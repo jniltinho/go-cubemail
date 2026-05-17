@@ -7,6 +7,7 @@ web/static/css/style.css
 *.db-shm
 *.db-wal
 .env
+config.toml
 config.local.toml
 
 # Binaries for programs and plugins

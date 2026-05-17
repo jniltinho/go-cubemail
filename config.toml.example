@@ -1,0 +1,47 @@
+[server]
+host        = "0.0.0.0"
+port        = 8080
+debug       = false
+secret_key  = "change-this-secret-key-32-chars!!"
+base_url    = "http://localhost:8080"
+# Para usar HTTPS, preencha os caminhos do certificado e da chave
+tls_cert    = ""
+tls_key     = ""
+
+[imap]
+host            = "mail.example.com"
+port            = 993
+tls             = true
+timeout_sec     = 30
+show_host_input = false
+
+[smtp]
+host        = "mail.example.com"
+port        = 25
+starttls    = false
+timeout_sec = 30
+
+[database]
+driver = "sqlite"
+dsn    = "./data/app.db"
+# MariaDB (produção):
+# driver = "mariadb"
+# dsn    = "user:password@tcp(localhost:3306)/go_cubemail?charset=utf8mb4&parseTime=True&loc=Local"
+
+[session]
+name      = "gorc_session"
+max_age   = 86400
+secure    = false
+http_only = true
+
+[ui]
+theme           = "larry"
+rows_per_page   = 50
+timezone        = "America/Sao_Paulo"
+date_format     = "02/01/2006"
+datetime_format = "02/01/2006 15:04"
+compose_html    = true
+
+[upload]
+max_size_mb = 25
+temp_dir    = "./tmp/uploads"
