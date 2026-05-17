@@ -14,12 +14,15 @@ import (
 	"go-cubemail/internal/session"
 	"github.com/labstack/echo/v5"
 	echoMiddleware "github.com/labstack/echo/v5/middleware"
+	"gorm.io/gorm"
 )
 
 // AppVersion can be set via ldflags: -ldflags "-X go-cubemail/internal/server.AppVersion=1.2.3"
 var AppVersion = "dev"
 
-func Start(cfg *config.Config, embeddedFiles embed.FS) error {
+func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
+	session.InitDB(db)
+	
 	e := echo.New()
 
 	tmplRenderer, err := loadTemplates(embeddedFiles)

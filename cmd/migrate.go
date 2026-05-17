@@ -38,6 +38,7 @@ var migrateCmd = &cobra.Command{
 			&model.ContactGroup{},
 			&model.Draft{},
 			&model.UserSettings{},
+			&model.Session{},
 		)
 		if err != nil {
 			return fmt.Errorf("migration failed: %w", err)
