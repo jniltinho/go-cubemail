@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+
+      - name: Set timezone to America/Sao_Paulo
+        run: sudo timedatectl set-timezone America/Sao_Paulo
+      - name: Verify timezone change
+        run: timedatectl && date
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y upx rpm
+
+      - name: Install Project Dependencies
+        run: make install-tailwind && make deps
+
+      - name: Build Application
+        run: make all
+
+      - name: Package Binary
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          ARCHIVE_NAME="go-cubemail_${VERSION}_linux_amd64.tar.gz"
+          cd bin && tar -czvf "../$ARCHIVE_NAME" go-cubemail && cd ..
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
+
+      # - name: Build Deb Package
+      #   run: make deb
+
+      # - name: Build RPM Package
+      #   run: make rpm
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ARCHIVE_NAME }}
+            # go-cubemail_*.deb
+            # *.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
