@@ -1,0 +1,49 @@
+{{template "layout/base.html" .}}
+
+{{define "title"}}Settings — Webmail{{end}}
+
+{{define "toolbar"}}
+<button form="settings-form" type="submit" class="flex items-center gap-1 px-3 py-1 text-sm bg-[#37517e] text-white hover:bg-[#2a3d5e] border border-[#2a3d5e]">
+  💾 Save
+</button>
+{{end}}
+
+{{define "content"}}
+<div class="flex-1 overflow-y-auto bg-white p-6">
+  <form id="settings-form" action="/settings" method="POST" class="max-w-md flex flex-col gap-5">
+
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-500">Messages per page</label>
+      <select name="rows_per_page"
+              class="border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[#37517e]">
+        <option value="25"  {{if eq .Settings.RowsPerPage 25}}selected{{end}}>25</option>
+        <option value="50"  {{if eq .Settings.RowsPerPage 50}}selected{{end}}>50</option>
+        <option value="100" {{if eq .Settings.RowsPerPage 100}}selected{{end}}>100</option>
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-500">Timezone</label>
+      <input type="text" name="timezone" value="{{.Settings.Timezone}}"
+             class="border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[#37517e]">
+    </div>
+
+    <div class="flex items-center gap-2">
+      <input type="checkbox" name="compose_html" id="compose_html" value="1"
+             {{if .Settings.ComposeHTML}}checked{{end}}
+             class="border border-gray-300">
+      <label for="compose_html" class="text-sm text-gray-700">Compose in HTML by default</label>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-500">Signature position</label>
+      <select name="signature_pos"
+              class="border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[#37517e]">
+        <option value="below" {{if eq .Settings.SignaturePos "below"}}selected{{end}}>Below quoted text</option>
+        <option value="above" {{if eq .Settings.SignaturePos "above"}}selected{{end}}>Above quoted text</option>
+      </select>
+    </div>
+
+  </form>
+</div>
+{{end}}

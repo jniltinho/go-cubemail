@@ -1,0 +1,43 @@
+{{template "layout/base.html" .}}
+
+{{define "title"}}Contacts — Webmail{{end}}
+
+{{define "toolbar"}}
+<a href="/contacts/new" class="flex items-center gap-1 px-3 py-1 text-sm bg-[#37517e] text-white hover:bg-[#2a3d5e] border border-[#2a3d5e]">
+  + New Contact
+</a>
+{{end}}
+
+{{define "content"}}
+<div class="flex-1 overflow-y-auto bg-white p-4">
+  <table class="w-full text-sm border border-gray-200">
+    <thead class="bg-[#f0f2f5] border-b border-gray-300">
+      <tr>
+        <th class="text-left px-3 py-2 font-medium text-gray-600">Name</th>
+        <th class="text-left px-3 py-2 font-medium text-gray-600">Email</th>
+        <th class="text-left px-3 py-2 font-medium text-gray-600">Company</th>
+        <th class="px-3 py-2"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Contacts}}
+      <tr class="border-b border-gray-100 hover:bg-blue-50">
+        <td class="px-3 py-2">{{.FirstName}} {{.LastName}}</td>
+        <td class="px-3 py-2"><a href="mailto:{{.Email}}" class="text-[#37517e] hover:underline">{{.Email}}</a></td>
+        <td class="px-3 py-2 text-gray-500">{{.Company}}</td>
+        <td class="px-3 py-2 flex gap-2">
+          <a href="/contacts/{{.ID}}/edit" class="text-xs text-[#37517e] hover:underline">Edit</a>
+          <button class="text-xs text-red-500 hover:underline delete-contact" data-id="{{.ID}}">Remove</button>
+        </td>
+      </tr>
+      {{else}}
+      <tr><td colspan="4" class="px-3 py-8 text-center text-gray-400">No contacts found.</td></tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="/static/js/contacts.js"></script>
+{{end}}

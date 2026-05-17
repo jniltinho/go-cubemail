@@ -1,0 +1,39 @@
+<div id="message-body"
+     data-subject="{{.Envelope.Subject}}"
+     data-from-email="{{.Envelope.FromEmail}}"
+     data-from-name="{{.Envelope.From}}"
+     data-date="{{.Envelope.Date}}">
+<div class="border-b border-gray-200 px-6 py-4">
+  <h2 class="text-base font-semibold text-gray-800 mb-3">{{.Envelope.Subject}}</h2>
+  <table class="border-collapse text-xs text-gray-600">
+    <tr>
+      <td class="pr-3 py-0.5 font-medium text-gray-500 whitespace-nowrap">From:</td>
+      <td class="py-0.5 whitespace-nowrap">{{.Envelope.From}}</td>
+      <td class="px-32"></td>
+      <td class="pr-3 py-0.5 font-medium text-gray-500 whitespace-nowrap">To:</td>
+      <td class="py-0.5 whitespace-nowrap">{{.Envelope.To}}</td>
+    </tr>
+    <tr>
+      <td class="pr-3 py-0.5 font-medium text-gray-500 whitespace-nowrap">Date:</td>
+      <td class="py-0.5">{{.Envelope.Date}}</td>
+    </tr>
+  </table>
+</div>
+{{if .Attachments}}
+<div class="px-6 py-3 border-b border-gray-200 bg-gray-50 flex flex-wrap gap-2">
+  <span class="text-xs font-medium text-gray-500 mr-1 self-center">📎 Attachments:</span>
+  {{range .Attachments}}
+  <a href="/mail/{{$.Mailbox}}/{{$.UID}}/attachment/{{.Part}}"
+     class="inline-flex items-center gap-1 px-3 py-1 rounded border border-gray-300 bg-white text-xs text-[#37517e] hover:bg-blue-50 hover:border-[#37517e] transition-colors"
+     download="{{.Filename}}">
+    📄 {{.Filename}}
+    <span class="text-gray-400 ml-1">({{.SizeLabel}})</span>
+  </a>
+  {{end}}
+</div>
+{{end}}
+<div id="msg-body" class="px-6 py-4 text-sm leading-relaxed prose max-w-none">
+  {{.SafeHTML}}
+</div>
+</div>
+

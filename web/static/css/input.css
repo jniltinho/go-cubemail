@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand:      #37517e;
+  --color-brand-dark: #2a3d5e;
+}
+
+/* Classe utilitária reutilizável para botões da toolbar */
+@layer components {
+  .toolbar-btn {
+    @apply flex items-center gap-1 px-3 py-1 text-sm bg-white text-gray-700 hover:bg-gray-100 border border-gray-300;
+  }
+  .toolbar-btn:disabled {
+    @apply opacity-40 cursor-not-allowed;
+  }
+}

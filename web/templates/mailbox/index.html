@@ -1,0 +1,160 @@
+{{template "layout/base.html" .}}
+
+{{define "title"}}{{.Mailbox}} — Webmail{{end}}
+
+{{define "toolbar"}}
+<button id="btn-novo-modal" type="button" class="flex items-center gap-1 px-3 py-1 text-sm bg-[#37517e] text-white hover:bg-[#2a3d5e] border border-[#2a3d5e]">
+  ✉ New
+</button>
+<button id="btn-reply"    class="toolbar-btn" disabled>↩ Reply</button>
+<button id="btn-forward"  class="toolbar-btn" disabled>↪ Forward</button>
+<button id="btn-delete"   class="toolbar-btn" disabled>🗑 Delete</button>
+<button id="btn-mark-read" class="toolbar-btn" disabled>● Mark Read</button>
+<select id="move-select" class="toolbar-btn" disabled>
+  <option value="">Move to...</option>
+  {{range .Folders}}<option value="{{.Name}}">{{.Name}}</option>{{end}}
+</select>
+{{end}}
+
+{{define "content"}}
+<!-- Lista de mensagens -->
+<section id="msg-list" class="w-[420px] shrink-0 border-r-2 border-gray-300 overflow-y-auto flex flex-col">
+  {{if .Query}}
+  <div class="px-3 py-2 bg-yellow-50 border-b border-yellow-200 text-xs text-gray-600">
+    Results for: <strong>{{.Query}}</strong>
+  </div>
+  {{end}}
+
+  <div id="msg-rows">
+    {{range .Messages}}
+    <div class="msg-row flex items-start gap-2 px-2 py-2 border-b border-gray-200 cursor-pointer
+                {{if .Seen}}bg-[#f8f9fa] text-gray-600{{else}}bg-white font-semibold{{end}}
+                hover:bg-blue-50"
+         data-uid="{{.UID}}" data-mailbox="{{$.Mailbox}}">
+      <input type="checkbox" class="msg-check mt-0.5 shrink-0">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between gap-1">
+          <span class="truncate text-xs {{if not .Seen}}text-[#37517e]{{end}}">{{.From}}</span>
+          <span class="text-xs text-gray-400 shrink-0">{{.Date}}</span>
+        </div>
+        <div class="truncate text-xs mt-0.5">{{.Subject}}</div>
+      </div>
+      {{if .Flagged}}<span class="text-yellow-500 shrink-0">★</span>{{end}}
+    </div>
+    {{else}}
+    <div class="px-4 py-8 text-center text-gray-400 text-sm">No messages.</div>
+    {{end}}
+  </div>
+</section>
+
+<!-- Painel de leitura -->
+<main id="reading-pane" class="flex-1 overflow-y-auto bg-white">
+  <div class="flex items-center justify-center h-full text-gray-300 text-sm">
+    Select a message
+  </div>
+</main>
+<!-- Modal Novo Email -->
+<div id="compose-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background-color: rgba(0, 0, 0, 0.5);">
+  <div class="bg-white shadow-lg w-[1530px] max-w-[95vw] flex flex-col h-[620px] max-h-[95vh] mx-4">
+    <div class="flex items-center justify-between px-4 py-2 bg-[#37517e] text-white">
+      <h3 class="font-semibold text-sm">New Message</h3>
+      <button type="button" class="close-compose hover:text-gray-200">✕</button>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto bg-white p-4">
+      <form id="compose-form-modal" action="/compose/send" method="POST" enctype="multipart/form-data" class="flex flex-col h-full gap-3">
+        <div class="flex items-center gap-2 border-b border-gray-200 pb-1">
+          <label class="w-12 text-xs text-gray-500 shrink-0">To:</label>
+          <input type="text" name="to" id="modal-to" required class="flex-1 px-1 text-sm outline-none">
+        </div>
+        <div class="flex items-center gap-2 border-b border-gray-200 pb-1">
+          <label class="w-12 text-xs text-gray-500 shrink-0">Subject:</label>
+          <input type="text" name="subject" id="modal-subject" class="flex-1 px-1 text-sm outline-none">
+        </div>
+        <div class="flex items-start flex-col gap-1 border-b border-gray-200 pb-2">
+          <div class="flex items-center gap-2 w-full">
+            <span class="w-20 text-xs text-gray-500 shrink-0">Attachments:</span>
+            <input type="file" name="attachments" id="modal-attachments" multiple class="hidden">
+            <button type="button" onclick="document.getElementById('modal-attachments').click()"
+                    class="px-3 py-1 text-xs border border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100">
+              📎 Choose files
+            </button>
+            <span id="modal-attach-label" class="text-xs text-gray-400">No files selected</span>
+          </div>
+          <div id="attachments-list" class="flex flex-wrap gap-2 pl-22 w-full"></div>
+        </div>
+        <textarea name="body_html" id="modal-body" class="flex-1 w-full p-2 text-sm outline-none border border-gray-200 resize-none font-mono mt-2" placeholder="Write your message here..."></textarea>
+      </form>
+    </div>
+
+    <div class="px-4 py-3 border-t border-gray-200 flex justify-end gap-2 bg-gray-50">
+      <button type="button" class="close-compose px-4 py-1.5 border border-gray-300 bg-white text-gray-700 text-sm hover:bg-gray-100">Cancel</button>
+      <button form="compose-form-modal" type="submit" class="px-4 py-1.5 bg-[#37517e] text-white text-sm hover:bg-[#2a3d5e]">Send</button>
+    </div>
+  </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js"></script>
+<script src="/static/js/mailbox.js"></script>
+<script>
+  tinymce.init({
+    selector: '#modal-body',
+    menubar: false,
+    statusbar: false,
+    promotion: false,
+    branding: false,
+    toolbar: 'bold italic underline | fontfamily fontsize | forecolor backcolor | removeformat | numlist bullist | outdent indent | blockquote | alignleft aligncenter alignright alignjustify | link table | charmap image | undo redo | code print',
+    plugins: 'lists link table charmap image code',
+    height: '100%',
+    width: '100%',
+    setup: function (editor) {
+      editor.on('change', function () {
+        editor.save();
+      });
+    }
+  });
+  let selectedFiles = new DataTransfer();
+
+  document.getElementById('modal-attachments').addEventListener('change', function(e) {
+    Array.from(this.files).forEach(file => { selectedFiles.items.add(file); });
+    this.value = '';
+    renderAttachments();
+  });
+
+  function renderAttachments() {
+    const list = document.getElementById('attachments-list');
+    list.innerHTML = '';
+    document.getElementById('modal-attachments').files = selectedFiles.files;
+
+    const count = selectedFiles.files.length;
+    document.getElementById('modal-attach-label').textContent =
+      count === 0 ? 'No files selected' : count + ' file' + (count > 1 ? 's' : '') + ' selected';
+
+    Array.from(selectedFiles.files).forEach((file, index) => {
+      const size = (file.size / 1024 / 1024).toFixed(2);
+      const span = document.createElement('span');
+      span.className = 'inline-flex items-center gap-1 px-2 py-1 bg-gray-100 border border-gray-200 rounded text-xs text-gray-600';
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.innerHTML = '✕';
+      removeBtn.className = 'text-red-500 hover:text-red-700 ml-1 font-bold';
+      removeBtn.onclick = function() {
+        // Remove the file at this index
+        const dt = new DataTransfer();
+        Array.from(selectedFiles.files).forEach((f, i) => {
+          if (i !== index) dt.items.add(f);
+        });
+        selectedFiles = dt;
+        renderAttachments();
+      };
+
+      span.innerHTML = `📄 ${file.name} <span class="text-gray-400">(${size}MB)</span>`;
+      span.appendChild(removeBtn);
+      list.appendChild(span);
+    });
+  }
+</script>
+{{end}}

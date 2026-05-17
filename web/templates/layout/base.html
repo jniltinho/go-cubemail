@@ -1,0 +1,87 @@
+{{define "layout/base.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{block "title" .}}Webmail{{end}}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans text-sm h-screen flex flex-col">
+
+  <!-- Topbar -->
+  <header class="flex items-center h-10 bg-[#37517e] text-white px-3 gap-4 border-b border-[#2a3d5e] shrink-0">
+    <span class="font-bold text-base tracking-tight">Webmail</span>
+
+    <form action="/search" method="GET" class="flex-1 max-w-sm">
+      <input type="text" name="q" placeholder="Search emails..."
+             class="w-full px-2 py-1 text-sm text-gray-800 bg-white border border-[#2a3d5e] outline-none">
+    </form>
+
+    <div class="ml-auto flex items-center gap-3">
+      <span class="text-sm opacity-80">{{.Username}}</span>
+      <form action="/logout" method="POST">
+        <button class="text-sm px-2 py-1 border border-white/30 hover:bg-white/10">Logout</button>
+      </form>
+    </div>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="flex items-center h-9 bg-[#f0f2f5] border-b border-gray-300 px-2 gap-1 shrink-0">
+    {{block "toolbar" .}}{{end}}
+  </div>
+
+  <!-- Main: sidebar + content -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Sidebar de pastas -->
+    <aside class="w-56 shrink-0 bg-[#f8f9fa] border-r-2 border-gray-300 overflow-y-auto">
+      <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Folders</div>
+      {{range .Folders}}
+      <div class="relative group folder-item" data-folder="{{.Name}}" data-parent="{{.ParentName}}" data-delim="{{.Delim}}" data-is-trash="{{.IsTrash}}">
+        {{if .HasChildren}}<button class="folder-toggle absolute left-0 top-0 bottom-0 w-5 flex items-center justify-center text-gray-400 hover:text-gray-700 z-10"><svg class="w-3 h-3" style="transform:rotate(90deg);transition:transform .15s" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg></button>{{end}}
+        <a href="/mail/{{.Name}}"
+           style="padding-left: {{.PaddingLeft}}px"
+           class="flex items-center gap-2 pr-7 py-1.5 text-sm text-gray-700 hover:bg-gray-200 {{if eq $.Mailbox .Name}}bg-[#37517e] text-white hover:bg-[#37517e]{{end}}">
+          {{if eq .IconType "inbox"}}
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H6.911a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661Z"/></svg>
+          {{else if eq .IconType "drafts"}}
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/></svg>
+          {{else if eq .IconType "sent"}}
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"/></svg>
+          {{else if eq .IconType "trash"}}
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+          {{else if eq .IconType "junk"}}
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
+          {{else}}
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"/></svg>
+          {{end}}
+          <span class="truncate flex-1">{{.DisplayName}}</span>
+          {{if .Unseen}}<span class="text-xs font-bold ml-auto {{if eq $.Mailbox .Name}}text-white{{else}}text-[#37517e]{{end}}">{{.Unseen}}</span>{{end}}
+        </a>
+        {{if eq $.Mailbox .Name}}<button class="folder-menu-btn absolute right-0 top-0 bottom-0 text-white hover:bg-white/20 w-6 flex items-center justify-center text-base font-bold rounded-sm">⋮</button>{{end}}
+        <div class="folder-dropdown hidden fixed z-50 bg-white border border-gray-200 shadow-md rounded text-sm min-w-36 py-1">
+          {{if .IsTrash}}<button class="folder-action-empty w-full text-left px-3 py-1.5 hover:bg-gray-100 text-red-600">Empty Trash</button>{{end}}
+          <button class="folder-action-subfolder w-full text-left px-3 py-1.5 hover:bg-gray-100">New Subfolder...</button>
+          {{if not .IsSystem}}
+          <hr class="my-1 border-gray-200">
+          <button class="folder-action-rename w-full text-left px-3 py-1.5 hover:bg-gray-100">Rename...</button>
+          <button class="folder-action-delete w-full text-left px-3 py-1.5 hover:bg-gray-100 text-red-600">Delete</button>
+          {{end}}
+        </div>
+      </div>
+      {{end}}
+    </aside>
+
+    <!-- Conteúdo principal -->
+    <div class="flex flex-1 overflow-hidden">
+      {{block "content" .}}{{end}}
+    </div>
+  </div>
+
+  <script src="/static/js/jquery-4.0.0.min.js"></script>
+  <script src="/static/js/app.js"></script>
+  {{block "scripts" .}}{{end}}
+</body>
+</html>
+{{end}}

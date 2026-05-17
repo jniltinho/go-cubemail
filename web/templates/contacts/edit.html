@@ -1,0 +1,55 @@
+{{template "layout/base.html" .}}
+
+{{define "title"}}{{if eq .Mode "new"}}New Contact{{else}}Edit Contact{{end}} — Webmail{{end}}
+
+{{define "toolbar"}}
+<button form="contact-form" type="submit" class="flex items-center gap-1 px-3 py-1 text-sm bg-[#37517e] text-white hover:bg-[#2a3d5e] border border-[#2a3d5e]">
+  💾 Save
+</button>
+<a href="/contacts" class="toolbar-btn">✕ Cancel</a>
+{{end}}
+
+{{define "content"}}
+<div class="flex-1 overflow-y-auto bg-white p-6">
+  <form id="contact-form"
+        action="{{if eq .Mode "new"}}/contacts{{else}}/contacts/{{.Contact.ID}}{{end}}"
+        method="POST"
+        class="max-w-lg flex flex-col gap-4">
+
+    {{if eq .Mode "edit"}}<input type="hidden" name="_method" value="PUT">{{end}}
+
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-medium text-gray-500">First Name</label>
+        <input type="text" name="first_name" value="{{.Contact.FirstName}}"
+               class="border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[#37517e]">
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-medium text-gray-500">Last Name</label>
+        <input type="text" name="last_name" value="{{.Contact.LastName}}"
+               class="border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[#37517e]">
+      </div>
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-500">Email *</label>
+      <input type="email" name="email" value="{{.Contact.Email}}" required
+             class="border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[#37517e]">
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-500">Phone</label>
+      <input type="tel" name="phone" value="{{.Contact.Phone}}"
+             class="border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[#37517e]">
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-500">Company</label>
+      <input type="text" name="company" value="{{.Contact.Company}}"
+             class="border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[#37517e]">
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-500">Notes</label>
+      <textarea name="notes" rows="3"
+                class="border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[#37517e] resize-none">{{.Contact.Notes}}</textarea>
+    </div>
+  </form>
+</div>
+{{end}}

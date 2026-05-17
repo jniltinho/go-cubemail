@@ -1,0 +1,66 @@
+{{template "layout/base.html" .}}
+
+{{define "title"}}Compose — Webmail{{end}}
+
+{{define "toolbar"}}
+<button form="compose-form" type="submit" class="flex items-center gap-1 px-3 py-1 text-sm bg-[#37517e] text-white hover:bg-[#2a3d5e] border border-[#2a3d5e]">
+  ✉ Send
+</button>
+<button id="btn-save-draft" type="button" class="toolbar-btn">💾 Draft</button>
+<a href="javascript:history.back()" class="toolbar-btn">✕ Cancel</a>
+{{end}}
+
+{{define "content"}}
+<div class="flex-1 overflow-y-auto bg-white">
+  {{if .Error}}
+  <div class="bg-red-50 border-b border-red-300 px-6 py-2 text-red-700 text-sm">{{.Error}}</div>
+  {{end}}
+
+  <form id="compose-form" action="/compose/send" method="POST" enctype="multipart/form-data"
+        class="flex flex-col h-full">
+
+    <!-- Cabeçalhos -->
+    <div class="border-b border-gray-200 px-4 py-2 flex flex-col gap-1.5">
+      <div class="flex items-center gap-2">
+        <label class="w-12 text-xs text-gray-500 shrink-0">To:</label>
+        <input type="text" name="to" id="to-field" value="{{.To}}" required
+               class="flex-1 border-b border-gray-300 px-1 py-0.5 text-sm outline-none focus:border-[#37517e]">
+        <button type="button" id="btn-cc" class="text-xs text-[#37517e] hover:underline">Cc</button>
+        <button type="button" id="btn-bcc" class="text-xs text-[#37517e] hover:underline">Bcc</button>
+      </div>
+      <div id="cc-row" class="hidden flex items-center gap-2">
+        <label class="w-12 text-xs text-gray-500 shrink-0">Cc:</label>
+        <input type="text" name="cc" id="cc-field"
+               class="flex-1 border-b border-gray-300 px-1 py-0.5 text-sm outline-none focus:border-[#37517e]">
+      </div>
+      <div id="bcc-row" class="hidden flex items-center gap-2">
+        <label class="w-12 text-xs text-gray-500 shrink-0">Bcc:</label>
+        <input type="text" name="bcc" id="bcc-field"
+               class="flex-1 border-b border-gray-300 px-1 py-0.5 text-sm outline-none focus:border-[#37517e]">
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="w-12 text-xs text-gray-500 shrink-0">Subject:</label>
+        <input type="text" name="subject" value="{{.Subject}}"
+               class="flex-1 border-b border-gray-300 px-1 py-0.5 text-sm outline-none focus:border-[#37517e]">
+      </div>
+    </div>
+
+    <!-- Corpo -->
+    <textarea name="body_html" id="compose-body"
+              class="flex-1 p-4 text-sm outline-none resize-none font-mono">{{.Body}}</textarea>
+
+    <!-- Anexos -->
+    <div class="border-t border-gray-200 px-4 py-2 flex items-center gap-3">
+      <label class="text-xs text-[#37517e] cursor-pointer hover:underline">
+        📎 Attach file
+        <input type="file" id="attach-input" multiple class="hidden">
+      </label>
+      <div id="attachment-list" class="flex flex-wrap gap-2"></div>
+    </div>
+  </form>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="/static/js/compose.js"></script>
+{{end}}

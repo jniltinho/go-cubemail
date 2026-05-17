@@ -1,0 +1,44 @@
+{{template "layout/auth.html" .}}
+
+{{define "content"}}
+<div class="bg-gradient-to-b from-[#37517e] to-[#2a3d5e] w-full max-w-xl rounded-md shadow-[0_0_15px_rgba(0,0,0,0.5)] overflow-hidden border border-[#2a3d5e]">
+  <div class="px-6 py-6 border-b border-white/10 flex items-center gap-3">
+    <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+      <span class="text-blue-400 text-xl font-bold">W</span>
+    </div>
+    <h1 class="text-white text-xl font-semibold tracking-tight">Webmail</h1>
+  </div>
+
+  {{if .Error}}
+  <div class="bg-red-500/20 border-b border-red-500/50 px-6 py-2 text-red-200 text-sm">
+    {{.Error}}
+  </div>
+  {{end}}
+
+  <form action="/login" method="POST" class="px-8 py-8 flex flex-col gap-5">
+    {{if .ShowHostInput}}
+    <div class="flex items-center gap-4">
+      <label class="w-20 text-right text-sm text-gray-300 font-medium">Server</label>
+      <input type="text" name="imap_host" value="{{.DefaultHost}}" required
+             class="flex-1 bg-white border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none rounded shadow-inner focus:ring-2 focus:ring-blue-400">
+    </div>
+    {{end}}
+    <div class="flex items-center gap-4">
+      <label class="w-20 text-right text-sm text-gray-300 font-medium">Username</label>
+      <input type="text" name="username" autocomplete="username" required
+             class="flex-1 bg-white border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none rounded shadow-inner focus:ring-2 focus:ring-blue-400">
+    </div>
+    <div class="flex items-center gap-4">
+      <label class="w-20 text-right text-sm text-gray-300 font-medium">Password</label>
+      <input type="password" name="password" autocomplete="current-password" required
+             class="flex-1 bg-white border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none rounded shadow-inner focus:ring-2 focus:ring-blue-400">
+    </div>
+    <div class="flex justify-center pt-5">
+      <button type="submit"
+              class="px-6 py-1.5 bg-gray-100 text-gray-800 font-medium text-sm hover:bg-white rounded border border-gray-300 shadow-sm transition-colors">
+        Sign In
+      </button>
+    </div>
+  </form>
+</div>
+{{end}}
