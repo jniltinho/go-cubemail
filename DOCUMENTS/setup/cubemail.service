@@ -1,0 +1,31 @@
+[Unit]
+Description=go-cubemail Webmail
+Documentation=https://github.com/jniltinho/go-cubemail
+After=network.target mariadb.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/go-cubemail
+ExecStart=/opt/go-cubemail/go-cubemail serve
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=go-cubemail
+
+# Segurança
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/tmp/go-cubemail-uploads
+
+[Install]
+WantedBy=multi-user.target
