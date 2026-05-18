@@ -3,13 +3,13 @@
 {{define "title"}}{{.Mailbox}} — Webmail{{end}}
 
 {{define "toolbar"}}
-<button id="btn-novo-modal" type="button" class="flex items-center gap-1 px-3 py-1 text-sm bg-[#37517e] text-white hover:bg-[#2a3d5e] border border-[#2a3d5e]">
-  ✉ New
+<button id="btn-novo-modal" type="button" class="flex items-center gap-1.5 px-3 py-1 text-sm bg-[#37517e] text-white hover:bg-[#2a3d5e] border border-[#2a3d5e]">
+  <i data-lucide="mail-plus" style="width:14px;height:14px"></i> New
 </button>
-<button id="btn-reply"    class="toolbar-btn" disabled>↩ Reply</button>
-<button id="btn-forward"  class="toolbar-btn" disabled>↪ Forward</button>
-<button id="btn-delete"   class="toolbar-btn" disabled>🗑 Delete</button>
-<button id="btn-mark-read" class="toolbar-btn" disabled>● Mark Read</button>
+<button id="btn-reply"     class="toolbar-btn" disabled><i data-lucide="reply" style="width:14px;height:14px"></i> Reply</button>
+<button id="btn-forward"   class="toolbar-btn" disabled><i data-lucide="forward" style="width:14px;height:14px"></i> Forward</button>
+<button id="btn-delete"    class="toolbar-btn" disabled><i data-lucide="trash-2" style="width:14px;height:14px"></i> Delete</button>
+<button id="btn-mark-read" class="toolbar-btn" disabled><i data-lucide="mail-open" style="width:14px;height:14px"></i> Mark Read</button>
 <select id="move-select" class="toolbar-btn" disabled>
   <option value="">Move to...</option>
   {{range .Folders}}<option value="{{.Name}}">{{.Name}}</option>{{end}}
@@ -58,7 +58,7 @@
   <div class="bg-white shadow-lg w-[1530px] max-w-[95vw] flex flex-col h-[620px] max-h-[95vh] mx-4">
     <div class="flex items-center justify-between px-4 py-2 bg-[#37517e] text-white">
       <h3 class="font-semibold text-sm">New Message</h3>
-      <button type="button" class="close-compose hover:text-gray-200">✕</button>
+      <button type="button" class="close-compose hover:text-gray-200"><i data-lucide="x" style="width:16px;height:16px"></i></button>
     </div>
     
     <div class="flex-1 overflow-y-auto bg-white p-4">
@@ -76,8 +76,8 @@
             <span class="w-20 text-xs text-gray-500 shrink-0">Attachments:</span>
             <input type="file" name="attachments" id="modal-attachments" multiple class="hidden">
             <button type="button" onclick="document.getElementById('modal-attachments').click()"
-                    class="px-3 py-1 text-xs border border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100">
-              📎 Choose files
+                    class="flex items-center gap-1 px-3 py-1 text-xs border border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100">
+              <i data-lucide="paperclip" style="width:13px;height:13px"></i> Choose files
             </button>
             <span id="modal-attach-label" class="text-xs text-gray-400">No files selected</span>
           </div>
@@ -88,15 +88,23 @@
     </div>
 
     <div class="px-4 py-3 border-t border-gray-200 flex justify-end gap-2 bg-gray-50">
-      <button type="button" class="close-compose px-4 py-1.5 border border-gray-300 bg-white text-gray-700 text-sm hover:bg-gray-100">Cancel</button>
-      <button form="compose-form-modal" type="submit" class="px-4 py-1.5 bg-[#37517e] text-white text-sm hover:bg-[#2a3d5e]">Send</button>
+      <button type="button" class="close-compose flex items-center gap-1.5 px-4 py-1.5 border border-gray-300 bg-white text-gray-700 text-sm hover:bg-gray-100">
+        <i data-lucide="x" style="width:13px;height:13px"></i> Cancel
+      </button>
+      <button form="compose-form-modal" type="submit" class="flex items-center gap-1.5 px-4 py-1.5 bg-[#37517e] text-white text-sm hover:bg-[#2a3d5e]">
+        <i data-lucide="send" style="width:13px;height:13px"></i> Send
+      </button>
     </div>
   </div>
 </div>
 {{end}}
 
 {{define "scripts"}}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js"></script>
+<style>
+  .tox-tinymce { border-radius: 0 !important; border: 1px solid #d1d5db !important; }
+  .tox .tox-toolbar-overlord, .tox .tox-toolbar__primary { border-radius: 0 !important; }
+</style>
+<script src="/static/js/tinymce/tinymce.min.js"></script>
 <script src="/static/js/mailbox.js"></script>
 <script>
   tinymce.init({
@@ -139,10 +147,9 @@
       
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
-      removeBtn.innerHTML = '✕';
-      removeBtn.className = 'text-red-500 hover:text-red-700 ml-1 font-bold';
+      removeBtn.innerHTML = '<i data-lucide="x" style="width:11px;height:11px"></i>';
+      removeBtn.className = 'text-red-500 hover:text-red-700 ml-1';
       removeBtn.onclick = function() {
-        // Remove the file at this index
         const dt = new DataTransfer();
         Array.from(selectedFiles.files).forEach((f, i) => {
           if (i !== index) dt.items.add(f);
@@ -151,10 +158,11 @@
         renderAttachments();
       };
 
-      span.innerHTML = `📄 ${file.name} <span class="text-gray-400">(${size}MB)</span>`;
+      span.innerHTML = `<i data-lucide="file" style="width:12px;height:12px"></i> ${file.name} <span class="text-gray-400">(${size}MB)</span>`;
       span.appendChild(removeBtn);
       list.appendChild(span);
     });
+    lucide.createIcons();
   }
 </script>
 {{end}}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"math"
+	"net/url"
 	"strings"
 )
 
@@ -132,6 +133,8 @@ func templateFuncMap() template.FuncMap {
 		},
 
 		// Boolean helpers
+		"urlEncode": url.PathEscape,
+
 		"not": func(b bool) bool { return !b },
 		"and": func(a, b bool) bool { return a && b },
 		"or":  func(a, b bool) bool { return a || b },

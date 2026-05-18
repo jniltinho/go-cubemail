@@ -13,6 +13,7 @@ type MailboxInfo struct {
 	Delim       string
 	Unseen      uint32
 	IsTrash     bool
+	NoSelect    bool   // true when folder is a hierarchy placeholder (\Noselect)
 	IsSystem    bool   // true for INBOX, Sent, Drafts, Trash — no rename/delete
 	IconType    string // inbox | drafts | sent | trash | junk | folder
 	DisplayName string // last segment of the path (for tree display)
@@ -44,6 +45,8 @@ func (c *Client) ListMailboxes() ([]MailboxInfo, error) {
 		mi.IconType = "folder"
 		for _, attr := range m.Attrs {
 			switch attr {
+			case imap.MailboxAttrNoSelect:
+				mi.NoSelect = true
 			case imap.MailboxAttrTrash:
 				mi.IsTrash = true
 				mi.IsSystem = true
@@ -165,6 +168,42 @@ func (c *Client) RenameMailbox(oldName, newName string) error {
 
 // DeleteMailbox remove uma pasta.
 func (c *Client) DeleteMailbox(name string) error {
+	return c.Client.Delete(name).Wait()
+}
+
+// DeleteMailboxRecursive apaga uma pasta e todas as suas subpastas.
+func (c *Client) DeleteMailboxRecursive(name string) error {
+	all, err := c.ListMailboxes()
+	if err != nil {
+		return err
+	}
+
+	// Descobre o delimitador da pasta alvo.
+	delim := "."
+	for _, m := range all {
+		if m.Name == name && m.Delim != "" {
+			delim = m.Delim
+			break
+		}
+	}
+
+	// Coleta subpastas em ordem de profundidade decrescente (mais profundas primeiro).
+	prefix := name + delim
+	var children []string
+	for _, m := range all {
+		if strings.HasPrefix(m.Name, prefix) {
+			children = append(children, m.Name)
+		}
+	}
+	sort.Slice(children, func(i, j int) bool {
+		return len(children[i]) > len(children[j])
+	})
+
+	for _, child := range children {
+		if err := c.Client.Delete(child).Wait(); err != nil {
+			return err
+		}
+	}
 	return c.Client.Delete(name).Wait()
 }
 

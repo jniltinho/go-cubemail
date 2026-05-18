@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"html/template"
 	"net/http"
 	"strconv"
 	"time"
@@ -47,7 +49,7 @@ func (h *MailboxHandler) List(c *echo.Context) error {
 	}
 
 	if err := conn.SelectMailbox(mailbox); err != nil {
-		return err
+		return c.Redirect(http.StatusFound, "/mail/INBOX")
 	}
 
 	uids, err := conn.Search(&imap.SearchCriteria{})
@@ -91,13 +93,17 @@ func (h *MailboxHandler) List(c *echo.Context) error {
 		}
 	}
 
+	foldersJSON, _ := json.Marshal(folders)
+
 	return c.Render(http.StatusOK, "mailbox/index.html", map[string]interface{}{
-		"Mailbox":   mailbox,
-		"Folders":   folders,
-		"Messages":  envelopes,
-		"Page":      page,
-		"TotalMsgs": len(uids),
-		"Username":  s.Username,
+		"Mailbox":     mailbox,
+		"Folders":     folders,
+		"FoldersJSON": template.JS(foldersJSON),
+		"MailboxJS":   template.JSStr(mailbox),
+		"Messages":    envelopes,
+		"Page":        page,
+		"TotalMsgs":   len(uids),
+		"Username":    s.Username,
 	})
 }
 
@@ -180,7 +186,7 @@ func (h *MailboxHandler) DeleteFolder(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	defer conn.Close()
-	if err := conn.DeleteMailbox(name); err != nil {
+	if err := conn.DeleteMailboxRecursive(name); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})

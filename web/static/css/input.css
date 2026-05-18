@@ -1,8 +1,12 @@
+@import url('../fonts/google-fonts.css');
 @import "tailwindcss";
 
 @theme {
   --color-brand:      #37517e;
   --color-brand-dark: #2a3d5e;
+
+  --font-sans: "Fira Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* Classe utilitária reutilizável para botões da toolbar */
