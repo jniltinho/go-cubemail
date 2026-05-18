@@ -8,9 +8,9 @@
 </button>
 <button id="btn-reply"     class="toolbar-btn" disabled><i data-lucide="reply" style="width:14px;height:14px"></i> Reply</button>
 <button id="btn-forward"   class="toolbar-btn" disabled><i data-lucide="forward" style="width:14px;height:14px"></i> Forward</button>
-<button id="btn-delete"    class="toolbar-btn" disabled><i data-lucide="trash-2" style="width:14px;height:14px"></i> Delete</button>
+<button id="btn-delete"    class="toolbar-btn hover:text-red-600" disabled><i data-lucide="trash-2" style="width:14px;height:14px"></i> Delete</button>
 <button id="btn-mark-read" class="toolbar-btn" disabled><i data-lucide="mail-open" style="width:14px;height:14px"></i> Mark Read</button>
-<select id="move-select" class="toolbar-btn" disabled>
+<select id="move-select" class="toolbar-btn h-[30px] py-0 leading-none" disabled>
   <option value="">Move to...</option>
   {{range .Folders}}<option value="{{.Name}}">{{.Name}}</option>{{end}}
 </select>
@@ -94,6 +94,21 @@
       <button form="compose-form-modal" type="submit" class="flex items-center gap-1.5 px-4 py-1.5 bg-[#37517e] text-white text-sm hover:bg-[#2a3d5e]">
         <i data-lucide="send" style="width:13px;height:13px"></i> Send
       </button>
+    </div>
+  </div>
+</div>
+
+<div id="raw-message-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+  <div id="raw-message-backdrop" class="absolute inset-0 bg-black/45"></div>
+  <div class="relative bg-white shadow-xl w-[1100px] max-w-[95vw] h-[78vh] max-h-[95vh] mx-4 flex flex-col border border-gray-300">
+    <div class="flex items-center justify-between px-4 py-2 bg-[#37517e] text-white">
+      <h3 class="font-semibold text-sm">Raw Message</h3>
+      <button type="button" id="raw-message-close" class="hover:text-gray-200">
+        <i data-lucide="x" style="width:16px;height:16px"></i>
+      </button>
+    </div>
+    <div class="flex-1 overflow-auto bg-white">
+      <pre id="raw-message-content" class="m-0 min-h-full whitespace-pre-wrap break-words p-4 text-xs leading-5 text-gray-700 font-mono"></pre>
     </div>
   </div>
 </div>

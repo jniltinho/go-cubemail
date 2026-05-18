@@ -5,18 +5,44 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/emersion/go-imap/v2"
+	"github.com/labstack/echo/v5"
+	"github.com/microcosm-cc/bluemonday"
 	"go-cubemail/internal/config"
 	imappkg "go-cubemail/internal/imap"
 	"go-cubemail/internal/session"
-	"github.com/labstack/echo/v5"
-	"github.com/microcosm-cc/bluemonday"
 )
 
 type MessageHandler struct {
 	cfg *config.Config
+}
+
+func messageDownloadName(subject string, uid uint64) string {
+	name := strings.TrimSpace(subject)
+	if name == "" {
+		return fmt.Sprintf("message-%d.eml", uid)
+	}
+
+	replacer := strings.NewReplacer(
+		"/", "-",
+		"\\", "-",
+		":", "-",
+		"*", "",
+		"?", "",
+		"\"", "",
+		"<", "",
+		">", "",
+		"|", "-",
+	)
+	name = replacer.Replace(name)
+	name = strings.Join(strings.Fields(name), " ")
+	if name == "" {
+		return fmt.Sprintf("message-%d.eml", uid)
+	}
+	return name + ".eml"
 }
 
 func (h *MessageHandler) imapConn(s *session.IMAPSession) (*imappkg.Client, error) {
@@ -91,8 +117,8 @@ func (h *MessageHandler) Read(c *echo.Context) error {
 
 	// Monta lista de anexos com tamanho pré-formatado
 	type attachmentView struct {
-		Filename string
-		Part     int
+		Filename  string
+		Part      int
 		SizeLabel string
 	}
 	var attViews []attachmentView
@@ -125,6 +151,64 @@ func (h *MessageHandler) Read(c *echo.Context) error {
 		"SafeHTML":    safeHTML,
 		"Attachments": attViews,
 	})
+}
+
+func (h *MessageHandler) Download(c *echo.Context) error {
+	mailbox := c.Param("mailbox")
+	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)
+	if err != nil {
+		return echo.ErrBadRequest
+	}
+
+	s := c.Get("imap_session").(*session.IMAPSession)
+	conn, err := h.imapConn(s)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	if err := conn.SelectMailbox(mailbox); err != nil {
+		return err
+	}
+
+	rawMsg, err := conn.FetchRawMessage(imap.UID(uid))
+	if err != nil || len(rawMsg) == 0 {
+		return echo.ErrNotFound
+	}
+
+	filename := messageDownloadName("", uid)
+	if envelopes, envErr := conn.FetchEnvelopes([]imap.UID{imap.UID(uid)}); envErr == nil && len(envelopes) > 0 {
+		filename = messageDownloadName(envelopes[0].Subject, uid)
+	}
+
+	c.Response().Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
+	return c.Blob(http.StatusOK, "message/rfc822", rawMsg)
+}
+
+func (h *MessageHandler) Raw(c *echo.Context) error {
+	mailbox := c.Param("mailbox")
+	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)
+	if err != nil {
+		return echo.ErrBadRequest
+	}
+
+	s := c.Get("imap_session").(*session.IMAPSession)
+	conn, err := h.imapConn(s)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	if err := conn.SelectMailbox(mailbox); err != nil {
+		return err
+	}
+
+	rawMsg, err := conn.FetchRawMessage(imap.UID(uid))
+	if err != nil || len(rawMsg) == 0 {
+		return echo.ErrNotFound
+	}
+
+	return c.Blob(http.StatusOK, "text/plain; charset=utf-8", rawMsg)
 }
 
 func (h *MessageHandler) Flag(c *echo.Context) error {

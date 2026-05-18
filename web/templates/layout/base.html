@@ -1,35 +1,26 @@
 {{define "layout/base.html"}}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{block "title" .}}Webmail{{end}}</title>
   <link rel="stylesheet" href="/static/fonts/google-fonts.css">
   <link rel="stylesheet" href="/static/css/style.css">
-  <style>
-    #folder-list .folder-row { cursor: pointer; user-select: none; padding-left: 20px; }
-    #folder-list .folder-row[data-depth="1"] { padding-left: 36px; }
-    #folder-list .folder-row[data-depth="2"] { padding-left: 52px; }
-    #folder-list .folder-row[data-depth="3"] { padding-left: 68px; }
-    #folder-list .folder-row[data-depth="4"] { padding-left: 84px; }
-    #folder-list .folder-row[data-depth="5"] { padding-left: 100px; }
-    #folder-list .folder-menu-btn { opacity: 0; transition: opacity 0.1s; }
-    #folder-list .folder-row:hover .folder-menu-btn { opacity: 1; }
-    #folder-list .folder-row.active .folder-menu-btn { opacity: 1; }
-    .toggle-chevron { transition: transform 0.15s ease; }
-    #folder-list i[data-lucide] { width: 18px; height: 18px; display: block; flex-shrink: 0; }
-  </style>
+  <link rel="stylesheet" href="/static/css/folder-tree.css">
+  <link rel="stylesheet" href="/static/js/jqtree/jqtree.css">
 </head>
+
 <body class="bg-gray-100 text-gray-800 font-sans text-sm h-screen flex flex-col">
 
   <!-- Topbar -->
   <header class="flex items-center h-10 bg-[#37517e] text-white px-3 gap-4 border-b border-[#2a3d5e] shrink-0">
     <span class="font-bold text-base tracking-tight">Webmail</span>
 
-    <form action="/search" method="GET" class="flex-1 max-w-sm">
+    <form action="/search" method="GET" class="flex-1 max-w-[16.5rem]">
       <input type="text" name="q" placeholder="Search emails..."
-             class="w-full px-2 py-1 text-sm text-gray-800 bg-white border border-[#2a3d5e] outline-none">
+        class="w-full px-2 py-1 text-sm text-gray-800 bg-white border border-[#2a3d5e] outline-none">
     </form>
 
     <div class="ml-auto flex items-center gap-3">
@@ -52,62 +43,14 @@
     <aside class="w-48 shrink-0 bg-[#f8f9fa] border-r border-gray-300 flex flex-col overflow-hidden">
       <div class="px-3 pt-2 pb-1 text-[0.68rem] font-semibold text-gray-400 uppercase tracking-wider">Folders</div>
 
-      <nav id="folder-list" class="flex-1 overflow-y-auto">
-        {{range .Folders}}
-        <div class="folder-row group relative flex items-center h-7 pr-1
-                    {{if eq $.Mailbox .Name}}bg-[#37517e] text-white active{{else}}text-gray-700 hover:bg-[#e8ecf0]{{end}}"
-             data-folder="{{.Name}}"
-             data-parent="{{.ParentName}}"
-             data-is-trash="{{.IsTrash}}"
-             data-is-system="{{.IsSystem}}"
-             data-delim="{{.Delim}}"
-             data-has-children="{{.HasChildren}}"
-             data-depth="{{.Depth}}">
-
-          {{if .HasChildren}}
-          <button class="folder-toggle flex items-center justify-center w-4 h-4 shrink-0 mr-0.5 rounded hover:bg-black/10 focus:outline-none">
-            <svg class="toggle-chevron w-2 h-2"
-                 viewBox="0 0 6 10" fill="none" stroke="currentColor" stroke-width="1.8"
-                 stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 1l4 4-4 4"/>
-            </svg>
-          </button>
-          {{else}}
-          <span class="w-4 h-4 shrink-0 mr-0.5"></span>
-          {{end}}
-
-          <span class="w-4 h-4 shrink-0 mr-1.5 flex items-center justify-center
-                       {{if eq $.Mailbox .Name}}text-white{{else}}text-[#5c6e8a]{{end}}">
-            {{template "folder-icon" .IconType}}
-          </span>
-
-          {{if .NoSelect}}
-          <span class="flex-1 truncate text-xs min-w-0 leading-none italic
-                       {{if eq $.Mailbox .Name}}text-white{{else}}text-gray-400{{end}}">
-            {{.DisplayName}}</span>
-          {{else}}
-          <a href="/mail/{{urlEncode .Name}}"
-             class="flex-1 truncate text-xs min-w-0 leading-none
-                    {{if eq $.Mailbox .Name}}text-white font-medium{{else}}text-gray-700{{end}}">
-            {{.DisplayName}}</a>
-          {{end}}
-
-          {{if gt .Unseen 0}}
-          <span class="text-[0.65rem] font-bold shrink-0 mr-1
-                       {{if eq $.Mailbox .Name}}text-white{{else}}text-[#37517e]{{end}}">
-            {{.Unseen}}</span>
-          {{end}}
-
-          <button class="folder-menu-btn flex items-center justify-center w-5 h-5 shrink-0
-                         text-sm rounded leading-none focus:outline-none
-                         {{if eq $.Mailbox .Name}}text-white hover:bg-white/20{{else}}text-gray-400 hover:bg-gray-300 hover:text-gray-600{{end}}"
-                  title="">&#8942;</button>
-        </div>
-        {{end}}
+      <nav id="folder-list" class="flex-1 overflow-y-auto" data-current-mailbox="{{if .Mailbox}}{{.Mailbox}}{{end}}"
+        data-folders-url="/api/folders">
+        <div class="folder-tree-status">Loading folders...</div>
       </nav>
 
       <!-- Context Menu -->
-      <div id="folder-context-menu" class="hidden fixed z-50 bg-white border border-gray-200 shadow-md text-sm min-w-36 py-1">
+      <div id="folder-context-menu"
+        class="hidden fixed z-50 bg-white border border-gray-200 shadow-md text-sm min-w-36 py-1">
         <button id="ctx-subfolder" class="w-full text-left px-3 py-1.5 hover:bg-gray-100">New Subfolder...</button>
         <div id="ctx-non-system">
           <hr class="my-1 border-gray-200">
@@ -116,7 +59,8 @@
         </div>
         <div id="ctx-trash-only" class="hidden">
           <hr class="my-1 border-gray-200">
-          <button id="ctx-empty" class="w-full text-left px-3 py-1.5 hover:bg-gray-100 text-red-600">Empty Trash</button>
+          <button id="ctx-empty" class="w-full text-left px-3 py-1.5 hover:bg-gray-100 text-red-600">Empty
+            Trash</button>
         </div>
       </div>
     </aside>
@@ -133,7 +77,8 @@
     <div class="relative bg-white border border-gray-300 shadow-xl w-full max-w-sm mx-4">
       <div class="flex items-center gap-2 bg-[#37517e] text-white px-4 py-2.5">
         <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
         </svg>
         <span id="app-modal-title" class="font-semibold text-sm tracking-wide">Webmail</span>
       </div>
@@ -141,16 +86,16 @@
         <p id="app-modal-message" class="text-sm text-gray-700 mb-3"></p>
         <div id="app-modal-input-wrap" class="hidden">
           <input id="app-modal-input" type="text"
-                 class="w-full border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[#37517e] focus:ring-1 focus:ring-[#37517e]">
+            class="w-full border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[#37517e] focus:ring-1 focus:ring-[#37517e]">
         </div>
       </div>
       <div class="flex justify-end gap-2 px-4 pb-4">
         <button id="app-modal-cancel"
-                class="px-4 py-1.5 text-sm border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors">
+          class="px-4 py-1.5 text-sm border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors">
           Cancel
         </button>
         <button id="app-modal-ok"
-                class="px-4 py-1.5 text-sm bg-[#37517e] text-white hover:bg-[#2a3d5e] transition-colors">
+          class="px-4 py-1.5 text-sm bg-[#37517e] text-white hover:bg-[#2a3d5e] transition-colors">
           OK
         </button>
       </div>
@@ -159,10 +104,12 @@
 
   <script src="/static/js/lucide.min.js"></script>
   <script src="/static/js/jquery-4.0.0.min.js"></script>
+  <script src="/static/js/jqtree/tree.jquery.js"></script>
   <script src="/static/js/app.js"></script>
   <script>lucide.createIcons();</script>
   {{block "scripts" .}}{{end}}
 </body>
+
 </html>
 {{end}}
 

@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/labstack/echo/v5"
+	echoMiddleware "github.com/labstack/echo/v5/middleware"
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/handler"
 	appMiddleware "go-cubemail/internal/server/middleware"
 	"go-cubemail/internal/session"
-	"github.com/labstack/echo/v5"
-	echoMiddleware "github.com/labstack/echo/v5/middleware"
 	"gorm.io/gorm"
 )
 
@@ -22,7 +22,7 @@ var AppVersion = "dev"
 
 func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 	session.InitDB(db)
-	
+
 	e := echo.New()
 
 	tmplRenderer, err := loadTemplates(embeddedFiles)
@@ -34,27 +34,27 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 	e.Use(echoMiddleware.Recover())
 	e.Use(echoMiddleware.RequestID())
 	e.Use(echoMiddleware.RequestLoggerWithConfig(echoMiddleware.RequestLoggerConfig{
-		LogMethod:       true,
-		LogURI:          true,
-		LogStatus:       true,
-		LogLatency:      true,
-		LogHost:         true,
+		LogMethod:        true,
+		LogURI:           true,
+		LogStatus:        true,
+		LogLatency:       true,
+		LogHost:          true,
 		LogContentLength: true,
-		LogResponseSize: true,
-		LogUserAgent:    true,
-		LogRemoteIP:     true,
-		LogRequestID:    true,
+		LogResponseSize:  true,
+		LogUserAgent:     true,
+		LogRemoteIP:      true,
+		LogRequestID:     true,
 		LogValuesFunc: func(c *echo.Context, v echoMiddleware.RequestLoggerValues) error {
 			slog.Info("REQUEST",
-				"method",     v.Method,
-				"uri",        v.URI,
-				"status",     v.Status,
-				"latency",    v.Latency.Nanoseconds(),
-				"host",       v.Host,
-				"bytes_in",   v.ContentLength,
-				"bytes_out",  v.ResponseSize,
+				"method", v.Method,
+				"uri", v.URI,
+				"status", v.Status,
+				"latency", v.Latency.Nanoseconds(),
+				"host", v.Host,
+				"bytes_in", v.ContentLength,
+				"bytes_out", v.ResponseSize,
 				"user_agent", v.UserAgent,
-				"remote_ip",  v.RemoteIP,
+				"remote_ip", v.RemoteIP,
 				"request_id", v.RequestID,
 			)
 			return nil
@@ -94,6 +94,8 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 	mail := e.Group("/mail", authMiddleware)
 	mail.GET("/:mailbox", h.Mailbox.List)
 	mail.GET("/:mailbox/:uid", h.Message.Read)
+	mail.GET("/:mailbox/:uid/download", h.Message.Download)
+	mail.GET("/:mailbox/:uid/raw", h.Message.Raw)
 	mail.POST("/:mailbox/:uid/flag", h.Message.Flag)
 	mail.POST("/:mailbox/:uid/move", h.Message.Move)
 	mail.DELETE("/:mailbox/:uid", h.Message.Delete)

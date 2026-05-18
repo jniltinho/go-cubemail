@@ -1,0 +1,35 @@
+#folder-list .folder-tree-status { padding: 8px 12px; font-size: 12px; color: #9ca3af; }
+#folder-list ul.jqtree-tree { padding: 0 0 4px; }
+#folder-list ul.jqtree-tree ul.jqtree_common { margin-left: 0; }
+#folder-list li.jqtree_common { margin: 0; }
+#folder-list li.jqtree-folder { margin-bottom: 0; }
+#folder-list .jqtree-element { min-height: 28px; width: 100%; padding-right: 4px; display: flex; align-items: center; box-sizing: border-box; }
+#folder-list .jqtree-element:hover { background: #e8ecf0; }
+#folder-list .jqtree-element.folder-tree-row.is-active { background: #37517e; }
+#folder-list .folder-tree-row { padding-left: calc(12px + (var(--folder-depth, 0) * 16px)); }
+#folder-list .jqtree-title { flex: 1; min-width: 0; margin-left: 0; color: inherit; }
+#folder-list .folder-tree-title { display: flex; align-items: center; min-width: 0; }
+#folder-list .folder-tree-node { display: flex; align-items: center; min-width: 0; }
+#folder-list .folder-tree-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 1; color: #374151; }
+#folder-list .folder-tree-label.is-placeholder { font-style: italic; color: #9ca3af; }
+#folder-list .folder-tree-row.is-active .folder-tree-label { color: #fff; font-weight: 500; }
+#folder-list .folder-tree-row.is-active .folder-tree-label.is-placeholder { color: rgba(255, 255, 255, 0.82); }
+#folder-list .folder-tree-icon { width: 18px; height: 18px; margin-right: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #5c6e8a; }
+#folder-list .folder-tree-row.is-active .folder-tree-icon { color: #fff; }
+#folder-list .jqtree-toggler { width: 14px; height: 14px; margin-right: 2px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 2px; color: #4b5563; text-decoration: none; }
+#folder-list .jqtree-toggler:hover { background: rgba(0, 0, 0, 0.08); color: #1f2937; text-decoration: none; }
+#folder-list .folder-tree-row.is-active .jqtree-toggler { color: #fff; }
+#folder-list .folder-tree-row.is-active .jqtree-toggler:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+#folder-list .folder-tree-spacer { width: 14px; height: 14px; margin-right: 2px; flex-shrink: 0; }
+#folder-list .folder-toggle-chevron { width: 6px; height: 6px; display: block; transition: transform 0.15s ease; }
+#folder-list .folder-toggle-chevron.is-open { transform: rotate(90deg); }
+#folder-list .folder-tree-unseen { margin-right: 4px; flex-shrink: 0; font-size: 0.65rem; font-weight: 700; color: #37517e; }
+#folder-list .folder-tree-row.is-active .folder-tree-unseen { color: #fff; }
+#folder-list .folder-menu-btn { width: 20px; height: 20px; flex-shrink: 0; border-radius: 4px; opacity: 0; transition: opacity 0.1s; font-size: 14px; line-height: 1; color: #9ca3af; }
+#folder-list .jqtree-element:hover .folder-menu-btn,
+#folder-list .folder-tree-row.is-active .folder-menu-btn,
+#folder-list .folder-menu-btn:focus-visible { opacity: 1; }
+#folder-list .folder-menu-btn:hover { background: #d1d5db; color: #4b5563; }
+#folder-list .folder-tree-row.is-active .folder-menu-btn { color: #fff; }
+#folder-list .folder-tree-row.is-active .folder-menu-btn:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+#folder-list i[data-lucide] { width: 18px; height: 18px; display: block; flex-shrink: 0; }

@@ -1,23 +1,77 @@
 <div id="message-body"
+     class="relative"
+     data-mailbox="{{.Mailbox}}"
+     data-uid="{{.UID}}"
      data-subject="{{.Envelope.Subject}}"
      data-from-email="{{.Envelope.FromEmail}}"
      data-from-name="{{.Envelope.From}}"
      data-date="{{.Envelope.Date}}">
 <div class="border-b border-gray-200 px-6 py-4">
-  <h2 class="text-base font-semibold text-gray-800 mb-3">{{.Envelope.Subject}}</h2>
-  <table class="border-collapse text-xs text-gray-600">
-    <tr>
-      <td class="pr-3 py-0.5 font-medium text-gray-500 whitespace-nowrap">From:</td>
-      <td class="py-0.5 whitespace-nowrap">{{.Envelope.From}}</td>
-      <td class="px-32"></td>
-      <td class="pr-3 py-0.5 font-medium text-gray-500 whitespace-nowrap">To:</td>
-      <td class="py-0.5 whitespace-nowrap">{{.Envelope.To}}</td>
-    </tr>
-    <tr>
-      <td class="pr-3 py-0.5 font-medium text-gray-500 whitespace-nowrap">Date:</td>
-      <td class="py-0.5">{{.Envelope.Date}}</td>
-    </tr>
-  </table>
+  <div class="flex items-start justify-between gap-4">
+    <div class="min-w-0 flex-1">
+      <h2 class="text-base font-semibold text-gray-800 mb-3">{{.Envelope.Subject}}</h2>
+      <table class="border-collapse text-xs text-gray-600">
+        <tr>
+          <td class="pr-3 py-0.5 font-medium text-gray-500 whitespace-nowrap">From:</td>
+          <td class="py-0.5 whitespace-nowrap">{{.Envelope.From}}</td>
+          <td class="px-32"></td>
+          <td class="pr-3 py-0.5 font-medium text-gray-500 whitespace-nowrap">To:</td>
+          <td class="py-0.5 whitespace-nowrap">{{.Envelope.To}}</td>
+        </tr>
+        <tr>
+          <td class="pr-3 py-0.5 font-medium text-gray-500 whitespace-nowrap">Date:</td>
+          <td class="py-0.5">{{.Envelope.Date}}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="relative shrink-0">
+      <div class="flex items-center gap-1">
+        <button type="button"
+                id="message-reply-btn"
+                class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-[#37517e] focus:outline-none"
+                title="Reply">
+          <i data-lucide="reply" style="width:18px;height:18px"></i>
+        </button>
+
+        <button type="button"
+                id="message-forward-btn"
+                class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-[#37517e] focus:outline-none"
+                title="Forward">
+          <i data-lucide="forward" style="width:18px;height:18px"></i>
+        </button>
+
+        <button type="button"
+                id="message-delete-btn"
+                class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-red-600 focus:outline-none"
+                title="Delete message">
+          <i data-lucide="trash-2" style="width:18px;height:18px"></i>
+        </button>
+
+        <button type="button"
+                id="message-actions-btn"
+                class="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                title="Message actions">
+          <span class="text-2xl leading-none">&#8942;</span>
+        </button>
+      </div>
+
+      <div id="message-actions-menu"
+           class="hidden absolute right-0 top-9 z-20 min-w-52 border border-gray-200 bg-white py-1 shadow-lg">
+        <a href="/mail/{{.Mailbox}}/{{.UID}}/download"
+           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+          Download message
+        </a>
+        <button type="button"
+           class="message-view-raw-btn block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+           data-raw-url="/mail/{{.Mailbox}}/{{.UID}}/raw">
+          View raw message
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 {{if .Attachments}}
 <div class="px-6 py-3 border-b border-gray-200 bg-gray-50 flex flex-wrap gap-2">
@@ -36,4 +90,3 @@
   {{.SafeHTML}}
 </div>
 </div>
-

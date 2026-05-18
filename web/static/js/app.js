@@ -26,7 +26,14 @@ $(function () {
       $('#app-modal-cancel, #app-modal-backdrop').one('click.appmodal', function () {
         cleanup(); resolve(null);
       });
-      $(document).one('keydown.appmodal', function (e) {
+      $('#app-modal-input').on('keydown.appmodal', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const val = $('#app-modal-input').val().trim();
+          cleanup(); resolve(val || null);
+        }
+      });
+      $(document).on('keydown.appmodal', function (e) {
         if (e.key === 'Enter') { const val = $('#app-modal-input').val().trim(); cleanup(); resolve(val || null); }
         else if (e.key === 'Escape') { cleanup(); resolve(null); }
       });
@@ -49,7 +56,7 @@ $(function () {
 
       $('#app-modal-ok').one('click.appmodal', function () { cleanup(); resolve(true); });
       $('#app-modal-cancel, #app-modal-backdrop').one('click.appmodal', function () { cleanup(); resolve(false); });
-      $(document).one('keydown.appmodal', function (e) {
+      $(document).on('keydown.appmodal', function (e) {
         if (e.key === 'Enter') { cleanup(); resolve(true); }
         else if (e.key === 'Escape') { cleanup(); resolve(false); }
       });
@@ -73,67 +80,206 @@ $(function () {
 
       $('#app-modal-ok').one('click.appmodal', function () { cleanup(); resolve(); });
       $('#app-modal-backdrop').one('click.appmodal', function () { cleanup(); resolve(); });
-      $(document).one('keydown.appmodal', function (e) {
+      $(document).on('keydown.appmodal', function (e) {
         if (e.key === 'Enter' || e.key === 'Escape') { cleanup(); resolve(); }
       });
     });
   }
 
-  // ─── Folder Tree (expand/collapse) ────────────────────────────────────────
+  // ─── Folder Tree (jqTree) ──────────────────────────────────────────────────
 
-  const collapsed = new Set(
-    JSON.parse(localStorage.getItem('wm_collapsed') || '[]')
-  );
+  const $folderList = $('#folder-list');
+  const currentMailbox = String($folderList.data('current-mailbox') || '');
+  const foldersUrl = String($folderList.data('folders-url') || '/api/folders');
+  let folderTreeReady = false;
 
-  function saveCollapsed() {
-    localStorage.setItem('wm_collapsed', JSON.stringify([...collapsed]));
-  }
-
-  function rowByFolder(name) {
-    return $('#folder-list .folder-row').filter(function () {
-      return $(this).data('folder') === name;
-    });
-  }
-
-  function isDescendantHidden(parent) {
-    let p = parent;
-    while (p) {
-      if (collapsed.has(p)) return true;
-      const parentRow = rowByFolder(p);
-      p = parentRow.length ? String(parentRow.data('parent') || '') : '';
+  function iconNameForFolder(iconType) {
+    switch (iconType) {
+      case 'inbox': return 'inbox';
+      case 'sent': return 'send';
+      case 'drafts': return 'pencil';
+      case 'trash': return 'trash-2';
+      case 'junk': return 'alert-triangle';
+      default: return 'folder';
     }
-    return false;
   }
 
-  function updateTree() {
-    $('#folder-list .folder-row').each(function () {
-      const row    = $(this);
-      const parent = String(row.data('parent') || '');
-      row.toggleClass('hidden', !!parent && isDescendantHidden(parent));
-    });
-
-    $('#folder-list .folder-row').each(function () {
-      if (!$(this).data('has-children')) return;
-      const folder = String($(this).data('folder') || '');
-      const deg = collapsed.has(folder) ? '0deg' : '90deg';
-      $(this).find('.toggle-chevron').css('transform', 'rotate(' + deg + ')');
-    });
+  function createChevronElement(opened) {
+    const span = document.createElement('span');
+    span.className = 'folder-toggle-chevron' + (opened ? ' is-open' : '');
+    span.setAttribute('aria-hidden', 'true');
+    span.innerHTML = '<svg viewBox="0 0 6 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4-4 4"></path></svg>';
+    return span;
   }
 
-  updateTree();
+  function renderFolderIcons() {
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  }
 
-  $('#folder-list').on('click', '.folder-toggle', function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-    const folder = String($(this).closest('.folder-row').data('folder') || '');
-    if (collapsed.has(folder)) {
-      collapsed.delete(folder);
+  function buildFolderTreeData(folders) {
+    const nodesById = new Map();
+    const roots = [];
+
+    folders.forEach(function (folder) {
+      nodesById.set(folder.Name, {
+        id: folder.Name,
+        name: folder.DisplayName || folder.Name,
+        fullName: folder.Name,
+        delim: folder.Delim || '/',
+        unseen: Number(folder.Unseen || 0),
+        iconType: folder.IconType || 'folder',
+        isTrash: folder.IsTrash === true,
+        isSystem: folder.IsSystem === true,
+        noSelect: folder.NoSelect === true,
+        parentName: folder.ParentName || '',
+        children: []
+      });
+    });
+
+    folders.forEach(function (folder) {
+      const node = nodesById.get(folder.Name);
+      if (node.parentName && nodesById.has(node.parentName)) {
+        nodesById.get(node.parentName).children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    return roots;
+  }
+
+  function decorateFolderNode(node, $li) {
+    const $element = $li.children('.jqtree-element');
+    const $title = $element.children('.jqtree-title');
+    const depth = Math.max(0, (typeof node.getLevel === 'function' ? node.getLevel() : 1) - 1);
+
+    $element.addClass('folder-tree-row');
+    $element.css('--folder-depth', String(depth));
+    if (node.id === currentMailbox) {
+      $element.addClass('is-active');
+    }
+
+    $element.children('.folder-tree-spacer, .folder-tree-unseen, .folder-menu-btn').remove();
+    if (!$element.children('.jqtree-toggler').length) {
+      $element.prepend('<span class="folder-tree-spacer" aria-hidden="true"></span>');
+    }
+
+    $title.addClass('folder-tree-title').empty();
+
+    const $node = $('<span class="folder-tree-node"></span>');
+    const $icon = $('<span class="folder-tree-icon"></span>');
+    const $label = $('<span class="folder-tree-label"></span>').text(node.name);
+
+    if (node.noSelect) {
+      $label.addClass('is-placeholder');
+    }
+
+    $icon.append($('<i>').attr('data-lucide', iconNameForFolder(node.iconType)));
+    $node.append($icon, $label);
+    $title.append($node);
+
+    if (node.unseen > 0) {
+      $element.append(
+        $('<span class="folder-tree-unseen"></span>').text(String(node.unseen))
+      );
+    }
+
+    $element.append(
+      $('<button type="button" class="folder-menu-btn" title="Folder actions">&#8942;</button>')
+    );
+  }
+
+  function showFolderStatus(message) {
+    $folderList.html(
+      $('<div class="folder-tree-status"></div>').text(message)
+    );
+  }
+
+  function revealFolderNode(nodeId) {
+    if (!folderTreeReady || !nodeId) return;
+    const node = $folderList.tree('getNodeById', nodeId);
+    if (!node) return;
+    if (node.parent) {
+      $folderList.tree('openNode', node.parent, false);
+    }
+    $folderList.tree('scrollToNode', node);
+  }
+
+  function applyFolderTreeData(folders, options) {
+    const treeData = buildFolderTreeData(folders);
+    const state = folderTreeReady ? $folderList.tree('getState') : null;
+
+    if (!folderTreeReady) {
+      $folderList.empty().tree({
+        data: treeData,
+        autoOpen: 0,
+        animationSpeed: 110,
+        selectable: false,
+        saveState: 'wm_folder_tree',
+        useContextMenu: true,
+        closedIcon: createChevronElement(false),
+        openedIcon: createChevronElement(true),
+        onCreateLi: decorateFolderNode
+      });
+      bindFolderTreeEvents();
+      folderTreeReady = true;
     } else {
-      collapsed.add(folder);
+      $folderList.tree('loadData', treeData);
+      if (state) {
+        $folderList.tree('setState', state);
+      }
     }
-    saveCollapsed();
-    updateTree();
-  });
+
+    renderFolderIcons();
+
+    const targetNodeId = options && options.revealNodeId
+      ? options.revealNodeId
+      : currentMailbox;
+
+    if (targetNodeId) {
+      revealFolderNode(targetNodeId);
+    }
+  }
+
+  function refreshFolderTree(options) {
+    if (!folderTreeReady) {
+      showFolderStatus('Loading folders...');
+    }
+    return $.getJSON(foldersUrl)
+      .done(function (folders) {
+        applyFolderTreeData(folders, options || {});
+      })
+      .fail(function () {
+        if (!folderTreeReady) {
+          showFolderStatus('Could not load folders.');
+        }
+      });
+  }
+
+  function bindFolderTreeEvents() {
+    $folderList.on('tree.click', function (event) {
+      const target = event.click_event && event.click_event.target;
+      if ($(target).closest('.folder-menu-btn, .jqtree-toggler').length) {
+        event.preventDefault();
+        return;
+      }
+      if (event.node.noSelect) {
+        event.preventDefault();
+        return;
+      }
+      window.location.href = '/mail/' + encodeURIComponent(event.node.id);
+      event.preventDefault();
+    });
+
+    $folderList.on('tree.contextmenu', function (event) {
+      event.preventDefault();
+      showContextMenu(event.click_event.clientX, event.click_event.clientY, event.node);
+    });
+  }
+
+  refreshFolderTree();
 
   // ─── Context Menu ──────────────────────────────────────────────────────────
 
@@ -142,23 +288,34 @@ $(function () {
   let ctxIsTrash  = false;
   let ctxIsSystem = false;
 
-  function showContextMenu(x, y, nodeEl) {
-    const row     = nodeEl.closest('.folder-row');
-    ctxFolder     = String(row.data('folder') || '');
-    ctxDelim      = String(row.data('delim') || '/');
-    ctxIsTrash    = row.data('is-trash')  === true;
-    ctxIsSystem   = row.data('is-system') === true;
+  function showContextMenu(x, y, node) {
+    if (!node) return;
+
+    ctxFolder   = String(node.fullName || node.id || '');
+    ctxDelim    = String(node.delim || '/');
+    ctxIsTrash  = node.isTrash === true;
+    ctxIsSystem = node.isSystem === true;
 
     $('#ctx-non-system').toggle(!ctxIsSystem);
     $('#ctx-trash-only').toggle(ctxIsTrash);
 
-    $('#folder-context-menu').css({ top: y, left: x }).removeClass('hidden');
+    const $menu = $('#folder-context-menu').removeClass('hidden');
+    const menuWidth = $menu.outerWidth();
+    const menuHeight = $menu.outerHeight();
+    const maxLeft = Math.max(8, window.innerWidth - menuWidth - 8);
+    const maxTop = Math.max(8, window.innerHeight - menuHeight - 8);
+    const left = Math.max(8, Math.min(x, maxLeft));
+    const top = Math.max(8, Math.min(y, maxTop));
+
+    $menu.css({ top: top, left: left });
   }
 
   $('#folder-list').on('click', '.folder-menu-btn', function (e) {
     e.preventDefault();
     e.stopPropagation();
-    showContextMenu(e.pageX, e.pageY, $(this));
+    if (!folderTreeReady) return;
+    const node = $folderList.tree('getNodeByHtmlElement', this);
+    showContextMenu(e.clientX, e.clientY, node);
   });
 
   $(document).on('click.ctxmenu', function () {
@@ -167,13 +324,20 @@ $(function () {
 
   // ─── Context Menu Actions ──────────────────────────────────────────────────
 
+  function isCurrentMailboxAffected(targetFolder, delim) {
+    if (!targetFolder || !currentMailbox) return false;
+    return currentMailbox === targetFolder || currentMailbox.startsWith(targetFolder + delim);
+  }
+
   $('#ctx-subfolder').on('click', async function () {
     $('#folder-context-menu').addClass('hidden');
     if (!ctxFolder) return;
     const name = await appPrompt('New Subfolder', 'Enter the name for the new subfolder:', '');
     if (!name) return;
     $.post('/api/folders', { parent: ctxFolder, delim: ctxDelim, name: name })
-      .done(function () { location.reload(); })
+      .done(function (res) {
+        refreshFolderTree({ revealNodeId: res && res.name ? res.name : ctxFolder });
+      })
       .fail(async function (xhr) {
         const msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'unknown error';
         await appAlert('Error', 'Error creating subfolder: ' + msg);
@@ -190,7 +354,16 @@ $(function () {
     parts[parts.length - 1] = newDisplay;
     const newname = parts.join(ctxDelim);
     $.post('/api/folders/rename', { name: ctxFolder, newname: newname })
-      .done(function () { window.location.href = '/mail/' + encodeURIComponent(newname); })
+      .done(function () {
+        if (isCurrentMailboxAffected(ctxFolder, ctxDelim)) {
+          const nextMailbox = currentMailbox === ctxFolder
+            ? newname
+            : newname + currentMailbox.slice(ctxFolder.length);
+          window.location.href = '/mail/' + encodeURIComponent(nextMailbox);
+          return;
+        }
+        refreshFolderTree({ revealNodeId: newname });
+      })
       .fail(async function (xhr) {
         const msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'unknown error';
         await appAlert('Error', 'Error renaming folder: ' + msg);
@@ -203,7 +376,13 @@ $(function () {
     const ok = await appConfirm('Delete Folder', 'Delete "' + ctxFolder + '" and all its messages? This cannot be undone.');
     if (!ok) return;
     $.post('/api/folders/delete', { name: ctxFolder })
-      .done(function () { window.location.href = '/mail/INBOX'; })
+      .done(function () {
+        if (isCurrentMailboxAffected(ctxFolder, ctxDelim)) {
+          window.location.href = '/mail/INBOX';
+          return;
+        }
+        refreshFolderTree();
+      })
       .fail(async function (xhr) {
         const msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'unknown error';
         await appAlert('Error', 'Error deleting folder: ' + msg);
@@ -218,7 +397,13 @@ $(function () {
     $.ajax({
       url: '/mail/' + encodeURIComponent(ctxFolder),
       method: 'DELETE',
-      success: function () { location.reload(); },
+      success: function () {
+        if (currentMailbox === ctxFolder) {
+          location.reload();
+          return;
+        }
+        refreshFolderTree({ revealNodeId: ctxFolder });
+      },
       error: async function () { await appAlert('Error', 'Error emptying folder.'); }
     });
   });

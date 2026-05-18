@@ -1,17 +1,15 @@
 package handler
 
 import (
-	"encoding/json"
-	"html/template"
 	"net/http"
 	"strconv"
 	"time"
 
+	goimap "github.com/emersion/go-imap/v2"
+	"github.com/labstack/echo/v5"
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/imap"
 	"go-cubemail/internal/session"
-	goimap "github.com/emersion/go-imap/v2"
-	"github.com/labstack/echo/v5"
 )
 
 func (h *MailboxHandler) imapConn(s *session.IMAPSession) (*imap.Client, error) {
@@ -93,17 +91,13 @@ func (h *MailboxHandler) List(c *echo.Context) error {
 		}
 	}
 
-	foldersJSON, _ := json.Marshal(folders)
-
 	return c.Render(http.StatusOK, "mailbox/index.html", map[string]interface{}{
-		"Mailbox":     mailbox,
-		"Folders":     folders,
-		"FoldersJSON": template.JS(foldersJSON),
-		"MailboxJS":   template.JSStr(mailbox),
-		"Messages":    envelopes,
-		"Page":        page,
-		"TotalMsgs":   len(uids),
-		"Username":    s.Username,
+		"Mailbox":   mailbox,
+		"Folders":   folders,
+		"Messages":  envelopes,
+		"Page":      page,
+		"TotalMsgs": len(uids),
+		"Username":  s.Username,
 	})
 }
 

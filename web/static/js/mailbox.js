@@ -2,6 +2,28 @@ $(function () {
   let selectedUID     = null;
   let selectedMailbox = null;
 
+  function clearReadingPane() {
+    $('#reading-pane').html('<div class="flex items-center justify-center h-full text-gray-300 text-sm">Select a message</div>');
+  }
+
+  function removeSelectedMessageRow(uid) {
+    const row = $('.msg-row[data-uid="' + uid + '"]');
+    row.fadeOut(200, function () { $(this).remove(); });
+  }
+
+  function deleteMessage(uid, mailbox) {
+    return $.ajax({ url: '/mail/' + mailbox + '/' + uid, method: 'DELETE' })
+      .then(function () {
+        removeSelectedMessageRow(uid);
+        if (String(uid) === String(selectedUID)) {
+          selectedUID = null;
+          selectedMailbox = null;
+          clearReadingPane();
+        }
+        updateToolbar();
+      });
+  }
+
   // Clique em linha de mensagem — carrega painel de leitura via AJAX
   $(document).on('click', '.msg-row', function (e) {
     if ($(e.target).is('input[type=checkbox]')) return;
@@ -15,6 +37,9 @@ $(function () {
     $('#reading-pane').load(
       '/mail/' + selectedMailbox + '/' + selectedUID + ' #message-body',
       function () {
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
         // marca como lido localmente
         const row = $('[data-uid="' + selectedUID + '"]');
         row.removeClass('bg-white font-semibold').addClass('bg-[#f8f9fa] text-gray-600');
@@ -49,14 +74,7 @@ $(function () {
       const row  = $(this);
       const uid  = row.data('uid');
       const mbox = row.data('mailbox');
-      return $.ajax({ url: '/mail/' + mbox + '/' + uid, method: 'DELETE' })
-        .then(function () {
-          row.fadeOut(200, function () { $(this).remove(); });
-          if (uid == selectedUID) {
-            selectedUID = null;
-            $('#reading-pane').html('<div class="flex items-center justify-center h-full text-gray-300 text-sm">Select a message</div>');
-          }
-        });
+      return deleteMessage(uid, mbox);
     }).get();
 
     $.when.apply($, requests).always(function () { updateToolbar(); });
@@ -152,6 +170,35 @@ $(function () {
     $('#compose-modal').removeClass('hidden');
   }
 
+  function openReplyCompose() {
+    const mb      = $('#message-body');
+    const to      = mb.data('from-email') || '';
+    const subject = 'Re: ' + (mb.data('subject') || '');
+    openCompose(to, subject, quotedBody(), 'Reply');
+  }
+
+  function openForwardCompose() {
+    const mb      = $('#message-body');
+    const subject = 'Fwd: ' + (mb.data('subject') || '');
+    openCompose('', subject, quotedBody(), 'Forward');
+  }
+
+  function closeRawMessageModal() {
+    $('#raw-message-modal').addClass('hidden');
+    $('#raw-message-content').text('');
+    $(document).off('keydown.rawmessage');
+  }
+
+  function openRawMessageModal(content) {
+    $('#raw-message-content').text(content);
+    $('#raw-message-modal').removeClass('hidden');
+    $(document).off('keydown.rawmessage').on('keydown.rawmessage', function (e) {
+      if (e.key === 'Escape') {
+        closeRawMessageModal();
+      }
+    });
+  }
+
   function quotedBody() {
     const mb    = $('#message-body');
     const from  = mb.data('from-name') || mb.data('from-email') || '';
@@ -170,20 +217,88 @@ $(function () {
 
   // Reply
   $('#btn-reply').on('click', function () {
-    const mb      = $('#message-body');
-    const to      = mb.data('from-email') || '';
-    const subject = 'Re: ' + (mb.data('subject') || '');
-    openCompose(to, subject, quotedBody(), 'Reply');
+    openReplyCompose();
   });
 
   // Forward
   $('#btn-forward').on('click', function () {
-    const mb      = $('#message-body');
-    const subject = 'Fwd: ' + (mb.data('subject') || '');
-    openCompose('', subject, quotedBody(), 'Forward');
+    openForwardCompose();
   });
 
   $('.close-compose').on('click', function () {
     $('#compose-modal').addClass('hidden');
+  });
+
+  $(document).on('click', '.message-view-raw-btn', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const rawUrl = $(this).data('raw-url');
+    $('#message-actions-menu').addClass('hidden');
+    $('#message-actions-btn').attr('aria-expanded', 'false');
+    if (!rawUrl) return;
+
+    openRawMessageModal('Loading raw message...');
+    $.ajax({
+      url: rawUrl,
+      method: 'GET',
+      dataType: 'text'
+    }).done(function (raw) {
+      $('#raw-message-content').text(raw);
+    }).fail(function () {
+      $('#raw-message-content').text('Error loading raw message.');
+    });
+  });
+
+  $(document).on('click', '#raw-message-close, #raw-message-backdrop', function () {
+    closeRawMessageModal();
+  });
+
+  $(document).on('click', '#message-actions-btn', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const $menu = $('#message-actions-menu');
+    const isOpen = !$menu.hasClass('hidden');
+    $('#message-actions-menu').addClass('hidden');
+    $('#message-actions-btn').attr('aria-expanded', 'false');
+    if (!isOpen) {
+      $menu.removeClass('hidden');
+      $(this).attr('aria-expanded', 'true');
+    }
+  });
+
+  $(document).on('click', '#message-actions-menu', function (e) {
+    e.stopPropagation();
+  });
+
+  $(document).on('click', '#message-delete-btn', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const $messageBody = $('#message-body');
+    const uid = $messageBody.data('uid');
+    const mailbox = $messageBody.data('mailbox');
+    if (!uid || !mailbox) return;
+
+    $('#message-actions-menu').addClass('hidden');
+    $('#message-actions-btn').attr('aria-expanded', 'false');
+    deleteMessage(uid, mailbox);
+  });
+
+  $(document).on('click', '#message-reply-btn', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    openReplyCompose();
+  });
+
+  $(document).on('click', '#message-forward-btn', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    openForwardCompose();
+  });
+
+  $(document).on('click', function () {
+    $('#message-actions-menu').addClass('hidden');
+    $('#message-actions-btn').attr('aria-expanded', 'false');
   });
 });
