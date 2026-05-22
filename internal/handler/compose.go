@@ -18,24 +18,22 @@ type ComposeHandler struct {
 }
 
 func (h *ComposeHandler) New(c *echo.Context) error {
-	return c.Render(http.StatusOK, "compose/compose.html", map[string]interface{}{
-		"Mode": "new",
-	})
+	return c.JSON(http.StatusOK, map[string]string{"mode": "new"})
 }
 
 func (h *ComposeHandler) Reply(c *echo.Context) error {
-	return c.Render(http.StatusOK, "compose/compose.html", map[string]interface{}{
-		"Mode":    "reply",
-		"Mailbox": c.Param("mailbox"),
-		"UID":     c.Param("uid"),
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"mode":    "reply",
+		"mailbox": c.Param("mailbox"),
+		"uid":     c.Param("uid"),
 	})
 }
 
 func (h *ComposeHandler) Forward(c *echo.Context) error {
-	return c.Render(http.StatusOK, "compose/compose.html", map[string]interface{}{
-		"Mode":    "forward",
-		"Mailbox": c.Param("mailbox"),
-		"UID":     c.Param("uid"),
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"mode":    "forward",
+		"mailbox": c.Param("mailbox"),
+		"uid":     c.Param("uid"),
 	})
 }
 
@@ -90,9 +88,7 @@ func (h *ComposeHandler) Send(c *echo.Context) error {
 
 	raw, err := smtppkg.Send(smtpCfg, s.Username, pass, msg)
 	if err != nil {
-		return c.Render(http.StatusOK, "compose/compose.html", map[string]interface{}{
-			"Error": err.Error(),
-		})
+		return c.JSON(http.StatusBadGateway, map[string]string{"error": err.Error()})
 	}
 
 	// Tenta salvar na pasta Sent
@@ -105,7 +101,7 @@ func (h *ComposeHandler) Send(c *echo.Context) error {
 		_ = conn.AppendMessage("Sent", []goimap.Flag{goimap.FlagSeen}, raw)
 	}
 
-	return c.Redirect(http.StatusSeeOther, "/mail/INBOX")
+	return c.JSON(http.StatusOK, map[string]string{"status": "sent"})
 }
 
 func (h *ComposeHandler) SaveDraft(c *echo.Context) error {

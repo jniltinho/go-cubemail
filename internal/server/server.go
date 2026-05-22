@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"mime"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v5"
@@ -25,14 +28,11 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 
 	e := echo.New()
 
-	tmplRenderer, err := loadTemplates(embeddedFiles)
-	if err != nil {
-		return fmt.Errorf("falha ao carregar templates: %w", err)
-	}
-	e.Renderer = tmplRenderer
-
+	// ── Global middlewares ────────────────────────────────────────────────────
 	e.Use(echoMiddleware.Recover())
 	e.Use(echoMiddleware.RequestID())
+	e.Use(appMiddleware.SecurityHeaders())
+	e.Use(appMiddleware.CSRF())
 	e.Use(echoMiddleware.RequestLoggerWithConfig(echoMiddleware.RequestLoggerConfig{
 		LogMethod:        true,
 		LogURI:           true,
@@ -61,7 +61,7 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 		},
 	}))
 
-	// Housekeeping de sessões ociosas
+	// ── Session cleanup goroutine ─────────────────────────────────────────────
 	go func() {
 		ticker := time.NewTicker(10 * time.Minute)
 		for range ticker.C {
@@ -69,78 +69,117 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 		}
 	}()
 
-	// Arquivos estáticos
-	publicFS, err := fs.Sub(embeddedFiles, "web/static")
+	// ── Embedded SPA filesystem (web/dist) ───────────────────────────────────
+	distFS, err := fs.Sub(embeddedFiles, "web/dist")
 	if err != nil {
-		return fmt.Errorf("falha ao criar sub filesystem: %w", err)
+		return fmt.Errorf("failed to open embedded dist: %w", err)
 	}
-	staticHandler := http.FileServer(http.FS(publicFS))
-	e.GET("/static/*", echo.WrapHandler(http.StripPrefix("/static/", staticHandler)))
 
-	// Rotas públicas
-	e.GET("/", func(c *echo.Context) error {
-		return c.Redirect(http.StatusSeeOther, "/login")
-	})
-
+	// ── API handlers ─────────────────────────────────────────────────────────
 	h := handler.New(cfg)
 
-	e.GET("/login", h.Auth.LoginPage)
-	e.POST("/login", h.Auth.DoLogin)
-	e.POST("/logout", h.Auth.DoLogout)
-
+	authRateLimit := appMiddleware.NewRateLimit(5, time.Minute)
 	authMiddleware := appMiddleware.RequireAuth(cfg.Session.Name)
 
-	// Rotas protegidas
-	mail := e.Group("/mail", authMiddleware)
-	mail.GET("/:mailbox", h.Mailbox.List)
-	mail.GET("/:mailbox/:uid", h.Message.Read)
-	mail.GET("/:mailbox/:uid/download", h.Message.Download)
-	mail.GET("/:mailbox/:uid/raw", h.Message.Raw)
-	mail.POST("/:mailbox/:uid/flag", h.Message.Flag)
-	mail.POST("/:mailbox/:uid/move", h.Message.Move)
-	mail.DELETE("/:mailbox/:uid", h.Message.Delete)
-	mail.DELETE("/:mailbox", h.Message.EmptyTrash)
-	mail.GET("/:mailbox/:uid/attachment/:part", h.Message.Attachment)
+	// Public auth endpoints
+	auth := e.Group("/api/auth")
+	auth.POST("/login", h.Auth.DoLogin, authRateLimit)
+	auth.POST("/logout", h.Auth.DoLogout)
+	auth.GET("/me", h.Auth.Me, authMiddleware)
 
-	compose := e.Group("/compose", authMiddleware)
-	compose.GET("", h.Compose.New)
-	compose.GET("/reply/:mailbox/:uid", h.Compose.Reply)
-	compose.GET("/forward/:mailbox/:uid", h.Compose.Forward)
-	compose.POST("/send", h.Compose.Send)
-	compose.POST("/draft", h.Compose.SaveDraft)
-	compose.POST("/upload", h.Compose.UploadAttachment)
-	compose.GET("/attachment/:id", h.Compose.ServeAttachment)
-
-	contacts := e.Group("/contacts", authMiddleware)
-	contacts.GET("", h.Contacts.Index)
-	contacts.GET("/new", h.Contacts.New)
-	contacts.POST("", h.Contacts.Create)
-	contacts.GET("/:id/edit", h.Contacts.Edit)
-	contacts.PUT("/:id", h.Contacts.Update)
-	contacts.DELETE("/:id", h.Contacts.Delete)
-
-	settings := e.Group("/settings", authMiddleware)
-	settings.GET("", h.Settings.Index)
-	settings.POST("", h.Settings.Save)
-
-	e.GET("/search", h.Search.Results, authMiddleware)
-
-	// API JSON
+	// Protected mail endpoints
 	api := e.Group("/api", authMiddleware)
+
+	// Folders
 	api.GET("/folders", h.Mailbox.FoldersJSON)
 	api.POST("/folders", h.Mailbox.CreateSubfolder)
 	api.POST("/folders/rename", h.Mailbox.RenameFolder)
 	api.POST("/folders/delete", h.Mailbox.DeleteFolder)
 	api.GET("/folders/:name/count", h.Mailbox.UnreadCountJSON)
 
+	// Mail (mailbox messages)
+	api.GET("/mail/:mailbox", h.Mailbox.List)
+	api.GET("/mail/:mailbox/:uid", h.Message.Read)
+	api.GET("/mail/:mailbox/:uid/download", h.Message.Download)
+	api.GET("/mail/:mailbox/:uid/raw", h.Message.Raw)
+	api.POST("/mail/:mailbox/:uid/flag", h.Message.Flag)
+	api.POST("/mail/:mailbox/:uid/move", h.Message.Move)
+	api.DELETE("/mail/:mailbox/:uid", h.Message.Delete)
+	api.DELETE("/mail/:mailbox", h.Message.EmptyTrash)
+	api.GET("/mail/:mailbox/:uid/attachment/:part", h.Message.Attachment)
+
+	// Compose
+	api.POST("/compose/send", h.Compose.Send)
+	api.POST("/compose/draft", h.Compose.SaveDraft)
+	api.POST("/compose/upload", h.Compose.UploadAttachment)
+
+	// Search
+	api.GET("/search", h.Search.Results)
+
+	// Contacts
+	api.GET("/contacts", h.Contacts.Index)
+	api.POST("/contacts", h.Contacts.Create)
+	api.PUT("/contacts/:id", h.Contacts.Update)
+	api.DELETE("/contacts/:id", h.Contacts.Delete)
+
+	// ── SPA + Static file handler ────────────────────────────────────────────
+	// Serves Vite build assets with correct MIME types.
+	// For known static files (by extension), reads from distFS and streams.
+	// For all other paths, falls back to index.html (Vue Router history mode).
+	e.GET("/*", func(c *echo.Context) error {
+		urlPath := c.Request().URL.Path
+
+		// Paths with a file extension are treated as static assets
+		ext := strings.ToLower(filepath.Ext(urlPath))
+		if ext != "" {
+			// Strip leading /
+			fsPath := strings.TrimPrefix(urlPath, "/")
+			data, err := fs.ReadFile(distFS, fsPath)
+			if err != nil {
+				return echo.ErrNotFound
+			}
+			// Resolve MIME type, fallback to binary stream
+			ct := mime.TypeByExtension(ext)
+			if ct == "" {
+				ct = "application/octet-stream"
+			}
+			// JavaScript modules must be application/javascript
+			if ext == ".js" || ext == ".mjs" {
+				ct = "application/javascript; charset=utf-8"
+			}
+			// Long cache for hashed assets, no-cache for index
+			if strings.HasPrefix(urlPath, "/assets/") {
+				c.Response().Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+			}
+			c.Response().Header().Set("Content-Type", ct)
+			_, _ = c.Response().Write(data)
+			return nil
+		}
+
+		// No extension → SPA route → serve index.html
+		indexHTML, err := fs.ReadFile(distFS, "index.html")
+		if err != nil {
+			return echo.ErrNotFound
+		}
+		c.Response().Header().Set("Content-Type", "text/html; charset=utf-8")
+		c.Response().Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		_, _ = c.Response().Write(indexHTML)
+		return nil
+	})
+
+	// ── Start server ─────────────────────────────────────────────────────────
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	if cfg.Server.TLSCert != "" && cfg.Server.TLSKey != "" {
-		e.Logger.Info("Iniciando servidor com suporte a TLS/HTTPS")
-		server := &http.Server{
-			Addr:    addr,
-			Handler: e,
+		e.Logger.Info("Starting server with TLS/HTTPS")
+		srv := &http.Server{
+			Addr:              addr,
+			Handler:           e,
+			ReadTimeout:       30 * time.Second,
+			WriteTimeout:      60 * time.Second,
+			IdleTimeout:       120 * time.Second,
+			ReadHeaderTimeout: 10 * time.Second,
 		}
-		return server.ListenAndServeTLS(cfg.Server.TLSCert, cfg.Server.TLSKey)
+		return srv.ListenAndServeTLS(cfg.Server.TLSCert, cfg.Server.TLSKey)
 	}
 	return e.Start(addr)
 }

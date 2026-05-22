@@ -3,6 +3,8 @@ data/
 tmp/
 ssl/
 web/static/css/style.css
+web/dist/
+frontend/node_modules/
 *.db
 *.db-shm
 *.db-wal

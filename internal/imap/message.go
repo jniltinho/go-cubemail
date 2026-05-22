@@ -7,14 +7,14 @@ import (
 
 // Envelope resume cabeçalhos de uma mensagem para listagem.
 type Envelope struct {
-	UID       imap.UID
-	Subject   string
-	From      string
-	FromEmail string
-	To        string
-	Date      string
-	Seen      bool
-	Flagged   bool
+	UID       imap.UID  `json:"uid"`
+	Subject   string    `json:"subject"`
+	From      string    `json:"from"`
+	FromEmail string    `json:"from_email"`
+	To        string    `json:"to"`
+	Date      string    `json:"date"`
+	Seen      bool      `json:"seen"`
+	Flagged   bool      `json:"flagged"`
 }
 
 // FetchEnvelopes busca envelopes de uma lista de UIDs.

@@ -10,6 +10,7 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.21.0
+	golang.org/x/time v0.14.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.1
@@ -38,5 +39,4 @@ require (
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
-	golang.org/x/time v0.14.0 // indirect
 )

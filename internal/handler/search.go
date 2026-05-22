@@ -49,16 +49,10 @@ func (h *SearchHandler) Results(c *echo.Context) error {
 		return err
 	}
 
-	folders, err := conn.ListMailboxes()
-	if err != nil {
-		return err
-	}
 
-	return c.Render(http.StatusOK, "mailbox/index.html", map[string]interface{}{
-		"Mailbox":  mailbox,
-		"Messages": envelopes,
-		"Folders":  folders,
-		"Query":    q,
-		"Username": s.Username,
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"mailbox":  mailbox,
+		"messages": envelopes,
+		"query":    q,
 	})
 }

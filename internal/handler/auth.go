@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"strings"
 	"time"
 
 	"go-cubemail/internal/config"
@@ -16,17 +17,20 @@ type AuthHandler struct {
 	cfg *config.Config
 }
 
-func (h *AuthHandler) LoginPage(c *echo.Context) error {
-	return c.Render(http.StatusOK, "auth/login.html", map[string]interface{}{
-		"DefaultHost":   h.cfg.IMAP.Host,
-		"ShowHostInput": h.cfg.IMAP.ShowHostInput,
-	})
-}
-
+// DoLogin authenticates the user via IMAP and sets an encrypted session cookie.
+// Returns JSON {"username": "..."} on success or {"error": "..."} on failure.
 func (h *AuthHandler) DoLogin(c *echo.Context) error {
 	imapHost := c.FormValue("imap_host")
-	username := c.FormValue("username")
+	username := strings.TrimSpace(c.FormValue("username"))
 	password := c.FormValue("password")
+
+	// Input validation: reject obviously bad inputs early
+	if username == "" || password == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Username and password are required."})
+	}
+	if len(username) > 254 || len(password) > 512 {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Input too long."})
+	}
 
 	if imapHost == "" {
 		imapHost = h.cfg.IMAP.Host
@@ -43,11 +47,7 @@ func (h *AuthHandler) DoLogin(c *echo.Context) error {
 	)
 	if err != nil {
 		c.Logger().Error("IMAP Login failed", "user", username, "host", imapHost, "port", h.cfg.IMAP.Port, "error", err)
-		return c.Render(http.StatusOK, "auth/login.html", map[string]interface{}{
-			"DefaultHost":   imapHost,
-			"ShowHostInput": h.cfg.IMAP.ShowHostInput,
-			"Error":         "Invalid credentials or server unreachable.",
-		})
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials or server unreachable."})
 	}
 	conn.Close()
 
@@ -58,7 +58,7 @@ func (h *AuthHandler) DoLogin(c *echo.Context) error {
 		Username: username,
 	}
 	if err := s.SetPassword(password, h.cfg.Server.SecretKey); err != nil {
-		return err
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Session error."})
 	}
 	session.Set(sessID, s)
 
@@ -69,22 +69,31 @@ func (h *AuthHandler) DoLogin(c *echo.Context) error {
 		MaxAge:   h.cfg.Session.MaxAge,
 		HttpOnly: h.cfg.Session.HTTPOnly,
 		Secure:   h.cfg.Session.Secure,
+		SameSite: http.SameSiteStrictMode,
 	})
-	return c.Redirect(http.StatusSeeOther, "/mail/INBOX")
+	return c.JSON(http.StatusOK, map[string]string{"username": username})
 }
 
+// DoLogout invalidates the current session and clears the cookie.
 func (h *AuthHandler) DoLogout(c *echo.Context) error {
 	cookie, err := c.Cookie(h.cfg.Session.Name)
 	if err == nil {
 		session.Delete(cookie.Value)
 	}
 	c.SetCookie(&http.Cookie{
-		Name:   h.cfg.Session.Name,
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
+		Name:     h.cfg.Session.Name,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		SameSite: http.SameSiteStrictMode,
 	})
-	return c.Redirect(http.StatusSeeOther, "/login")
+	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
+}
+
+// Me returns the current session username for the Vue router auth guard.
+func (h *AuthHandler) Me(c *echo.Context) error {
+	s := c.Get("imap_session").(*session.IMAPSession)
+	return c.JSON(http.StatusOK, map[string]string{"username": s.Username})
 }
 
 func newSessionID() string {

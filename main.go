@@ -6,7 +6,7 @@ import (
 	"go-cubemail/cmd"
 )
 
-//go:embed web
+//go:embed all:web/dist
 var embeddedFiles embed.FS
 
 func main() {

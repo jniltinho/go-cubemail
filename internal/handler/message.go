@@ -79,10 +79,7 @@ func (h *MessageHandler) Read(c *echo.Context) error {
 
 	conn.MarkSeen(imap.UID(uid))
 
-	policy := bluemonday.UGCPolicy()
-	safeSubject := policy.Sanitize(envelopes[0].Subject)
-
-	var safeHTML template.HTML = template.HTML("<p class='text-gray-500 italic'>O corpo da mensagem está vazio.</p>")
+	var safeHTML template.HTML = template.HTML("<p>O corpo da mensagem está vazio.</p>")
 	rawMsg, err := conn.FetchRawMessage(imap.UID(uid))
 	if err == nil {
 		parsedMsg, parseErr := imappkg.ParseMessage(rawMsg)
@@ -115,11 +112,11 @@ func (h *MessageHandler) Read(c *echo.Context) error {
 		}
 	}
 
-	// Monta lista de anexos com tamanho pré-formatado
 	type attachmentView struct {
-		Filename  string
-		Part      int
-		SizeLabel string
+		Filename    string `json:"filename"`
+		Part        int    `json:"part"`
+		SizeLabel   string `json:"size_label"`
+		ContentType string `json:"content_type"`
 	}
 	var attViews []attachmentView
 	if rawMsg != nil {
@@ -135,21 +132,29 @@ func (h *MessageHandler) Read(c *echo.Context) error {
 					label = fmt.Sprintf("%dB", a.Size)
 				}
 				attViews = append(attViews, attachmentView{
-					Filename:  a.Filename,
-					Part:      a.Part,
-					SizeLabel: label,
+					Filename:    a.Filename,
+					Part:        a.Part,
+					SizeLabel:   label,
+					ContentType: a.ContentType,
 				})
 			}
 		}
 	}
 
-	return c.Render(http.StatusOK, "mailbox/message.html", map[string]interface{}{
-		"Mailbox":     mailbox,
-		"UID":         uid,
-		"Envelope":    envelopes[0],
-		"SafeSubject": safeSubject,
-		"SafeHTML":    safeHTML,
-		"Attachments": attViews,
+	plainBody := ""
+	if rawMsg != nil {
+		if parsedMsg, err := imappkg.ParseMessage(rawMsg); err == nil {
+			plainBody = parsedMsg.TextPlain
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"mailbox":     mailbox,
+		"uid":         uid,
+		"envelope":    envelopes[0],
+		"html_body":   string(safeHTML),
+		"plain_body":  plainBody,
+		"attachments": attViews,
 	})
 }
 

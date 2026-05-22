@@ -41,13 +41,8 @@ func (h *MailboxHandler) List(c *echo.Context) error {
 	}
 	defer conn.Close()
 
-	folders, err := conn.ListMailboxes()
-	if err != nil {
-		return err
-	}
-
 	if err := conn.SelectMailbox(mailbox); err != nil {
-		return c.Redirect(http.StatusFound, "/mail/INBOX")
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Mailbox not found"})
 	}
 
 	uids, err := conn.Search(&imap.SearchCriteria{})
@@ -91,13 +86,12 @@ func (h *MailboxHandler) List(c *echo.Context) error {
 		}
 	}
 
-	return c.Render(http.StatusOK, "mailbox/index.html", map[string]interface{}{
-		"Mailbox":   mailbox,
-		"Folders":   folders,
-		"Messages":  envelopes,
-		"Page":      page,
-		"TotalMsgs": len(uids),
-		"Username":  s.Username,
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"mailbox":  mailbox,
+		"messages": envelopes,
+		"page":     page,
+		"total":    len(uids),
+		"username": s.Username,
 	})
 }
 
