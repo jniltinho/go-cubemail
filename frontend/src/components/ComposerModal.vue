@@ -1,6 +1,21 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import Icon from './Icon.vue'
+import tinymce from 'tinymce'
+import 'tinymce/themes/silver'
+import 'tinymce/icons/default'
+import 'tinymce/models/dom'
+import 'tinymce/plugins/autolink'
+import 'tinymce/plugins/lists'
+import 'tinymce/plugins/link'
+import 'tinymce/plugins/image'
+import 'tinymce/plugins/table'
+import 'tinymce/plugins/code'
+import 'tinymce/plugins/emoticons'
+import 'tinymce/plugins/emoticons/js/emojis'
+import 'tinymce/plugins/charmap'
+import 'tinymce/plugins/searchreplace'
+import 'tinymce/plugins/wordcount'
 
 const props = defineProps({
   prefill: { type: Object, default: () => ({}) },
@@ -17,9 +32,8 @@ const taRef  = ref(null)
 let destroyEditor = null
 
 onMounted(() => {
-  if (!window.tinymce || !taRef.value) return
+  if (!taRef.value) return
 
-  // Convert plain-text prefill to HTML paragraphs
   const html = body.value
     .split('\n')
     .map(l => l.trim() === '' ? '<p>&nbsp;</p>' : `<p>${l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`)
@@ -30,13 +44,15 @@ onMounted(() => {
 
   tinymce.init({
     target: taRef.value,
+    base_url: '/tinymce',
+    suffix: '.min',
     inline: false,
     menubar: false,
     branding: false,
     promotion: false,
     statusbar: false,
     license_key: 'gpl',
-    height: 240,
+    height: 433,
     placeholder: 'Write your message…',
     plugins: 'autolink lists link image table code emoticons charmap searchreplace wordcount',
     toolbar:

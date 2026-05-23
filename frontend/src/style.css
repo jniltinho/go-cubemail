@@ -203,7 +203,7 @@ button, input, select, textarea { font-family: inherit; border-radius: 0; }
     background: rgba(11,31,64,.35);
   }
   .composer-shell {
-    width: 760px;
+    width: 1530px;
     max-width: calc(100vw - 40px);
     background: white;
     border: 1px solid var(--accent-bar);
