@@ -8,11 +8,11 @@ import (
 	"go-cubemail/internal/session"
 )
 
-// Start launches the background goroutine that checks for new mail every 5 minutes.
+// Start launches the background goroutine that checks for new mail every 10 minutes.
 func Start(secretKey string, tlsEnabled bool, timeout time.Duration, hub *Hub) {
 	go func() {
 		unseen := make(map[string]uint32) // sessID → last known unseen count
-		ticker := time.NewTicker(5 * time.Minute)
+		ticker := time.NewTicker(10 * time.Minute)
 		defer ticker.Stop()
 		for range ticker.C {
 			checkAll(secretKey, tlsEnabled, timeout, hub, unseen)

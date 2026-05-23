@@ -30,7 +30,8 @@ import ContactsPane  from './components/ContactsPane.vue'
 import CalendarPane  from './components/CalendarPane.vue'
 import ComposerModal from './components/ComposerModal.vue'
 import SourceViewer  from './components/SourceViewer.vue'
-import DialogModal   from './components/DialogModal.vue'
+import DialogModal     from './components/DialogModal.vue'
+import ToastContainer  from './components/ToastContainer.vue'
 
 const auth = useAuthStore()
 const mail = useMailStore()
@@ -93,4 +94,5 @@ onBeforeUnmount(() => {
   <ComposerModal v-if="mail.composer !== null" :prefill="mail.composer" @close="mail.closeComposer()" />
   <SourceViewer  v-if="mail.sourceMail" />
   <DialogModal />
+  <ToastContainer />
 </template>
