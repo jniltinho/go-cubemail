@@ -167,7 +167,7 @@ export const useMailStore = defineStore('mail', () => {
         to:       auth.currentUser.email,
         subject:  m.subject || '(No Subject)',
         rawDate:  m.date || '',
-        date:     formatDate(m.date),
+        date:     formatDate(m.date, auth.datetimeFormat),
         fullDate: m.date || '',
         snippet:  m.subject || '',
         unread:   !m.seen,

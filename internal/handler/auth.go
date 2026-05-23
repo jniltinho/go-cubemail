@@ -90,10 +90,13 @@ func (h *AuthHandler) DoLogout(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
 }
 
-// Me returns the current session username for the Vue router auth guard.
+// Me returns the current session username and UI settings for the Vue router auth guard.
 func (h *AuthHandler) Me(c *echo.Context) error {
 	s := c.Get("imap_session").(*session.IMAPSession)
-	return c.JSON(http.StatusOK, map[string]string{"username": s.Username})
+	return c.JSON(http.StatusOK, map[string]string{
+		"username":        s.Username,
+		"datetime_format": h.cfg.UI.DatetimeFormat,
+	})
 }
 
 // Quota returns IMAP storage quota in bytes: {"used": N, "limit": N}.

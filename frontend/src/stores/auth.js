@@ -7,7 +7,8 @@ const API_BASE = '/api/v1'
 export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = ref(false)
   const isApiOnline = ref(false)
-  const currentUser = ref({ email: 'user@webmail.test', quotaUsedBytes: 0, quotaTotalBytes: 0 })
+  const currentUser    = ref({ email: 'user@webmail.test', quotaUsedBytes: 0, quotaTotalBytes: 0 })
+  const datetimeFormat = ref('02/01/2006 15:04')
 
   const loginUser = ref('')
   const loginPwd = ref('')
@@ -40,6 +41,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const res = await axios.get(`${API_BASE}/auth/me`)
       currentUser.value.email = res.data.username || currentUser.value.email
+      if (res.data.datetime_format) datetimeFormat.value = res.data.datetime_format
       isAuthenticated.value = true
       isApiOnline.value = true
       fetchQuota()
@@ -74,6 +76,10 @@ export const useAuthStore = defineStore('auth', () => {
           : loginUser.value + '@go-webmail.test'
         isAuthenticated.value = true
         fetchQuota()
+        // Fetch datetime_format after login
+        axios.get(`${API_BASE}/auth/me`).then(r => {
+          if (r.data.datetime_format) datetimeFormat.value = r.data.datetime_format
+        }).catch(() => {})
       } else {
         await new Promise(r => setTimeout(r, 700))
         if (loginPwd.value.toLowerCase() === 'wrong') {
@@ -102,6 +108,6 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     isAuthenticated, isApiOnline, currentUser,
     loginUser, loginPwd, loginBusy, loginErr, loginUserBad, loginPwdBad,
-    checkSession, handleLogin, handleLogout, fetchQuota,
+    checkSession, handleLogin, handleLogout, fetchQuota, datetimeFormat,
   }
 })

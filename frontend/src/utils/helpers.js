@@ -1,15 +1,24 @@
 // ─── Date ─────────────────────────────────────────────────────────────────────
-export function formatDate(raw) {
+// Applies a Go-style format string (reference: 02/01/2006 15:04:05) to a Date.
+export function formatDate(raw, goFmt) {
   if (!raw) return ''
   let d = new Date(raw)
   if (isNaN(d.getTime())) d = new Date(raw.replace(/^[A-Za-z]{3},\s*/, ''))
   if (isNaN(d.getTime())) d = new Date(raw.replace(' ', 'T'))
   if (isNaN(d.getTime())) return raw
-  const dd  = String(d.getDate()).padStart(2, '0')
-  const mm  = String(d.getMonth() + 1).padStart(2, '0')
-  const hh  = String(d.getHours()).padStart(2, '0')
-  const min = String(d.getMinutes()).padStart(2, '0')
-  return `${dd}/${mm}/${d.getFullYear()} ${hh}:${min}`
+
+  const fmt = goFmt || '02/01/2006 15:04'
+  const pad = (n) => String(n).padStart(2, '0')
+
+  // Replace Go tokens longest-first to avoid partial matches (e.g. 2006 before 06)
+  return fmt
+    .replace('2006', d.getFullYear())
+    .replace('06',   String(d.getFullYear()).slice(-2))
+    .replace('01',   pad(d.getMonth() + 1))
+    .replace('02',   pad(d.getDate()))
+    .replace('15',   pad(d.getHours()))
+    .replace('04',   pad(d.getMinutes()))
+    .replace('05',   pad(d.getSeconds()))
 }
 
 // ─── Strings ──────────────────────────────────────────────────────────────────
