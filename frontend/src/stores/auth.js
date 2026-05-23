@@ -45,8 +45,9 @@ export const useAuthStore = defineStore('auth', () => {
       isAuthenticated.value = true
       isApiOnline.value = true
       fetchQuota()
-    } catch {
-      isApiOnline.value = false
+    } catch (e) {
+      // A response means the API is reachable; only a network failure means offline
+      isApiOnline.value = e?.response ? true : false
     }
   }
 
@@ -64,37 +65,28 @@ export const useAuthStore = defineStore('auth', () => {
     }
     loginBusy.value = true
     try {
-      if (isApiOnline.value) {
-        const params = new URLSearchParams()
-        params.append('username', loginUser.value)
-        params.append('password', loginPwd.value)
-        await axios.post(`${API_BASE}/auth/login`, params, {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        })
-        currentUser.value.email = loginUser.value.includes('@')
-          ? loginUser.value
-          : loginUser.value + '@go-webmail.test'
-        isAuthenticated.value = true
-        fetchQuota()
-        // Fetch datetime_format after login
-        axios.get(`${API_BASE}/auth/me`).then(r => {
-          if (r.data.datetime_format) datetimeFormat.value = r.data.datetime_format
-        }).catch(() => {})
+      const params = new URLSearchParams()
+      params.append('username', loginUser.value)
+      params.append('password', loginPwd.value)
+      await axios.post(`${API_BASE}/auth/login`, params, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      })
+      currentUser.value.email = loginUser.value.includes('@')
+        ? loginUser.value
+        : loginUser.value + '@go-webmail.test'
+      isAuthenticated.value = true
+      isApiOnline.value = true
+      fetchQuota()
+      axios.get(`${API_BASE}/auth/me`).then(r => {
+        if (r.data.datetime_format) datetimeFormat.value = r.data.datetime_format
+      }).catch(() => {})
+    } catch (e) {
+      if (e?.response) {
+        loginPwdBad.value = true
+        loginErr.value = 'The username or password you entered is incorrect.'
       } else {
-        await new Promise(r => setTimeout(r, 700))
-        if (loginPwd.value.toLowerCase() === 'wrong') {
-          loginPwdBad.value = true
-          loginErr.value = 'The username or password you entered is incorrect.'
-          return
-        }
-        currentUser.value.email = loginUser.value.includes('@')
-          ? loginUser.value
-          : loginUser.value + '@go-webmail.test'
-        isAuthenticated.value = true
+        loginErr.value = 'Server unavailable. Please try again later.'
       }
-    } catch {
-      loginPwdBad.value = true
-      loginErr.value = 'The username or password you entered is incorrect.'
     } finally {
       loginBusy.value = false
     }

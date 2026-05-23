@@ -258,6 +258,42 @@ export const useMailStore = defineStore('mail', () => {
     selectedId.value = next?.id ?? null
   }
 
+  async function moveMail(destFolderId) {
+    const ids = selectedIds.value.size > 0
+      ? [...selectedIds.value]
+      : (selectedId.value ? [selectedId.value] : [])
+    if (!ids.length) return
+
+    const srcDef  = folders.value.find(f => f.id === folder.value)
+    const srcName = srcDef?.name || srcDef?.label || 'INBOX'
+    const dstDef  = folders.value.find(f => f.id === destFolderId)
+    const dstName = dstDef?.name || dstDef?.label || destFolderId
+
+    ids.forEach(id => {
+      const m = mails.value.find(m => m.id === id)
+      if (m) m.folder = destFolderId
+    })
+    selectedId.value  = null
+    selectedIds.value = new Set()
+
+    const srcObj = folders.value.find(f => f.id === folder.value)
+    if (srcObj) {
+      const rem   = mails.value.filter(m => m.folder === folder.value)
+      const unr   = rem.filter(m => m.unread).length
+      srcObj.count = unr > 0 ? `${unr}/${rem.length}` : String(rem.length)
+    }
+
+    if (auth.isApiOnline) {
+      await Promise.all(ids.map(id => {
+        const fd = new URLSearchParams()
+        fd.append('dest', dstName)
+        return axios.post(`${API_BASE}/mail/${encodeURIComponent(srcName)}/${id}/move`, fd, {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        }).catch(() => {})
+      }))
+    }
+  }
+
   async function deleteMail() {
     // Collect IDs to delete: checked set takes priority, else current selection
     const ids = selectedIds.value.size > 0
@@ -449,6 +485,6 @@ export const useMailStore = defineStore('mail', () => {
     loadFromApi, fetchFolderMessages, reloadFolders, fetchMessageBody,
     selectMsg, toggleSelect, toggleRead, archiveMail, deleteMail,
     reply, forward, compose, closeComposer, showSource, closeSource, copySource,
-    setFolder, onFolderMenu,
+    moveMail, setFolder, onFolderMenu,
   }
 })
