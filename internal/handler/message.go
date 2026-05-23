@@ -296,10 +296,21 @@ func (h *MessageHandler) Delete(c *echo.Context) error {
 		return err
 	}
 
-	if mailbox == "Trash" {
+	// Find real trash folder name via IMAP attributes
+	trashFolder := "Trash"
+	if boxes, lerr := conn.ListMailboxes(); lerr == nil {
+		for _, mb := range boxes {
+			if mb.IsTrash {
+				trashFolder = mb.Name
+				break
+			}
+		}
+	}
+
+	if mailbox == trashFolder {
 		err = conn.DeleteMessage(imap.UID(uid))
 	} else {
-		err = conn.MoveMessage(imap.UID(uid), "Trash")
+		err = conn.MoveMessage(imap.UID(uid), trashFolder)
 	}
 	if err != nil {
 		return err
@@ -308,6 +319,7 @@ func (h *MessageHandler) Delete(c *echo.Context) error {
 }
 
 func (h *MessageHandler) EmptyTrash(c *echo.Context) error {
+	mailbox := c.Param("mailbox")
 	s := c.Get("imap_session").(*session.IMAPSession)
 	conn, err := h.imapConn(s)
 	if err != nil {
@@ -315,8 +327,27 @@ func (h *MessageHandler) EmptyTrash(c *echo.Context) error {
 	}
 	defer conn.Close()
 
-	if err := conn.EmptyMailbox(c.Param("mailbox")); err != nil {
-		return err
+	// Find real trash folder name
+	trashFolder := "Trash"
+	if boxes, lerr := conn.ListMailboxes(); lerr == nil {
+		for _, mb := range boxes {
+			if mb.IsTrash {
+				trashFolder = mb.Name
+				break
+			}
+		}
+	}
+
+	if mailbox == trashFolder {
+		// Permanently delete all messages in Trash
+		if err := conn.EmptyMailbox(mailbox); err != nil {
+			return err
+		}
+	} else {
+		// Move all messages to Trash
+		if err := conn.MoveAllMessages(mailbox, trashFolder); err != nil {
+			return err
+		}
 	}
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }

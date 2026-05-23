@@ -1,8 +1,15 @@
 <script setup>
 import { useMailStore } from '../stores/mail'
+import { useAuthStore } from '../stores/auth'
 import Icon from './Icon.vue'
 
 const mail = useMailStore()
+const auth = useAuthStore()
+
+function refresh() {
+  mail.fetchFolderMessages(mail.folder)
+  auth.fetchQuota()
+}
 </script>
 
 <template>
@@ -11,7 +18,7 @@ const mail = useMailStore()
       <Icon name="pencil-line" :size="14" /> New Message
     </button>
     <div class="w-px h-[18px] bg-line mx-1"></div>
-    <button class="tbtn" type="button" @click="mail.fetchFolderMessages(mail.folder)">
+    <button class="tbtn" type="button" @click="refresh()">
       <Icon name="refresh-cw" :size="14" /> Refresh
     </button>
     <button class="tbtn" type="button" :disabled="!mail.selected" @click="mail.reply()">
@@ -27,7 +34,7 @@ const mail = useMailStore()
     <button class="tbtn" type="button" :disabled="!mail.selected" @click="mail.archiveMail()">
       <Icon name="archive" :size="14" /> Archive
     </button>
-    <button class="tbtn tbtn-danger" type="button" :disabled="!mail.selected" @click="mail.deleteMail()">
+    <button class="tbtn tbtn-danger" type="button" :disabled="!mail.selected && !mail.selectedIds.size" @click="mail.deleteMail()">
       <Icon name="trash-2" :size="14" /> Delete
     </button>
     <div class="w-px h-[18px] bg-line mx-1"></div>

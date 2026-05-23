@@ -155,10 +155,11 @@ export const useMailStore = defineStore('mail', () => {
   // ── API ────────────────────────────────────────────────────────────────────
   async function fetchFolderMessages(folderId) {
     if (!auth.isApiOnline) return
-    const label = folders.value.find(f => f.id === folderId)?.label
-    if (!label) return
+    const folderDef = folders.value.find(f => f.id === folderId)
+    const imapName  = folderDef?.name || folderDef?.label
+    if (!imapName) return
     try {
-      const mailRes = await axios.get(`${API_BASE}/mail/${encodeURIComponent(label)}`)
+      const mailRes = await axios.get(`${API_BASE}/mail/${encodeURIComponent(imapName)}`)
       const fetched = (mailRes.data.messages || []).map(m => ({
         id:       String(m.uid),
         folder:   folderId,
@@ -178,6 +179,14 @@ export const useMailStore = defineStore('mail', () => {
       // Replace messages for this folder, keep others
       mails.value = [...mails.value.filter(m => m.folder !== folderId), ...fetched]
       selectedId.value = fetched[0]?.id ?? null
+
+      // Update folder count badge
+      const folderObj = folders.value.find(f => f.id === folderId)
+      if (folderObj) {
+        const total  = mailRes.data.total ?? fetched.length
+        const unread = fetched.filter(m => m.unread).length
+        folderObj.count = unread > 0 ? `${unread}/${total}` : String(total)
+      }
     } catch (e) {
       console.error('fetchFolderMessages failed', e)
     }
@@ -194,7 +203,7 @@ export const useMailStore = defineStore('mail', () => {
         const id     = FOLDER_ID_MAP[f.Name] || f.Name.toLowerCase().replace(/\s+/g, '-')
         const unread = f.Unseen   || 0
         const total  = f.Messages || 0
-        return { id, label: f.DisplayName || f.Name, count: unread > 0 ? `${unread}/${total}` : String(total), custom: false }
+        return { id, label: f.DisplayName || f.Name, name: f.Name, count: unread > 0 ? `${unread}/${total}` : String(total), custom: !f.IsSystem }
       })
 
       await fetchFolderMessages(folder.value)
@@ -207,8 +216,9 @@ export const useMailStore = defineStore('mail', () => {
     const msg = mails.value.find(m => m.id === msgId)
     if (!msg || !auth.isApiOnline) return
     try {
-      const label = folders.value.find(f => f.id === msg.folder)?.label || 'Inbox'
-      const res   = await axios.get(`${API_BASE}/mail/${label}/${msgId}`)
+      const fd    = folders.value.find(f => f.id === msg.folder)
+      const label = fd?.name || fd?.label || 'INBOX'
+      const res   = await axios.get(`${API_BASE}/mail/${encodeURIComponent(label)}/${msgId}`)
       msg.htmlBody    = res.data.html_body  || ''
       msg.body        = res.data.plain_body ? res.data.plain_body.split('\n') : []
       msg.attachments = (res.data.attachments || []).map(a => ({
@@ -248,13 +258,39 @@ export const useMailStore = defineStore('mail', () => {
     selectedId.value = next?.id ?? null
   }
 
-  function deleteMail() {
-    const s = selected.value; if (!s) return
-    const idx = visibleMails.value.findIndex(m => m.id === s.id)
-    const m   = mails.value.find(x => x.id === s.id)
-    if (m) m.folder = 'trash'
-    const next = visibleMails.value[idx + 1] || visibleMails.value[idx - 1]
-    selectedId.value = next?.id ?? null
+  async function deleteMail() {
+    // Collect IDs to delete: checked set takes priority, else current selection
+    const ids = selectedIds.value.size > 0
+      ? [...selectedIds.value]
+      : (selectedId.value ? [selectedId.value] : [])
+    if (!ids.length) return
+
+    // Capture original IMAP folder name before optimistic update
+    const folderDef    = folders.value.find(f => f.id === folder.value)
+    const currentLabel = folderDef?.name || folderDef?.label || 'INBOX'
+
+    // Pick next message to show after deletion
+    const firstIdx = visibleMails.value.findIndex(m => m.id === ids[0])
+    const remaining = visibleMails.value.filter(m => !ids.includes(m.id))
+    const next = remaining[firstIdx] || remaining[firstIdx - 1] || null
+
+    // Optimistic: remove from visible list and update folder count
+    mails.value = mails.value.filter(m => !ids.includes(m.id))
+    selectedId.value  = next?.id ?? null
+    selectedIds.value = new Set()
+    const folderObj = folders.value.find(f => f.id === folder.value)
+    if (folderObj) {
+      const remaining2 = mails.value.filter(m => m.folder === folder.value)
+      const unread2    = remaining2.filter(m => m.unread).length
+      folderObj.count  = unread2 > 0 ? `${unread2}/${remaining2.length}` : String(remaining2.length)
+    }
+
+    // API calls
+    if (auth.isApiOnline) {
+      await Promise.all(ids.map(id =>
+        axios.delete(`${API_BASE}/mail/${encodeURIComponent(currentLabel)}/${id}`).catch(() => {})
+      ))
+    }
   }
 
   function reply() {
@@ -292,7 +328,8 @@ export const useMailStore = defineStore('mail', () => {
     sourceRaw.value  = ''
     if (auth.isApiOnline) {
       try {
-        const label = folders.value.find(f => f.id === m.folder)?.label || 'Inbox'
+        const fd    = folders.value.find(f => f.id === m.folder)
+        const label = fd?.name || fd?.label || 'INBOX'
         const res   = await axios.get(`${API_BASE}/mail/${encodeURIComponent(label)}/${m.id}/raw`, { responseType: 'text' })
         sourceRaw.value = res.data
       } catch {}
@@ -312,32 +349,91 @@ export const useMailStore = defineStore('mail', () => {
     fetchFolderMessages(id)
   }
 
-  function onFolderMenu(action, f) {
+  async function reloadFolders() {
+    if (!auth.isApiOnline) return
+    const res = await axios.get(`${API_BASE}/folders`)
+    folders.value = res.data.map(f => {
+      const id     = FOLDER_ID_MAP[f.Name] || f.Name.toLowerCase().replace(/\s+/g, '-')
+      const unread = f.Unseen   || 0
+      const total  = f.Messages || 0
+      return { id, label: f.DisplayName || f.Name, name: f.Name, count: unread > 0 ? `${unread}/${total}` : String(total), custom: !f.IsSystem }
+    })
+  }
+
+  async function onFolderMenu(action, f) {
     if (action === 'new' || action === 'subfolder') {
-      const label = action === 'subfolder' && f ? `New subfolder inside "${f.label}":` : 'New folder name:'
-      const name  = window.prompt(label)
+      const promptLabel = action === 'subfolder' && f ? `New subfolder inside "${f.label}":` : 'New folder name:'
+      const name = window.prompt(promptLabel)
       if (!name?.trim()) return
-      const id     = 'f-' + Date.now()
-      const prefix = action === 'subfolder' && f ? `${f.label} / ` : ''
-      folders.value.push({ id, label: prefix + name.trim(), count: '0', custom: true })
-      folder.value = id
+      if (auth.isApiOnline) {
+        const fd = new FormData()
+        fd.append('name', name.trim())
+        if (action === 'subfolder' && f) fd.append('parent', f.name || f.label)
+        try {
+          await axios.post(`${API_BASE}/folders`, fd)
+          await reloadFolders()
+        } catch (e) {
+          window.alert('Failed to create folder: ' + (e.response?.data?.error || e.message))
+        }
+      }
       return
     }
     if (!f) return
     if (action === 'rename') {
       const next = window.prompt('Rename folder:', f.label)
       if (!next?.trim()) return
-      const x = folders.value.find(x => x.id === f.id)
-      if (x) x.label = next.trim()
+      if (auth.isApiOnline) {
+        const fd = new FormData()
+        fd.append('name', f.name || f.label)
+        fd.append('newname', next.trim())
+        try {
+          await axios.post(`${API_BASE}/folders/rename`, fd)
+          await reloadFolders()
+          if (folder.value === f.id) fetchFolderMessages(folder.value)
+        } catch (e) {
+          window.alert('Failed to rename folder: ' + (e.response?.data?.error || e.message))
+        }
+      } else {
+        const x = folders.value.find(x => x.id === f.id)
+        if (x) x.label = next.trim()
+      }
     } else if (action === 'read-all') {
       mails.value.forEach(m => { if (m.folder === f.id) m.unread = false })
+      const folderObj = folders.value.find(x => x.id === f.id)
+      if (folderObj) {
+        const total = mails.value.filter(m => m.folder === f.id).length
+        folderObj.count = String(total)
+      }
     } else if (action === 'empty') {
-      if (!window.confirm(`Empty "${f.label}"? Messages will be moved to Deleted Items.`)) return
-      mails.value.forEach(m => { if (m.folder === f.id) m.folder = 'trash' })
+      const isTrash = f.id === 'trash'
+      const msg = isTrash
+        ? `Permanently delete all messages in "${f.label}"? This cannot be undone.`
+        : `Move all messages in "${f.label}" to Trash?`
+      if (!window.confirm(msg)) return
+      mails.value = mails.value.filter(m => m.folder !== f.id)
+      selectedId.value = null
+      const folderObj = folders.value.find(x => x.id === f.id)
+      if (folderObj) folderObj.count = '0'
+      if (auth.isApiOnline) {
+        axios.delete(`${API_BASE}/mail/${encodeURIComponent(f.name || f.label)}`).catch(() => {})
+      }
     } else if (action === 'delete') {
       if (!window.confirm(`Delete folder "${f.label}"?`)) return
-      folders.value = folders.value.filter(x => x.id !== f.id)
-      if (folder.value === f.id) folder.value = 'inbox'
+      if (auth.isApiOnline) {
+        const fd = new FormData()
+        fd.append('name', f.name || f.label)
+        try {
+          await axios.post(`${API_BASE}/folders/delete`, fd)
+          folders.value = folders.value.filter(x => x.id !== f.id)
+          mails.value   = mails.value.filter(m => m.folder !== f.id)
+          if (folder.value === f.id) setFolder('inbox')
+        } catch (e) {
+          window.alert('Failed to delete folder: ' + (e.response?.data?.error || e.message))
+        }
+      } else {
+        folders.value = folders.value.filter(x => x.id !== f.id)
+        if (folder.value === f.id) folder.value = 'inbox'
+      }
     } else if (action === 'properties') {
       window.alert(`Folder properties\n\nName: ${f.label}\nType: ${f.custom ? 'User folder' : 'System folder'}`)
     }
@@ -350,7 +446,7 @@ export const useMailStore = defineStore('mail', () => {
     // computed
     visibleMails, counts, selected, currentFolderLabel,
     // actions
-    loadFromApi, fetchFolderMessages, fetchMessageBody,
+    loadFromApi, fetchFolderMessages, reloadFolders, fetchMessageBody,
     selectMsg, toggleSelect, toggleRead, archiveMail, deleteMail,
     reply, forward, compose, closeComposer, showSource, closeSource, copySource,
     setFolder, onFolderMenu,

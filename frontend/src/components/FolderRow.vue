@@ -59,7 +59,8 @@ const iconName = computed(() => FOLDER_ICON_MAP[props.folder.id] || 'folder')
         <span class="ic-wrap"><Icon name="folder-plus" :size="13" /></span><span>New Subfolder…</span>
       </div>
       <div class="kdiv"></div>
-      <div class="kmi" @click="act('rename')">
+      <div :class="['kmi', { disabled: !folder.custom }]"
+           @click="folder.custom && act('rename')">
         <span class="ic-wrap"><Icon name="pencil" :size="13" /></span><span>Rename…</span>
       </div>
       <div class="kmi" @click="act('read-all')">

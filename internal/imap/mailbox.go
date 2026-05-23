@@ -213,6 +213,22 @@ func (c *Client) DeleteMailboxRecursive(name string) error {
 	return c.Client.Delete(name).Wait()
 }
 
+// MoveAllMessages move todas as mensagens de uma pasta para o destino.
+func (c *Client) MoveAllMessages(mailbox, dest string) error {
+	if err := c.SelectMailbox(mailbox); err != nil {
+		return err
+	}
+	searchData, err := c.Client.Search(&imap.SearchCriteria{}, &imap.SearchOptions{ReturnAll: true}).Wait()
+	if err != nil {
+		return err
+	}
+	if searchData.All == nil {
+		return nil
+	}
+	_, err = c.Client.Move(searchData.All, dest).Wait()
+	return err
+}
+
 // EmptyMailbox apaga todas as mensagens de uma pasta.
 func (c *Client) EmptyMailbox(mailbox string) error {
 	if err := c.SelectMailbox(mailbox); err != nil {
