@@ -25,6 +25,34 @@ type MailboxHandler struct {
 	cfg *config.Config
 }
 
+func (h *MailboxHandler) resolveCreateDelimiter(conn *imap.Client, parent, requested string) string {
+	if parent == "" {
+		if requested != "" {
+			return requested
+		}
+		return "/"
+	}
+
+	folders, err := conn.ListMailboxes()
+	if err == nil {
+		for _, folder := range folders {
+			if folder.Name == parent && folder.Delim != "" {
+				return folder.Delim
+			}
+		}
+		for _, folder := range folders {
+			if folder.Delim != "" {
+				return folder.Delim
+			}
+		}
+	}
+
+	if requested != "" {
+		return requested
+	}
+	return "/"
+}
+
 func (h *MailboxHandler) List(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	s := c.Get("imap_session").(*session.IMAPSession)
@@ -119,18 +147,10 @@ func (h *MailboxHandler) FoldersJSON(c *echo.Context) error {
 func (h *MailboxHandler) CreateSubfolder(c *echo.Context) error {
 	parent := c.FormValue("parent")
 	name := c.FormValue("name")
-	delim := c.FormValue("delim")
 	if name == "" {
 		return echo.ErrBadRequest
 	}
-	if delim == "" {
-		delim = "/"
-	}
-
-	fullName := name
-	if parent != "" {
-		fullName = parent + delim + name
-	}
+	requestedDelim := c.FormValue("delim")
 
 	s := c.Get("imap_session").(*session.IMAPSession)
 	conn, err := h.imapConn(s)
@@ -138,6 +158,12 @@ func (h *MailboxHandler) CreateSubfolder(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	defer conn.Close()
+
+	delim := h.resolveCreateDelimiter(conn, parent, requestedDelim)
+	fullName := name
+	if parent != "" {
+		fullName = parent + delim + name
+	}
 
 	if err := conn.CreateMailbox(fullName); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})

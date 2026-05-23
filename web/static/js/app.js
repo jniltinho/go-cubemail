@@ -90,7 +90,7 @@ $(function () {
 
   const $folderList = $('#folder-list');
   const currentMailbox = String($folderList.data('current-mailbox') || '');
-  const foldersUrl = String($folderList.data('folders-url') || '/api/folders');
+  const foldersUrl = String($folderList.data('folders-url') || '/api/v1/folders');
   let folderTreeReady = false;
 
   function iconNameForFolder(iconType) {
@@ -334,7 +334,7 @@ $(function () {
     if (!ctxFolder) return;
     const name = await appPrompt('New Subfolder', 'Enter the name for the new subfolder:', '');
     if (!name) return;
-    $.post('/api/folders', { parent: ctxFolder, delim: ctxDelim, name: name })
+    $.post('/api/v1/folders', { parent: ctxFolder, delim: ctxDelim, name: name })
       .done(function (res) {
         refreshFolderTree({ revealNodeId: res && res.name ? res.name : ctxFolder });
       })
@@ -353,7 +353,7 @@ $(function () {
     if (!newDisplay || newDisplay === current) return;
     parts[parts.length - 1] = newDisplay;
     const newname = parts.join(ctxDelim);
-    $.post('/api/folders/rename', { name: ctxFolder, newname: newname })
+    $.post('/api/v1/folders/rename', { name: ctxFolder, newname: newname })
       .done(function () {
         if (isCurrentMailboxAffected(ctxFolder, ctxDelim)) {
           const nextMailbox = currentMailbox === ctxFolder
@@ -375,7 +375,7 @@ $(function () {
     if (!ctxFolder) return;
     const ok = await appConfirm('Delete Folder', 'Delete "' + ctxFolder + '" and all its messages? This cannot be undone.');
     if (!ok) return;
-    $.post('/api/folders/delete', { name: ctxFolder })
+    $.post('/api/v1/folders/delete', { name: ctxFolder })
       .done(function () {
         if (isCurrentMailboxAffected(ctxFolder, ctxDelim)) {
           window.location.href = '/mail/INBOX';

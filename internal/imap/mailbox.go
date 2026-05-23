@@ -12,6 +12,7 @@ type MailboxInfo struct {
 	Name        string
 	Delim       string
 	Unseen      uint32
+	Messages    uint32
 	IsTrash     bool
 	NoSelect    bool   // true when folder is a hierarchy placeholder (\Noselect)
 	IsSystem    bool   // true for INBOX, Sent, Drafts, Trash — no rename/delete
@@ -26,7 +27,7 @@ type MailboxInfo struct {
 // ListMailboxes retorna todas as pastas.
 func (c *Client) ListMailboxes() ([]MailboxInfo, error) {
 	listCmd := c.Client.List("", "*", &imap.ListOptions{
-		ReturnStatus: &imap.StatusOptions{NumUnseen: true},
+		ReturnStatus: &imap.StatusOptions{NumUnseen: true, NumMessages: true},
 	})
 	data, err := listCmd.Collect()
 	if err != nil {
@@ -39,8 +40,13 @@ func (c *Client) ListMailboxes() ([]MailboxInfo, error) {
 		if m.Delim != 0 {
 			mi.Delim = string(m.Delim)
 		}
-		if m.Status != nil && m.Status.NumUnseen != nil {
-			mi.Unseen = *m.Status.NumUnseen
+		if m.Status != nil {
+			if m.Status.NumUnseen != nil {
+				mi.Unseen = *m.Status.NumUnseen
+			}
+			if m.Status.NumMessages != nil {
+				mi.Messages = *m.Status.NumMessages
+			}
 		}
 		mi.IconType = "folder"
 		for _, attr := range m.Attrs {
