@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import Icon from './Icon.vue'
+import { extIcon, extColor } from '../utils/helpers'
 import tinymce from 'tinymce'
 import 'tinymce/themes/silver'
 import 'tinymce/icons/default'
@@ -22,14 +23,32 @@ const props = defineProps({
 })
 const emit = defineEmits(['close'])
 
-const to     = ref(props.prefill?.to   || '')
-const cc     = ref('')
-const subj   = ref(props.prefill?.subj || '')
-const body   = ref(props.prefill?.body || '')
-const showCc = ref(false)
-const sent   = ref(false)
-const taRef  = ref(null)
-let destroyEditor = null
+const to          = ref(props.prefill?.to   || '')
+const cc          = ref('')
+const subj        = ref(props.prefill?.subj || '')
+const body        = ref(props.prefill?.body || '')
+const showCc      = ref(false)
+const sent        = ref(false)
+const taRef       = ref(null)
+const fileInputRef = ref(null)
+const attachments  = ref([])
+let destroyEditor  = null
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+function fileExt(name) { return name.split('.').pop() }
+
+function openFilePicker() { fileInputRef.value?.click() }
+
+function onFilesSelected(e) {
+  for (const f of e.target.files) attachments.value.push(f)
+  e.target.value = ''
+}
+
+function removeAttachment(i) { attachments.value.splice(i, 1) }
 
 onMounted(() => {
   if (!taRef.value) return
@@ -136,9 +155,35 @@ function backdrop(e) {
         <div class="composer-field composer-rich" style="grid-template-columns:1fr">
           <textarea ref="taRef" placeholder="Write your message…"></textarea>
         </div>
+
+        <!-- Attachments bar -->
+        <div v-if="attachments.length" class="flex flex-wrap gap-1.5 px-3 py-2 bg-panel-2 border-t border-line-soft">
+          <span class="text-[10.5px] uppercase text-ink-mute tracking-wider font-semibold self-center mr-1 flex items-center gap-1">
+            <Icon name="paperclip" :size="11" />
+            {{ attachments.length }} attachment{{ attachments.length > 1 ? 's' : '' }}
+          </span>
+          <div
+            v-for="(f, i) in attachments"
+            :key="i"
+            class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-line text-[11.5px] text-ink"
+          >
+            <Icon :name="extIcon(fileExt(f.name))" :size="12" :class="extColor(fileExt(f.name))" />
+            <span class="font-medium max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">{{ f.name }}</span>
+            <span class="text-ink-mute text-[10.5px]">· {{ fmtSize(f.size) }}</span>
+            <button
+              type="button"
+              class="ml-0.5 text-ink-mute hover:text-[#B22B2B] cursor-pointer bg-transparent border-0 p-0 leading-none"
+              @click="removeAttachment(i)"
+            ><Icon name="x" :size="11" /></button>
+          </div>
+        </div>
+
+        <!-- Hidden file input -->
+        <input ref="fileInputRef" type="file" multiple class="hidden" @change="onFilesSelected" />
+
         <!-- Footer actions -->
         <div class="py-2 px-2.5 bg-panel-2 border-t border-line flex items-center gap-1.5">
-          <button class="tbtn" type="button"><Icon name="paperclip" :size="13" /> Attach</button>
+          <button class="tbtn" type="button" @click="openFilePicker"><Icon name="paperclip" :size="13" /> Attach</button>
           <button class="tbtn" type="button"><Icon name="signature" :size="13" /> Signature</button>
           <button class="tbtn" type="button"><Icon name="clock" :size="13" /> Schedule send</button>
           <div class="ml-auto flex gap-1.5">
