@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useMailStore } from '../stores/mail'
 import FolderRow from './FolderRow.vue'
@@ -6,6 +7,18 @@ import Icon from './Icon.vue'
 
 const auth = useAuthStore()
 const mail = useMailStore()
+
+function formatBytes(bytes) {
+  if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(2) + ' GB'
+  return (bytes / 1024 ** 2).toFixed(0) + ' MB'
+}
+
+const quotaUsedLabel  = computed(() => formatBytes(auth.currentUser.quotaUsedBytes))
+const quotaTotalLabel = computed(() => formatBytes(auth.currentUser.quotaTotalBytes))
+const quotaPercent    = computed(() => {
+  if (!auth.currentUser.quotaTotalBytes) return 0
+  return Math.min(auth.currentUser.quotaUsedBytes / auth.currentUser.quotaTotalBytes * 100, 100).toFixed(1)
+})
 </script>
 
 <template>
@@ -35,14 +48,11 @@ const mail = useMailStore()
     </div>
 
     <!-- Quota -->
-    <div class="px-3.5 py-2.5 text-[11px] text-ink-mute border-t border-line-soft flex-shrink-0">
+    <div v-if="auth.currentUser.quotaTotalBytes > 0" class="px-3.5 py-2.5 text-[11px] text-ink-mute border-t border-line-soft flex-shrink-0">
       Quota
-      <b class="text-ink-sub">{{ auth.currentUser.quotaUsed }} / {{ auth.currentUser.quotaTotal }} GB</b>
+      <b class="text-ink-sub">{{ quotaUsedLabel }} / {{ quotaTotalLabel }}</b>
       <div class="h-1.5 bg-line-soft mt-1 border border-line">
-        <div
-          class="h-full bg-accent"
-          :style="{ width: (auth.currentUser.quotaUsed / auth.currentUser.quotaTotal * 100).toFixed(1) + '%' }"
-        ></div>
+        <div class="h-full bg-accent" :style="{ width: quotaPercent + '%' }"></div>
       </div>
     </div>
   </aside>

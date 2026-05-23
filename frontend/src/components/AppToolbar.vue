@@ -11,7 +11,7 @@ const mail = useMailStore()
       <Icon name="pencil-line" :size="14" /> New Message
     </button>
     <div class="w-px h-[18px] bg-line mx-1"></div>
-    <button class="tbtn" type="button" @click="mail.loadFromApi()">
+    <button class="tbtn" type="button" @click="mail.fetchFolderMessages(mail.folder)">
       <Icon name="refresh-cw" :size="14" /> Refresh
     </button>
     <button class="tbtn" type="button" :disabled="!mail.selected" @click="mail.reply()">

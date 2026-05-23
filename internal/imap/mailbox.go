@@ -236,6 +236,31 @@ func (c *Client) EmptyMailbox(mailbox string) error {
 	return c.Client.Expunge().Close()
 }
 
+// QuotaInfo holds storage usage and limit in bytes.
+type QuotaInfo struct {
+	UsageBytes int64
+	LimitBytes int64
+}
+
+// GetQuota fetches the STORAGE quota via GETQUOTAROOT on INBOX.
+// Returns nil without error if the server does not support the QUOTA extension.
+func (c *Client) GetQuota() (*QuotaInfo, error) {
+	data, err := c.Client.GetQuotaRoot("INBOX").Wait()
+	if err != nil {
+		return nil, nil // quota extension not supported — ignore
+	}
+	for _, qd := range data {
+		if res, ok := qd.Resources[imap.QuotaResourceStorage]; ok {
+			// IMAP QUOTA reports storage in 1 KB blocks (RFC 2087), convert to bytes
+			return &QuotaInfo{
+				UsageBytes: res.Usage * 1024,
+				LimitBytes: res.Limit * 1024,
+			}, nil
+		}
+	}
+	return nil, nil
+}
+
 // AppendMessage adiciona uma mensagem crua em uma pasta.
 func (c *Client) AppendMessage(mailbox string, flags []imap.Flag, raw []byte) error {
 	cmd := c.Client.Append(mailbox, int64(len(raw)), &imap.AppendOptions{

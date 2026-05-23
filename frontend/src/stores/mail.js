@@ -153,6 +153,36 @@ export const useMailStore = defineStore('mail', () => {
   })
 
   // ── API ────────────────────────────────────────────────────────────────────
+  async function fetchFolderMessages(folderId) {
+    if (!auth.isApiOnline) return
+    const label = folders.value.find(f => f.id === folderId)?.label
+    if (!label) return
+    try {
+      const mailRes = await axios.get(`${API_BASE}/mail/${encodeURIComponent(label)}`)
+      const fetched = (mailRes.data.messages || []).map(m => ({
+        id:       String(m.uid),
+        folder:   folderId,
+        from:     { name: m.from || '', addr: m.from_email || '' },
+        to:       auth.currentUser.email,
+        subject:  m.subject || '(No Subject)',
+        rawDate:  m.date || '',
+        date:     formatDate(m.date),
+        fullDate: m.date || '',
+        snippet:  m.subject || '',
+        unread:   !m.seen,
+        starred:  !!m.flagged,
+        attachments: [],
+        htmlBody: '',
+        body: [],
+      }))
+      // Replace messages for this folder, keep others
+      mails.value = [...mails.value.filter(m => m.folder !== folderId), ...fetched]
+      selectedId.value = fetched[0]?.id ?? null
+    } catch (e) {
+      console.error('fetchFolderMessages failed', e)
+    }
+  }
+
   async function loadFromApi() {
     if (!auth.isApiOnline) return
     try {
@@ -167,27 +197,7 @@ export const useMailStore = defineStore('mail', () => {
         return { id, label: f.DisplayName || f.Name, count: unread > 0 ? `${unread}/${total}` : String(total), custom: false }
       })
 
-      const label   = folders.value.find(f => f.id === folder.value)?.label || 'Inbox'
-      const mailRes = await axios.get(`${API_BASE}/mail/${label}`)
-      mails.value = (mailRes.data.messages || []).map(m => ({
-        id:       String(m.uid),
-        folder:   folder.value,
-        from:     { name: m.from || '', addr: m.from_email || '' },
-        to:       auth.currentUser.email,
-        subject:  m.subject || '(No Subject)',
-        rawDate:  m.date || '',
-        date:     formatDate(m.date),
-        fullDate: m.date || '',
-        snippet:  m.subject || '',
-        unread:   !m.seen,
-        starred:  !!m.flagged,
-        attachments: [],
-        htmlBody: '',
-        body: [],
-      }))
-
-      if (mails.value.length && !selectedId.value)
-        selectedId.value = mails.value[0].id
+      await fetchFolderMessages(folder.value)
     } catch (e) {
       console.error('API load failed', e)
     }
@@ -295,7 +305,12 @@ export const useMailStore = defineStore('mail', () => {
   }
 
   // ── Folder actions ─────────────────────────────────────────────────────────
-  function setFolder(id) { folder.value = id; view.value = 'mail' }
+  function setFolder(id) {
+    folder.value = id
+    view.value   = 'mail'
+    selectedId.value = null
+    fetchFolderMessages(id)
+  }
 
   function onFolderMenu(action, f) {
     if (action === 'new' || action === 'subfolder') {
@@ -335,7 +350,7 @@ export const useMailStore = defineStore('mail', () => {
     // computed
     visibleMails, counts, selected, currentFolderLabel,
     // actions
-    loadFromApi, fetchMessageBody,
+    loadFromApi, fetchFolderMessages, fetchMessageBody,
     selectMsg, toggleSelect, toggleRead, archiveMail, deleteMail,
     reply, forward, compose, closeComposer, showSource, closeSource, copySource,
     setFolder, onFolderMenu,

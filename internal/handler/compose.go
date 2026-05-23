@@ -91,14 +91,21 @@ func (h *ComposeHandler) Send(c *echo.Context) error {
 		return c.JSON(http.StatusBadGateway, map[string]string{"error": err.Error()})
 	}
 
-	// Tenta salvar na pasta Sent
+	// Salva na pasta Sent (detecta o nome real via atributos IMAP)
 	conn, err := imap.Connect(s.IMAPHost, s.IMAPPort, h.cfg.IMAP.TLS,
 		time.Duration(h.cfg.IMAP.TimeoutSec)*time.Second, s.Username, pass, h.cfg.Server.Debug)
 	if err == nil {
 		defer conn.Close()
-		// Pode variar dependendo do servidor ("Sent", "Sent Items", "Enviados")
-		// Usaremos "Sent" como padrão
-		_ = conn.AppendMessage("Sent", []goimap.Flag{goimap.FlagSeen}, raw)
+		sentFolder := "Sent"
+		if boxes, lerr := conn.ListMailboxes(); lerr == nil {
+			for _, mb := range boxes {
+				if mb.IconType == "sent" {
+					sentFolder = mb.Name
+					break
+				}
+			}
+		}
+		_ = conn.AppendMessage(sentFolder, []goimap.Flag{goimap.FlagSeen}, raw)
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"status": "sent"})

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import axios from 'axios'
 import Icon from './Icon.vue'
 import { extIcon, extColor } from '../utils/helpers'
 import tinymce from 'tinymce'
@@ -29,6 +30,8 @@ const subj        = ref(props.prefill?.subj || '')
 const body        = ref(props.prefill?.body || '')
 const showCc      = ref(false)
 const sent        = ref(false)
+const sending     = ref(false)
+const sendError   = ref('')
 const taRef       = ref(null)
 const fileInputRef = ref(null)
 const attachments  = ref([])
@@ -121,9 +124,34 @@ onMounted(() => {
 
 onBeforeUnmount(() => destroyEditor?.())
 
-function send() {
-  sent.value = true
-  setTimeout(() => emit('close'), 900)
+async function send() {
+  sendError.value = ''
+  if (!to.value.trim()) { sendError.value = 'Please enter a recipient.'; return }
+
+  // Ensure TinyMCE content is synced to body.value
+  const activeEditor = tinymce.activeEditor
+  if (activeEditor) body.value = activeEditor.getContent()
+
+  const plainText = body.value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+
+  const fd = new FormData()
+  fd.append('to',         to.value.trim())
+  fd.append('cc',         cc.value.trim())
+  fd.append('subject',    subj.value)
+  fd.append('body_html',  body.value)
+  fd.append('body_plain', plainText)
+  for (const f of attachments.value) fd.append('attachments', f, f.name)
+
+  sending.value = true
+  try {
+    await axios.post('/api/v1/compose/send', fd)
+    sent.value = true
+    setTimeout(() => emit('close'), 1800)
+  } catch (e) {
+    sendError.value = e.response?.data?.error || 'Failed to send. Please try again.'
+  } finally {
+    sending.value = false
+  }
 }
 
 function backdrop(e) {
@@ -198,15 +226,21 @@ function backdrop(e) {
         <!-- Hidden file input -->
         <input ref="fileInputRef" type="file" multiple class="hidden" @change="onFilesSelected" />
 
+        <!-- Send error -->
+        <div v-if="sendError" class="px-3 py-1.5 bg-[#FFF0F0] border-t border-[#F5C0C0] text-[11.5px] text-[#B22B2B]">
+          {{ sendError }}
+        </div>
+
         <!-- Footer actions -->
         <div class="py-2 px-2.5 bg-panel-2 border-t border-line flex items-center gap-1.5">
           <button class="tbtn" type="button" @click="openFilePicker"><Icon name="paperclip" :size="13" /> Attach</button>
           <button class="tbtn" type="button"><Icon name="signature" :size="13" /> Signature</button>
           <button class="tbtn" type="button"><Icon name="clock" :size="13" /> Schedule send</button>
           <div class="ml-auto flex gap-1.5">
-            <button class="tbtn" type="button" @click="$emit('close')">Discard</button>
-            <button class="tbtn tbtn-primary" type="button" @click="send">
-              <Icon name="send" :size="13" /> Send
+            <button class="tbtn" type="button" :disabled="sending" @click="$emit('close')">Discard</button>
+            <button class="tbtn tbtn-primary" type="button" :disabled="sending" @click="send">
+              <Icon :name="sending ? 'loader-2' : 'send'" :size="13" :class="{ 'animate-spin': sending }" />
+              {{ sending ? 'Sending…' : 'Send' }}
             </button>
           </div>
         </div>

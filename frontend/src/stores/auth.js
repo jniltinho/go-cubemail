@@ -6,15 +6,27 @@ const API_BASE = '/api/v1'
 
 export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = ref(false)
-  const isApiOnline     = ref(false)
-  const currentUser     = ref({ email: 'user@webmail.test', quotaUsed: 3.4, quotaTotal: 25 })
+  const isApiOnline = ref(false)
+  const currentUser = ref({ email: 'user@webmail.test', quotaUsedBytes: 0, quotaTotalBytes: 0 })
 
-  const loginUser    = ref('')
-  const loginPwd     = ref('')
-  const loginBusy    = ref(false)
-  const loginErr     = ref(null)
+  const loginUser = ref('')
+  const loginPwd = ref('')
+  const loginBusy = ref(false)
+  const loginErr = ref(null)
   const loginUserBad = ref(false)
-  const loginPwdBad  = ref(false)
+  const loginPwdBad = ref(false)
+
+  async function fetchQuota() {
+    try {
+      const res = await axios.get(`${API_BASE}/auth/quota`)
+      //console.log('[quota] raw API response:', res.data)
+      currentUser.value.quotaUsedBytes = res.data.used || 0
+      currentUser.value.quotaTotalBytes = res.data.limit || 0
+      //console.log('[quota] used bytes:', currentUser.value.quotaUsedBytes, '/ total bytes:', currentUser.value.quotaTotalBytes)
+    } catch (e) {
+      console.error('[quota] fetch failed:', e)
+    }
+  }
 
   // Called on app mount to detect an existing session
   async function checkSession() {
@@ -29,7 +41,8 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await axios.get(`${API_BASE}/auth/me`)
       currentUser.value.email = res.data.username || currentUser.value.email
       isAuthenticated.value = true
-      isApiOnline.value     = true
+      isApiOnline.value = true
+      fetchQuota()
     } catch {
       isApiOnline.value = false
     }
@@ -60,6 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
           ? loginUser.value
           : loginUser.value + '@go-webmail.test'
         isAuthenticated.value = true
+        fetchQuota()
       } else {
         await new Promise(r => setTimeout(r, 700))
         if (loginPwd.value.toLowerCase() === 'wrong') {
@@ -81,7 +95,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function handleLogout() {
-    if (isApiOnline.value) { try { await axios.post(`${API_BASE}/auth/logout`) } catch {} }
+    if (isApiOnline.value) { try { await axios.post(`${API_BASE}/auth/logout`) } catch { } }
     isAuthenticated.value = false
   }
 

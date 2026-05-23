@@ -24,6 +24,7 @@ func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, distF
 	auth.POST("/login", h.Auth.DoLogin, authRateLimit)
 	auth.POST("/logout", h.Auth.DoLogout)
 	auth.GET("/me", h.Auth.Me, authMiddleware)
+	auth.GET("/quota", h.Auth.Quota, authMiddleware)
 
 	// Protected mail endpoints
 	api := v1.Group("", authMiddleware)

@@ -96,6 +96,31 @@ func (h *AuthHandler) Me(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"username": s.Username})
 }
 
+// Quota returns IMAP storage quota in bytes: {"used": N, "limit": N}.
+// Returns zeros without error when the server does not support QUOTA.
+func (h *AuthHandler) Quota(c *echo.Context) error {
+	s := c.Get("imap_session").(*session.IMAPSession)
+	pass, err := s.Password(h.cfg.Server.SecretKey)
+	if err != nil {
+		return err
+	}
+	conn, err := imap.Connect(s.IMAPHost, h.cfg.IMAP.Port, h.cfg.IMAP.TLS,
+		time.Duration(h.cfg.IMAP.TimeoutSec)*time.Second, s.Username, pass, h.cfg.Server.Debug)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	q, err := conn.GetQuota()
+	if err != nil {
+		return err
+	}
+	if q == nil {
+		return c.JSON(http.StatusOK, map[string]int64{"used": 0, "limit": 0})
+	}
+	return c.JSON(http.StatusOK, map[string]int64{"used": q.UsageBytes, "limit": q.LimitBytes})
+}
+
 func newSessionID() string {
 	b := make([]byte, 16)
 	rand.Read(b)
