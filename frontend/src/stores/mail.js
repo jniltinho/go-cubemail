@@ -103,6 +103,7 @@ export const useMailStore = defineStore('mail', () => {
   const query       = ref('')
   const composer    = ref(null)
   const sourceMail  = ref(null)
+  const sourceRaw   = ref('')
 
   watchEffect(() => applyAccent(accent.value))
 
@@ -266,8 +267,20 @@ export const useMailStore = defineStore('mail', () => {
 
   function compose()       { composer.value = {} }
   function closeComposer() { composer.value = null }
-  function showSource()    { sourceMail.value = selected.value }
-  function closeSource()   { sourceMail.value = null }
+  async function showSource() {
+    const m = selected.value
+    if (!m) return
+    sourceMail.value = m
+    sourceRaw.value  = ''
+    if (auth.isApiOnline) {
+      try {
+        const label = folders.value.find(f => f.id === m.folder)?.label || 'Inbox'
+        const res   = await axios.get(`${API_BASE}/mail/${encodeURIComponent(label)}/${m.id}/raw`, { responseType: 'text' })
+        sourceRaw.value = res.data
+      } catch {}
+    }
+  }
+  function closeSource() { sourceMail.value = null; sourceRaw.value = '' }
 
   function copySource(rawText) {
     try { navigator.clipboard.writeText(rawText) } catch {}
@@ -310,7 +323,7 @@ export const useMailStore = defineStore('mail', () => {
   return {
     // state
     accent, mails, folders, contacts, calCells, calDow,
-    view, folder, selectedId, selectedIds, query, composer, sourceMail,
+    view, folder, selectedId, selectedIds, query, composer, sourceMail, sourceRaw,
     // computed
     visibleMails, counts, selected, currentFolderLabel,
     // actions

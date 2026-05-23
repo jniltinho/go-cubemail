@@ -1,14 +1,10 @@
 <script setup>
 import { useMailStore } from '../stores/mail'
-import { buildRawSource } from '../utils/helpers'
-import { computed } from 'vue'
 import Icon from './Icon.vue'
 
 const mail = useMailStore()
 
-const rawText = computed(() => buildRawSource(mail.sourceMail))
-
-function copy() { mail.copySource(rawText.value) }
+function copy() { mail.copySource(mail.sourceRaw) }
 function backdrop(e) { if (e.target === e.currentTarget) mail.closeSource() }
 </script>
 
@@ -29,7 +25,10 @@ function backdrop(e) { if (e.target === e.currentTarget) mail.closeSource() }
       </div>
 
       <!-- Raw body -->
-      <div class="bg-[#0E1A2E] text-[#D5E0F2] font-mono text-[12px] leading-snug py-3.5 px-4 max-h-[calc(100vh-200px)] overflow-auto whitespace-pre-wrap break-words scroll-y">{{ rawText }}</div>
+      <div class="bg-[#0E1A2E] text-[#D5E0F2] font-mono text-[12px] leading-snug py-3.5 px-4 max-h-[calc(100vh-200px)] overflow-auto whitespace-pre-wrap break-words scroll-y">
+        <span v-if="!mail.sourceRaw" class="text-[#6A82A0] italic">Loading…</span>
+        <template v-else>{{ mail.sourceRaw }}</template>
+      </div>
 
       <!-- Footer -->
       <div class="py-2 px-2.5 bg-panel-2 border-t border-line flex items-center gap-1.5">
