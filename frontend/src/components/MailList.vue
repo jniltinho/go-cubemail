@@ -13,36 +13,15 @@ const emit = defineEmits(['select', 'toggle-select'])
 
 function formatDate(raw) {
   if (!raw) return ''
-
   let d = new Date(raw)
-
-  // IMAP sometimes returns "Wed, 3 Jun 2026 11:15:00 +0000" — strip weekday
-  if (isNaN(d.getTime())) {
-    d = new Date(raw.replace(/^[A-Za-z]{3},\s*/, ''))
-  }
-  // Try replacing space before timezone offset: "2026-06-03 11:15:00 +0000"
-  if (isNaN(d.getTime())) {
-    d = new Date(raw.replace(' ', 'T'))
-  }
-
+  if (isNaN(d.getTime())) d = new Date(raw.replace(/^[A-Za-z]{3},\s*/, ''))
+  if (isNaN(d.getTime())) d = new Date(raw.replace(' ', 'T'))
   if (isNaN(d.getTime())) return raw
-
-  const now    = new Date()
-  const today  = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  const diff   = Math.floor((today - msgDay) / 86400000)
-
+  const dd  = String(d.getDate()).padStart(2, '0')
+  const mm  = String(d.getMonth() + 1).padStart(2, '0')
   const hh  = String(d.getHours()).padStart(2, '0')
   const min = String(d.getMinutes()).padStart(2, '0')
-
-  if (diff === 0) return `${hh}:${min}`
-  if (diff === 1) return 'Yesterday'
-  if (diff < 7)  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]
-
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  if (d.getFullYear() === now.getFullYear()) return `${dd}/${mm}`
-  return `${dd}/${mm}/${d.getFullYear()}`
+  return `${dd}/${mm}/${d.getFullYear()} ${hh}:${min}`
 }
 
 const SORT_OPTS = ['Date', 'From', 'Subject', 'Size']

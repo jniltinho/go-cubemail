@@ -37,11 +37,11 @@ function formatFullDate(raw) {
   if (isNaN(d.getTime())) d = new Date(raw.replace(/^[A-Za-z]{3},\s*/, ''))
   if (isNaN(d.getTime())) d = new Date(raw.replace(' ', 'T'))
   if (isNaN(d.getTime())) return raw
-
-  return d.toLocaleString('en-GB', {
-    weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', hour12: false,
-  })
+  const dd  = String(d.getDate()).padStart(2, '0')
+  const mm  = String(d.getMonth() + 1).padStart(2, '0')
+  const hh  = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  return `${dd}/${mm}/${d.getFullYear()} ${hh}:${min}`
 }
 
 // Build a safe srcdoc that resets the iframe styles so the email renders
