@@ -56,7 +56,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
     <button class="tbtn tbtn-danger" type="button" :disabled="!mail.selected && !mail.selectedIds.size" @click="mail.deleteMail()">
       <Icon name="trash-2" :size="14" /> Delete
     </button>
-    <button class="tbtn" type="button" :disabled="!mail.selected" @click="mail.toggleRead()">
+    <button class="tbtn" type="button" :disabled="!mail.selected && !mail.selectedIds.size" @click="mail.toggleRead()">
       <Icon name="circle-dot" :size="14" /> Mark read/unread
     </button>
     <div class="w-px h-[18px] bg-line mx-1"></div>

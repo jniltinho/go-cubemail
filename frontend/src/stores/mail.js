@@ -247,38 +247,44 @@ export const useMailStore = defineStore('mail', () => {
   }
 
   async function toggleRead() {
-    const m = mails.value.find(x => x.id === selectedId.value)
-    if (!m) return
-    const nowUnread = !m.unread
-    m.unread = nowUnread
+    const ids = selectedIds.value.size > 0
+      ? [...selectedIds.value]
+      : (selectedId.value ? [selectedId.value] : [])
+    if (!ids.length) return
 
-    // Update folder count badge
-    const folderObj = folders.value.find(f => f.id === m.folder)
-    if (folderObj) {
-      const msgs   = mails.value.filter(x => x.folder === m.folder)
-      const unread = msgs.filter(x => x.unread).length
-      folderObj.count = unread > 0 ? `${unread}/${msgs.length}` : String(msgs.length)
-    }
+    const targets = ids.map(id => mails.value.find(x => x.id === id)).filter(Boolean)
+    if (!targets.length) return
+
+    // If any message is unread → mark all read; if all read → mark all unread
+    const anyUnread = targets.some(m => m.unread)
+    const nowUnread = !anyUnread
+
+    targets.forEach(m => { m.unread = nowUnread })
+    _updateFolderCount(folder.value)
 
     if (auth.isApiOnline) {
-      const fd = folders.value.find(f => f.id === m.folder)
-      const mailbox = fd?.name || fd?.label || 'INBOX'
-      const params = new URLSearchParams()
-      params.append('flag', 'seen')
-      params.append('value', nowUnread ? '0' : '1')
-      await axios.post(
-        `${API_BASE}/mail/${encodeURIComponent(mailbox)}/${m.id}/flag`,
-        params,
-        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-      ).catch(() => {
-        m.unread = !nowUnread
-        if (folderObj) {
-          const msgs   = mails.value.filter(x => x.folder === m.folder)
-          const unread = msgs.filter(x => x.unread).length
-          folderObj.count = unread > 0 ? `${unread}/${msgs.length}` : String(msgs.length)
-        }
-      })
+      const folderDef = folders.value.find(f => f.id === folder.value)
+      const mailbox   = folderDef?.name || folderDef?.label || 'INBOX'
+      await Promise.all(targets.map(async m => {
+        const params = new URLSearchParams()
+        params.append('flag', 'seen')
+        params.append('value', nowUnread ? '0' : '1')
+        await axios.post(
+          `${API_BASE}/mail/${encodeURIComponent(mailbox)}/${m.id}/flag`,
+          params,
+          { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        ).catch(() => { m.unread = !nowUnread })
+      }))
+      _updateFolderCount(folder.value)
     }
+  }
+
+  function _updateFolderCount(folderId) {
+    const obj = folders.value.find(f => f.id === folderId)
+    if (!obj) return
+    const msgs  = mails.value.filter(m => m.folder === folderId)
+    const unread = msgs.filter(m => m.unread).length
+    obj.count = unread > 0 ? `${unread}/${msgs.length}` : String(msgs.length)
   }
 
   function archiveMail() {
@@ -288,6 +294,8 @@ export const useMailStore = defineStore('mail', () => {
     if (m) m.folder = 'archive'
     const next = visibleMails.value[idx + 1] || visibleMails.value[idx - 1]
     selectedId.value = next?.id ?? null
+    _updateFolderCount(folder.value)
+    _updateFolderCount('archive')
   }
 
   async function moveMail(destFolderId) {
@@ -308,12 +316,8 @@ export const useMailStore = defineStore('mail', () => {
     selectedId.value  = null
     selectedIds.value = new Set()
 
-    const srcObj = folders.value.find(f => f.id === folder.value)
-    if (srcObj) {
-      const rem   = mails.value.filter(m => m.folder === folder.value)
-      const unr   = rem.filter(m => m.unread).length
-      srcObj.count = unr > 0 ? `${unr}/${rem.length}` : String(rem.length)
-    }
+    _updateFolderCount(folder.value)
+    _updateFolderCount(destFolderId)
 
     if (auth.isApiOnline) {
       await Promise.all(ids.map(id => {
@@ -327,33 +331,35 @@ export const useMailStore = defineStore('mail', () => {
   }
 
   async function deleteMail() {
-    // Collect IDs to delete: checked set takes priority, else current selection
     const ids = selectedIds.value.size > 0
       ? [...selectedIds.value]
       : (selectedId.value ? [selectedId.value] : [])
     if (!ids.length) return
 
-    // Capture original IMAP folder name before optimistic update
     const folderDef    = folders.value.find(f => f.id === folder.value)
     const currentLabel = folderDef?.name || folderDef?.label || 'INBOX'
+    const inTrash      = folder.value === 'trash'
 
-    // Pick next message to show after deletion
-    const firstIdx = visibleMails.value.findIndex(m => m.id === ids[0])
+    const firstIdx  = visibleMails.value.findIndex(m => m.id === ids[0])
     const remaining = visibleMails.value.filter(m => !ids.includes(m.id))
-    const next = remaining[firstIdx] || remaining[firstIdx - 1] || null
+    const next      = remaining[firstIdx] || remaining[firstIdx - 1] || null
 
-    // Optimistic: remove from visible list and update folder count
-    mails.value = mails.value.filter(m => !ids.includes(m.id))
-    selectedId.value  = next?.id ?? null
-    selectedIds.value = new Set()
-    const folderObj = folders.value.find(f => f.id === folder.value)
-    if (folderObj) {
-      const remaining2 = mails.value.filter(m => m.folder === folder.value)
-      const unread2    = remaining2.filter(m => m.unread).length
-      folderObj.count  = unread2 > 0 ? `${unread2}/${remaining2.length}` : String(remaining2.length)
+    if (inTrash) {
+      // Already in Trash: permanently delete from local state
+      mails.value = mails.value.filter(m => !ids.includes(m.id))
+    } else {
+      // Move to Trash in local state
+      ids.forEach(id => {
+        const m = mails.value.find(m => m.id === id)
+        if (m) m.folder = 'trash'
+      })
+      _updateFolderCount('trash')
     }
 
-    // API calls
+    selectedId.value  = next?.id ?? null
+    selectedIds.value = new Set()
+    _updateFolderCount(folder.value)
+
     if (auth.isApiOnline) {
       await Promise.all(ids.map(id =>
         axios.delete(`${API_BASE}/mail/${encodeURIComponent(currentLabel)}/${id}`).catch(() => {})
