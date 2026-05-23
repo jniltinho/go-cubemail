@@ -1,12 +1,12 @@
-<script setup>
+<script setup lang="ts">
 import * as Icons from 'lucide-vue-next'
 import { computed } from 'vue'
 
-const props = defineProps({
-  name:   { type: String, required: true },
-  size:   { type: [String, Number], default: 16 },
-  stroke: { type: [String, Number], default: 2 },
-})
+const props = defineProps<{
+  name: string
+  size?: string | number
+  stroke?: string | number
+}>()
 
 const IconComp = computed(() => {
   const pascal = props.name

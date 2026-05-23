@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import axios from 'axios'
 import Icon from './Icon.vue'
@@ -19,10 +19,21 @@ import 'tinymce/plugins/charmap'
 import 'tinymce/plugins/searchreplace'
 import 'tinymce/plugins/wordcount'
 
-const props = defineProps({
-  prefill: { type: Object, default: () => ({}) },
-})
-const emit = defineEmits(['close'])
+interface ComposerPrefill {
+  to?: string
+  subj?: string
+  body?: string
+  quoted?: {
+    header: string
+    html?: string | null
+    text?: string[]
+  }
+}
+
+const props = withDefaults(defineProps<{
+  prefill?: ComposerPrefill
+}>(), { prefill: () => ({}) })
+const emit = defineEmits<{ close: [] }>()
 
 const to          = ref(props.prefill?.to   || '')
 const cc          = ref('')

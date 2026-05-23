@@ -1,6 +1,7 @@
-// ─── Date ─────────────────────────────────────────────────────────────────────
+import type { CalCell, CalEvent, MailMessage } from '../types'
+
 // Applies a Go-style format string (reference: 02/01/2006 15:04:05) to a Date.
-export function formatDate(raw, goFmt) {
+export function formatDate(raw: string, goFmt?: string): string {
   if (!raw) return ''
   let d = new Date(raw)
   if (isNaN(d.getTime())) d = new Date(raw.replace(/^[A-Za-z]{3},\s*/, ''))
@@ -8,11 +9,10 @@ export function formatDate(raw, goFmt) {
   if (isNaN(d.getTime())) return raw
 
   const fmt = goFmt || '02/01/2006 15:04'
-  const pad = (n) => String(n).padStart(2, '0')
+  const pad = (n: number) => String(n).padStart(2, '0')
 
-  // Replace Go tokens longest-first to avoid partial matches (e.g. 2006 before 06)
   return fmt
-    .replace('2006', d.getFullYear())
+    .replace('2006', String(d.getFullYear()))
     .replace('06',   String(d.getFullYear()).slice(-2))
     .replace('01',   pad(d.getMonth() + 1))
     .replace('02',   pad(d.getDate()))
@@ -21,37 +21,34 @@ export function formatDate(raw, goFmt) {
     .replace('05',   pad(d.getSeconds()))
 }
 
-// ─── Strings ──────────────────────────────────────────────────────────────────
-export function initials(name) {
+export function initials(name: string): string {
   return (name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('')
 }
 
-// ─── File types ───────────────────────────────────────────────────────────────
-export function extIcon(ext) {
+export function extIcon(ext: string): string {
   const e = (ext || '').toUpperCase()
-  if (['PDF','DOC','DOCX'].includes(e)) return 'file-text'
-  if (['XLS','XLSX'].includes(e)) return 'file-spreadsheet'
-  if (['ZIP','RAR','7Z'].includes(e)) return 'file-archive'
-  if (['PNG','JPG','JPEG','GIF','WEBP'].includes(e)) return 'file-image'
+  if (['PDF', 'DOC', 'DOCX'].includes(e)) return 'file-text'
+  if (['XLS', 'XLSX'].includes(e)) return 'file-spreadsheet'
+  if (['ZIP', 'RAR', '7Z'].includes(e)) return 'file-archive'
+  if (['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP'].includes(e)) return 'file-image'
   return 'file'
 }
 
-export function extColor(ext) {
+export function extColor(ext: string): string {
   const e = (ext || '').toUpperCase()
   if (e === 'PDF') return 'text-[#B22B2B]'
-  if (['DOC','DOCX'].includes(e)) return 'text-accent'
-  if (['XLS','XLSX'].includes(e)) return 'text-[#1F7A45]'
-  if (['ZIP','RAR','7Z'].includes(e)) return 'text-[#7A4E1F]'
+  if (['DOC', 'DOCX'].includes(e)) return 'text-accent'
+  if (['XLS', 'XLSX'].includes(e)) return 'text-[#1F7A45]'
+  if (['ZIP', 'RAR', '7Z'].includes(e)) return 'text-[#7A4E1F]'
   return 'text-ink-sub'
 }
 
-// ─── Theme ────────────────────────────────────────────────────────────────────
-export function applyAccent(hex) {
+export function applyAccent(hex: string): void {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
-  const darken  = k => '#' + [r, g, b].map(v => Math.max(0, Math.round(v * k)).toString(16).padStart(2, '0')).join('')
-  const lighten = k => '#' + [r, g, b].map(v => Math.min(255, Math.round(v + (255 - v) * k)).toString(16).padStart(2, '0')).join('')
+  const darken  = (k: number) => '#' + [r, g, b].map(v => Math.max(0, Math.round(v * k)).toString(16).padStart(2, '0')).join('')
+  const lighten = (k: number) => '#' + [r, g, b].map(v => Math.min(255, Math.round(v + (255 - v) * k)).toString(16).padStart(2, '0')).join('')
   const s = document.documentElement.style
   s.setProperty('--accent',        hex)
   s.setProperty('--accent-2',      lighten(0.25))
@@ -61,13 +58,12 @@ export function applyAccent(hex) {
   s.setProperty('--row-selected',  lighten(0.80))
 }
 
-// ─── Email source builder ─────────────────────────────────────────────────────
-export function buildRawSource(m) {
+export function buildRawSource(m: MailMessage | null): string {
   if (!m) return ''
   const msgId    = `<${m.id}.${(m.fullDate || '').replace(/\D/g, '') || Date.now()}@webmail.test>`
   const boundary = `----=_Part_${m.id}`
   const hasAtt   = m.attachments?.length
-  const lines = [
+  const lines: string[] = [
     `Return-Path: <${m.from?.addr}>`,
     `Received: from mx-eu-03.webmail.test (mx-eu-03.webmail.test [10.0.0.41])`,
     `        by mail-eu-03.webmail.test with ESMTPS id 4Y2lW8b03Bz3p9k;`,
@@ -100,10 +96,9 @@ export function buildRawSource(m) {
   return lines.join('\n')
 }
 
-// ─── Calendar ─────────────────────────────────────────────────────────────────
-export function buildCalCells(events = {}) {
+export function buildCalCells(events: Record<number, CalEvent[]> = {}): CalCell[] {
   const CAL_FIRST_WEEKDAY = 5, CAL_DAYS = 31, CAL_PREV_DAYS = 30, TODAY = 22
-  const cells = []
+  const cells: CalCell[] = []
   for (let i = 0; i < CAL_FIRST_WEEKDAY; i++)
     cells.push({ day: CAL_PREV_DAYS - CAL_FIRST_WEEKDAY + 1 + i, dim: true, events: [] })
   for (let d = 1; d <= CAL_DAYS; d++)

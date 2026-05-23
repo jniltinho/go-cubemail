@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useMailStore } from '../stores/mail'
 import { formatDate } from '../utils/helpers'
 import Icon from './Icon.vue'

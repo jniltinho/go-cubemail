@@ -6,37 +6,33 @@ const API_BASE = '/api/v1'
 
 export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = ref(false)
-  const isApiOnline = ref(false)
-  const currentUser    = ref({ email: 'user@webmail.test', quotaUsedBytes: 0, quotaTotalBytes: 0 })
-  const datetimeFormat = ref('02/01/2006 15:04')
+  const isApiOnline     = ref(false)
+  const currentUser     = ref({ email: 'user@webmail.test', quotaUsedBytes: 0, quotaTotalBytes: 0 })
+  const datetimeFormat  = ref('02/01/2006 15:04')
+  const appVersion      = ref('')
 
-  const appVersion = ref('')
-
-  const loginUser = ref('')
-  const loginPwd = ref('')
-  const loginBusy = ref(false)
-  const loginErr = ref(null)
+  const loginUser    = ref('')
+  const loginPwd     = ref('')
+  const loginBusy    = ref(false)
+  const loginErr     = ref<string | null>(null)
   const loginUserBad = ref(false)
-  const loginPwdBad = ref(false)
+  const loginPwdBad  = ref(false)
 
-  async function fetchQuota() {
+  async function fetchQuota(): Promise<void> {
     try {
       const res = await axios.get(`${API_BASE}/auth/quota`)
-      //console.log('[quota] raw API response:', res.data)
-      currentUser.value.quotaUsedBytes = res.data.used || 0
+      currentUser.value.quotaUsedBytes  = res.data.used  || 0
       currentUser.value.quotaTotalBytes = res.data.limit || 0
-      //console.log('[quota] used bytes:', currentUser.value.quotaUsedBytes, '/ total bytes:', currentUser.value.quotaTotalBytes)
     } catch (e) {
       console.error('[quota] fetch failed:', e)
     }
   }
 
-  // Called on app mount to detect an existing session
-  async function checkSession() {
+  async function checkSession(): Promise<void> {
     axios.defaults.xsrfCookieName = 'csrf_token'
     axios.defaults.xsrfHeaderName = 'X-CSRF-Token'
     axios.interceptors.request.use(cfg => {
-      const val = `; ${document.cookie}`.split('; csrf_token=').pop().split(';').shift()
+      const val = `; ${document.cookie}`.split('; csrf_token=').pop()!.split(';').shift()
       if (val) cfg.headers['X-CSRF-Token'] = val
       return cfg
     })
@@ -55,14 +51,14 @@ export const useAuthStore = defineStore('auth', () => {
         isApiOnline.value = true
         fetchQuota()
       } else {
-        isApiOnline.value = meRes.reason?.response ? true : false
+        isApiOnline.value = (meRes as PromiseRejectedResult).reason?.response ? true : false
       }
     } catch {
       isApiOnline.value = false
     }
   }
 
-  async function handleLogin() {
+  async function handleLogin(): Promise<void> {
     loginErr.value = null; loginUserBad.value = false; loginPwdBad.value = false
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRe.test(loginUser.value.trim())) {
@@ -92,8 +88,8 @@ export const useAuthStore = defineStore('auth', () => {
       axios.get(`${API_BASE}/auth/me`).then(r => {
         if (r.data.datetime_format) datetimeFormat.value = r.data.datetime_format
       }).catch(() => {})
-    } catch (e) {
-      if (e?.response) {
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'response' in e) {
         loginPwdBad.value = true
         loginErr.value = 'The username or password you entered is incorrect.'
       } else {
@@ -104,7 +100,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function handleLogout() {
+  async function handleLogout(): Promise<void> {
     if (isApiOnline.value) { try { await axios.post(`${API_BASE}/auth/logout`) } catch { } }
     isAuthenticated.value = false
   }

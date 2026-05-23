@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useMailStore } from '../stores/mail'
 import { useAuthStore } from '../stores/auth'

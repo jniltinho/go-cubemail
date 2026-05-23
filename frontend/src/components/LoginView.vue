@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useAuthStore } from '../stores/auth'
 import { useMailStore } from '../stores/mail'
 import Icon from './Icon.vue'

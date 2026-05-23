@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useAuthStore } from '../stores/auth'
 import { useMailStore } from '../stores/mail'
 import Icon from './Icon.vue'
@@ -54,7 +54,7 @@ const TABS = [
           type="text"
           placeholder="Search mail (from, subject, body, attachment name…)"
           :value="mail.query"
-          @input="mail.query = $event.target.value"
+          @input="mail.query = ($event.target as HTMLInputElement).value"
         />
         <button type="submit">Search</button>
       </form>

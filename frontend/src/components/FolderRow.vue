@@ -1,12 +1,16 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import type { Folder } from '../types'
 import Icon from './Icon.vue'
 
-const props = defineProps({
-  folder: { type: Object, required: true },
-  active: { type: Boolean, default: false },
-})
-const emit = defineEmits(['click', 'menu'])
+const props = defineProps<{
+  folder: Folder
+  active?: boolean
+}>()
+const emit = defineEmits<{
+  click: []
+  menu: [action: string, folder: Folder]
+}>()
 
 const FOLDER_ICON_MAP = {
   inbox: 'inbox', starred: 'star', sent: 'send', drafts: 'file-edit',
