@@ -10,6 +10,8 @@ export const useAuthStore = defineStore('auth', () => {
   const currentUser    = ref({ email: 'user@webmail.test', quotaUsedBytes: 0, quotaTotalBytes: 0 })
   const datetimeFormat = ref('02/01/2006 15:04')
 
+  const appVersion = ref('')
+
   const loginUser = ref('')
   const loginPwd = ref('')
   const loginBusy = ref(false)
@@ -39,23 +41,33 @@ export const useAuthStore = defineStore('auth', () => {
       return cfg
     })
     try {
-      const res = await axios.get(`${API_BASE}/auth/me`)
-      currentUser.value.email = res.data.username || currentUser.value.email
-      if (res.data.datetime_format) datetimeFormat.value = res.data.datetime_format
-      isAuthenticated.value = true
-      isApiOnline.value = true
-      fetchQuota()
-    } catch (e) {
-      // A response means the API is reachable; only a network failure means offline
-      isApiOnline.value = e?.response ? true : false
+      const [meRes, versionRes] = await Promise.allSettled([
+        axios.get(`${API_BASE}/auth/me`),
+        axios.get(`${API_BASE}/version`),
+      ])
+      if (versionRes.status === 'fulfilled') {
+        appVersion.value = versionRes.value.data.version || ''
+      }
+      if (meRes.status === 'fulfilled') {
+        currentUser.value.email = meRes.value.data.username || currentUser.value.email
+        if (meRes.value.data.datetime_format) datetimeFormat.value = meRes.value.data.datetime_format
+        isAuthenticated.value = true
+        isApiOnline.value = true
+        fetchQuota()
+      } else {
+        isApiOnline.value = meRes.reason?.response ? true : false
+      }
+    } catch {
+      isApiOnline.value = false
     }
   }
 
   async function handleLogin() {
     loginErr.value = null; loginUserBad.value = false; loginPwdBad.value = false
-    if (!loginUser.value.trim()) {
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRe.test(loginUser.value.trim())) {
       loginUserBad.value = true
-      loginErr.value = 'Please enter your username.'
+      loginErr.value = 'Please enter a valid email address.'
       return
     }
     if (loginPwd.value.length < 4) {
@@ -98,7 +110,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    isAuthenticated, isApiOnline, currentUser,
+    isAuthenticated, isApiOnline, currentUser, appVersion,
     loginUser, loginPwd, loginBusy, loginErr, loginUserBad, loginPwdBad,
     checkSession, handleLogin, handleLogout, fetchQuota, datetimeFormat,
   }

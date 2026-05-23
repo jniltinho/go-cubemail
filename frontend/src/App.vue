@@ -1,7 +1,25 @@
 <script setup>
-import { onMounted, onBeforeUnmount } from 'vue'
+import { onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useMailStore } from './stores/mail'
+
+let evtSource = null
+
+function startSSE(mail, auth) {
+  evtSource?.close()
+  evtSource = new EventSource('/api/v1/events')
+  evtSource.addEventListener('new-mail', () => {
+    mail.fetchFolderMessages('inbox')
+    if (mail.folder !== 'inbox') mail.fetchFolderMessages(mail.folder)
+  })
+  evtSource.onerror = () => {
+    evtSource.close()
+    evtSource = null
+    setTimeout(() => {
+      if (auth.isAuthenticated) startSSE(mail, auth)
+    }, 30_000)
+  }
+}
 import LoginView     from './components/LoginView.vue'
 import AppBar        from './components/AppBar.vue'
 import AppToolbar    from './components/AppToolbar.vue'
@@ -12,6 +30,7 @@ import ContactsPane  from './components/ContactsPane.vue'
 import CalendarPane  from './components/CalendarPane.vue'
 import ComposerModal from './components/ComposerModal.vue'
 import SourceViewer  from './components/SourceViewer.vue'
+import DialogModal   from './components/DialogModal.vue'
 
 const auth = useAuthStore()
 const mail = useMailStore()
@@ -28,13 +47,21 @@ function onKey(e) {
   else if (e.key === 'c')                      mail.compose()
 }
 
+watch(() => auth.isAuthenticated, (authed) => {
+  if (authed) startSSE(mail, auth)
+  else { evtSource?.close(); evtSource = null }
+})
+
 onMounted(async () => {
   window.addEventListener('keydown', onKey)
   await auth.checkSession()
   if (auth.isAuthenticated) await mail.loadFromApi()
 })
 
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey)
+  evtSource?.close()
+})
 </script>
 
 <template>
@@ -65,4 +92,5 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   <!-- Modals (outside layout flow) -->
   <ComposerModal v-if="mail.composer !== null" :prefill="mail.composer" @close="mail.closeComposer()" />
   <SourceViewer  v-if="mail.sourceMail" />
+  <DialogModal />
 </template>

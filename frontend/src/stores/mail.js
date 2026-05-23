@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch, watchEffect, nextTick } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from './auth'
+import { useDialogStore } from './dialog'
 import { formatDate, applyAccent, buildCalCells } from '../utils/helpers'
 
 const API_BASE = '/api/v1'
@@ -86,7 +87,8 @@ const CAL_EVENTS = {
 }
 
 export const useMailStore = defineStore('mail', () => {
-  const auth = useAuthStore()
+  const auth   = useAuthStore()
+  const dialog = useDialogStore()
 
   // ── State ──────────────────────────────────────────────────────────────────
   const accent      = ref('#1B3A6B')
@@ -244,9 +246,39 @@ export const useMailStore = defineStore('mail', () => {
     selectedIds.value = s
   }
 
-  function toggleRead() {
+  async function toggleRead() {
     const m = mails.value.find(x => x.id === selectedId.value)
-    if (m) m.unread = !m.unread
+    if (!m) return
+    const nowUnread = !m.unread
+    m.unread = nowUnread
+
+    // Update folder count badge
+    const folderObj = folders.value.find(f => f.id === m.folder)
+    if (folderObj) {
+      const msgs   = mails.value.filter(x => x.folder === m.folder)
+      const unread = msgs.filter(x => x.unread).length
+      folderObj.count = unread > 0 ? `${unread}/${msgs.length}` : String(msgs.length)
+    }
+
+    if (auth.isApiOnline) {
+      const fd = folders.value.find(f => f.id === m.folder)
+      const mailbox = fd?.name || fd?.label || 'INBOX'
+      const params = new URLSearchParams()
+      params.append('flag', 'seen')
+      params.append('value', nowUnread ? '0' : '1')
+      await axios.post(
+        `${API_BASE}/mail/${encodeURIComponent(mailbox)}/${m.id}/flag`,
+        params,
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      ).catch(() => {
+        m.unread = !nowUnread
+        if (folderObj) {
+          const msgs   = mails.value.filter(x => x.folder === m.folder)
+          const unread = msgs.filter(x => x.unread).length
+          folderObj.count = unread > 0 ? `${unread}/${msgs.length}` : String(msgs.length)
+        }
+      })
+    }
   }
 
   function archiveMail() {
@@ -399,7 +431,7 @@ export const useMailStore = defineStore('mail', () => {
   async function onFolderMenu(action, f) {
     if (action === 'new' || action === 'subfolder') {
       const promptLabel = action === 'subfolder' && f ? `New subfolder inside "${f.label}":` : 'New folder name:'
-      const name = window.prompt(promptLabel)
+      const name = await dialog.prompt(promptLabel)
       if (!name?.trim()) return
       if (auth.isApiOnline) {
         const fd = new FormData()
@@ -409,14 +441,14 @@ export const useMailStore = defineStore('mail', () => {
           await axios.post(`${API_BASE}/folders`, fd)
           await reloadFolders()
         } catch (e) {
-          window.alert('Failed to create folder: ' + (e.response?.data?.error || e.message))
+          await dialog.alert('Failed to create folder: ' + (e.response?.data?.error || e.message))
         }
       }
       return
     }
     if (!f) return
     if (action === 'rename') {
-      const next = window.prompt('Rename folder:', f.label)
+      const next = await dialog.prompt('Rename folder:', f.label)
       if (!next?.trim()) return
       if (auth.isApiOnline) {
         const fd = new FormData()
@@ -427,7 +459,7 @@ export const useMailStore = defineStore('mail', () => {
           await reloadFolders()
           if (folder.value === f.id) fetchFolderMessages(folder.value)
         } catch (e) {
-          window.alert('Failed to rename folder: ' + (e.response?.data?.error || e.message))
+          await dialog.alert('Failed to rename folder: ' + (e.response?.data?.error || e.message))
         }
       } else {
         const x = folders.value.find(x => x.id === f.id)
@@ -445,7 +477,7 @@ export const useMailStore = defineStore('mail', () => {
       const msg = isTrash
         ? `Permanently delete all messages in "${f.label}"? This cannot be undone.`
         : `Move all messages in "${f.label}" to Trash?`
-      if (!window.confirm(msg)) return
+      if (!await dialog.confirm(msg)) return
       mails.value = mails.value.filter(m => m.folder !== f.id)
       selectedId.value = null
       const folderObj = folders.value.find(x => x.id === f.id)
@@ -454,7 +486,7 @@ export const useMailStore = defineStore('mail', () => {
         axios.delete(`${API_BASE}/mail/${encodeURIComponent(f.name || f.label)}`).catch(() => {})
       }
     } else if (action === 'delete') {
-      if (!window.confirm(`Delete folder "${f.label}"?`)) return
+      if (!await dialog.confirm(`Delete folder "${f.label}"?`)) return
       if (auth.isApiOnline) {
         const fd = new FormData()
         fd.append('name', f.name || f.label)
@@ -464,14 +496,14 @@ export const useMailStore = defineStore('mail', () => {
           mails.value   = mails.value.filter(m => m.folder !== f.id)
           if (folder.value === f.id) setFolder('inbox')
         } catch (e) {
-          window.alert('Failed to delete folder: ' + (e.response?.data?.error || e.message))
+          await dialog.alert('Failed to delete folder: ' + (e.response?.data?.error || e.message))
         }
       } else {
         folders.value = folders.value.filter(x => x.id !== f.id)
         if (folder.value === f.id) folder.value = 'inbox'
       }
     } else if (action === 'properties') {
-      window.alert(`Folder properties\n\nName: ${f.label}\nType: ${f.custom ? 'User folder' : 'System folder'}`)
+      await dialog.alert(`Folder properties\n\nName: ${f.label}\nType: ${f.custom ? 'User folder' : 'System folder'}`)
     }
   }
 

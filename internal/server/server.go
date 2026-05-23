@@ -12,6 +12,7 @@ import (
 	echoMiddleware "github.com/labstack/echo/v5/middleware"
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/handler"
+	"go-cubemail/internal/poll"
 	appMiddleware "go-cubemail/internal/server/middleware"
 	"go-cubemail/internal/session"
 	"gorm.io/gorm"
@@ -22,6 +23,13 @@ var AppVersion = "dev"
 
 func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 	session.InitDB(db)
+
+	poll.Start(
+		cfg.Server.SecretKey,
+		cfg.IMAP.TLS,
+		time.Duration(cfg.IMAP.TimeoutSec)*time.Second,
+		poll.Default,
+	)
 
 	e := echo.New()
 

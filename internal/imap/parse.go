@@ -65,11 +65,6 @@ func ParseMessage(raw []byte) (*ParsedMessage, error) {
 		}
 
 		switch {
-		case contentID != "" && strings.HasPrefix(mediatype, "image/"):
-			// Imagem inline referenciada por cid: → converter para data: URI
-			b64 := base64.StdEncoding.EncodeToString(data)
-			cidMap[contentID] = fmt.Sprintf("data:%s;base64,%s", mediatype, b64)
-
 		case dispType == "attachment" || (filename != "" && dispType != "inline"):
 			pm.Attachments = append(pm.Attachments, Attachment{
 				Filename:    filename,
@@ -78,6 +73,11 @@ func ParseMessage(raw []byte) (*ParsedMessage, error) {
 				Part:        part,
 				Data:        data,
 			})
+
+		case contentID != "" && strings.HasPrefix(mediatype, "image/"):
+			// Imagem inline referenciada por cid: → converter para data: URI
+			b64 := base64.StdEncoding.EncodeToString(data)
+			cidMap[contentID] = fmt.Sprintf("data:%s;base64,%s", mediatype, b64)
 
 		case strings.HasPrefix(mediatype, "text/html"):
 			pm.TextHTML = string(data)

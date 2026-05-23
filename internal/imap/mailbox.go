@@ -156,6 +156,18 @@ func (c *Client) UnreadCount(mailbox string) (uint32, error) {
 	return *data.NumUnseen, nil
 }
 
+// MessageCount returns the total number of messages in the mailbox.
+func (c *Client) MessageCount(mailbox string) (uint32, error) {
+	data, err := c.Client.Status(mailbox, &imap.StatusOptions{NumMessages: true}).Wait()
+	if err != nil {
+		return 0, err
+	}
+	if data.NumMessages == nil {
+		return 0, nil
+	}
+	return *data.NumMessages, nil
+}
+
 // SelectMailbox seleciona uma pasta para operações subsequentes.
 func (c *Client) SelectMailbox(mailbox string) error {
 	_, err := c.Client.Select(mailbox, nil).Wait()

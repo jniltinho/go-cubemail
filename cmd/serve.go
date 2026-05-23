@@ -37,6 +37,7 @@ var serveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		server.AppVersion = Version
 		return server.Start(cfg, db, globalFS)
 	},
 }

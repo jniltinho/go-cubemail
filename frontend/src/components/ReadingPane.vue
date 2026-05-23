@@ -109,12 +109,12 @@ const srcdoc = computed(() => {
           :key="i"
           :href="`/api/v1/mail/${m.folder}/${m.id}/attachment/${a.part ?? i}`"
           target="_blank"
-          class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-line text-[11.5px] text-ink no-underline hover:border-accent-2 hover:bg-accent-soft"
+          class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white border border-line text-[11px] text-ink no-underline hover:border-accent-2 hover:bg-accent-soft"
         >
-          <Icon :name="extIcon(a.ext)" :size="12" :class="extColor(a.ext)" />
-          <span class="font-medium max-w-[180px] overflow-hidden text-ellipsis whitespace-nowrap">{{ a.name }}</span>
-          <span v-if="a.size" class="text-ink-mute text-[10.5px]">· {{ a.size }}</span>
-          <Icon name="download" :size="11" class="text-accent-2 ml-0.5" />
+          <Icon :name="extIcon(a.ext)" :size="11" :class="extColor(a.ext)" />
+          <span class="font-medium max-w-[110px] overflow-hidden text-ellipsis whitespace-nowrap">{{ a.name }}</span>
+          <span v-if="a.size" class="text-ink-mute text-[10px]">· {{ a.size }}</span>
+          <Icon name="download" :size="10" class="text-accent-2" />
         </a>
       </div>
 

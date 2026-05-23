@@ -185,6 +185,17 @@ func (s *IMAPSession) Password(key string) (string, error) {
 	return DecryptPassword(s.EncPassword, key)
 }
 
+// All returns a snapshot of all active sessions keyed by session ID.
+func All() map[string]*IMAPSession {
+	storeMu.RLock()
+	defer storeMu.RUnlock()
+	out := make(map[string]*IMAPSession, len(store))
+	for id, s := range store {
+		out[id] = s
+	}
+	return out
+}
+
 // Cleanup removes idle sessions older than maxIdle.
 func Cleanup(maxIdle time.Duration) {
 	storeMu.Lock()

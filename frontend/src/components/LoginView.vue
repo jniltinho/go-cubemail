@@ -26,7 +26,7 @@ async function onSubmit() {
       <div class="flex items-center gap-3 px-5 py-3.5 bg-accent-bar border-b border-[#2A4978]">
         <div class="w-7 h-7 bg-[#66A0FF] text-accent-bar grid place-items-center font-mono font-extrabold text-[13px]">W</div>
         <div class="text-[17px] font-bold tracking-tight">
-          <b>Web</b>mail<span class="ml-1.5 text-[11px] font-normal text-[#BFD0EA] font-mono">v2.4.1</span>
+          <b>Web</b>mail<span v-if="auth.appVersion" class="ml-1.5 text-[11px] font-normal text-[#BFD0EA] font-mono">{{ auth.appVersion }}</span>
         </div>
       </div>
 
@@ -46,8 +46,8 @@ async function onSubmit() {
           <label for="lgn-u" class="text-[12.5px] text-[#BFD0EA] tracking-tight">Username</label>
           <input
             id="lgn-u"
-            type="text"
-            autocomplete="username"
+            type="email"
+            autocomplete="email"
             autofocus
             :class="['login-input', { bad: auth.loginUserBad }]"
             v-model="auth.loginUser"
@@ -71,11 +71,10 @@ async function onSubmit() {
         </div>
 
         <!-- Submit -->
-        <div class="grid gap-3.5 mt-2" style="grid-template-columns:110px 1fr">
-          <div></div>
+        <div class="flex justify-center mt-4">
           <button
             type="submit"
-            class="min-w-[120px] h-[30px] bg-[#F5F7FA] border border-[#0B1F40] text-ink text-[13px] font-semibold cursor-pointer px-5 inline-flex items-center justify-center gap-2 hover:bg-white hover:border-accent-2 disabled:text-ink-mute disabled:cursor-wait"
+            class="w-[140px] h-[28px] bg-[#F5F7FA] border border-[#0B1F40] text-ink text-[12.5px] font-semibold cursor-pointer inline-flex items-center justify-center gap-2 hover:bg-white hover:border-accent-2 disabled:text-ink-mute disabled:cursor-wait"
             :disabled="auth.loginBusy"
           >
             <template v-if="auth.loginBusy">

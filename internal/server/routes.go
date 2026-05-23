@@ -1,8 +1,10 @@
 package server
 
 import (
+	"fmt"
 	"io/fs"
 	"mime"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
@@ -10,24 +12,25 @@ import (
 	"github.com/labstack/echo/v5"
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/handler"
+	"go-cubemail/internal/poll"
 	appMiddleware "go-cubemail/internal/server/middleware"
 )
 
-func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, distFS fs.FS) {
-	authRateLimit := appMiddleware.NewRateLimit(5, time.Minute)
-	authMiddleware := appMiddleware.RequireAuth(cfg.Session.Name)
-
-	v1 := e.Group("/api/v1")
+func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authRateLimit echo.MiddlewareFunc, cookieName string) {
+	// Public: app version
+	g.GET("/version", func(c *echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"version": AppVersion})
+	})
 
 	// Public auth endpoints
-	auth := v1.Group("/auth")
+	auth := g.Group("/auth")
 	auth.POST("/login", h.Auth.DoLogin, authRateLimit)
 	auth.POST("/logout", h.Auth.DoLogout)
 	auth.GET("/me", h.Auth.Me, authMiddleware)
 	auth.GET("/quota", h.Auth.Quota, authMiddleware)
 
-	// Protected mail endpoints
-	api := v1.Group("", authMiddleware)
+	// Protected endpoints
+	api := g.Group("", authMiddleware)
 
 	// Folders
 	api.GET("/folders", h.Mailbox.FoldersJSON)
@@ -36,7 +39,7 @@ func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, distF
 	api.POST("/folders/delete", h.Mailbox.DeleteFolder)
 	api.GET("/folders/:name/count", h.Mailbox.UnreadCountJSON)
 
-	// Mail (mailbox messages)
+	// Mail
 	api.GET("/mail/:mailbox", h.Mailbox.List)
 	api.GET("/mail/:mailbox/:uid", h.Message.Read)
 	api.GET("/mail/:mailbox/:uid/download", h.Message.Download)
@@ -60,6 +63,54 @@ func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, distF
 	api.POST("/contacts", h.Contacts.Create)
 	api.PUT("/contacts/:id", h.Contacts.Update)
 	api.DELETE("/contacts/:id", h.Contacts.Delete)
+
+	// Server-Sent Events: pushes "new-mail" when poller detects new unseen messages
+	g.GET("/events", func(c *echo.Context) error {
+		cookie, err := c.Cookie(cookieName)
+		if err != nil {
+			return echo.ErrUnauthorized
+		}
+		sessID := cookie.Value
+
+		c.Response().Header().Set("Content-Type", "text/event-stream")
+		c.Response().Header().Set("Cache-Control", "no-cache")
+		c.Response().Header().Set("X-Accel-Buffering", "no")
+		c.Response().WriteHeader(http.StatusOK)
+
+		ch := poll.Default.Subscribe(sessID)
+		defer poll.Default.Unsubscribe(sessID)
+
+		w := c.Response()
+
+		// Initial keepalive comment so the browser doesn't treat it as an error
+		fmt.Fprintf(w, ": keepalive\n\n")
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+
+		for {
+			select {
+			case event, ok := <-ch:
+				if !ok {
+					return nil
+				}
+				fmt.Fprintf(w, "event: %s\ndata: {}\n\n", event)
+				if f, ok := w.(http.Flusher); ok {
+					f.Flush()
+				}
+			case <-c.Request().Context().Done():
+				return nil
+			}
+		}
+	}, authMiddleware)
+}
+
+func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, distFS fs.FS) {
+	authRateLimit := appMiddleware.NewRateLimit(5, time.Minute)
+	authMiddleware := appMiddleware.RequireAuth(cfg.Session.Name)
+
+	registerAPIRoutes(e.Group("/api/v1"), h, authMiddleware, authRateLimit, cfg.Session.Name)
+	// registerAPIRoutes(e.Group("/api/v2"), h, authMiddleware, authRateLimit)
 
 	// ── SPA + Static file handler ────────────────────────────────────────────
 	// Serves Vite build assets with correct MIME types.
