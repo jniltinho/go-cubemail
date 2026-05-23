@@ -5,6 +5,7 @@ import Icon from './components/Icon.vue'
 import FolderRow from './components/FolderRow.vue'
 import ComposerModal from './components/ComposerModal.vue'
 import MailList from './components/MailList.vue'
+import ReadingPane from './components/ReadingPane.vue'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const API_BASE = '/api/v1'
@@ -434,10 +435,16 @@ async function fetchMessageBody(msgId) {
   try {
     const folderLabel = folders.value.find(f => f.id === msg.folder)?.label || 'Inbox'
     const res = await axios.get(`${API_BASE}/mail/${folderLabel}/${msgId}`)
-    const bodyText = res.data.html_body || res.data.plain_body || ''
-    msg.body = bodyText ? bodyText.split('\n').filter(Boolean) : ['(empty)']
+    msg.htmlBody  = res.data.html_body  || ''
+    msg.body      = res.data.plain_body ? res.data.plain_body.split('\n') : []
     msg.attachments = (res.data.attachments || []).map(a => ({
-      name: a.filename, size: a.size_label || '', ext: (a.filename||'').split('.').pop().toUpperCase(),
+      name: a.filename,
+      filename: a.filename,
+      size: a.size_label || '',
+      size_label: a.size_label || '',
+      ext: (a.filename || '').split('.').pop().toUpperCase(),
+      part: a.part,
+      content_type: a.content_type || '',
     }))
   } catch {}
 }
@@ -777,68 +784,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           @toggle-select="toggleSelect"
         />
 
-        <!-- Reading pane -->
-        <div class="bg-white flex flex-col min-h-0">
-          <!-- Empty state -->
-          <div v-if="!selected" class="flex-1 grid place-items-center text-ink-mute bg-panel-2">
-            <div class="text-center py-6 px-8 border border-dashed border-line bg-white max-w-[320px]">
-              <Icon name="mail" :size="40" class="text-[#D2DCEB] mb-2" />
-              <div class="font-bold text-ink mb-1.5">No message selected</div>
-              <div class="text-[12px]">Pick a message from the list on the left to read it here.</div>
-            </div>
-          </div>
-          <template v-else>
-            <!-- Message header -->
-            <div class="py-3.5 px-4 border-b border-line bg-white">
-              <h1 class="m-0 mb-2 text-[18px] text-accent-bar font-bold tracking-tight leading-tight">{{ selected.subject }}</h1>
-              <div class="flex items-center gap-3 mt-1.5">
-                <div class="w-9 h-9 bg-accent text-white grid place-items-center font-bold text-[14px] flex-shrink-0">
-                  {{ initials(selected.from.name) }}
-                </div>
-                <div class="text-[13px] text-ink">
-                  <div><b class="text-[#0E1A2E]">{{ selected.from.name }}</b> <span class="text-ink-sub">&lt;{{ selected.from.addr }}&gt;</span></div>
-                  <div class="mt-1.5 text-[12px] text-ink-sub">to <b class="text-ink">{{ selected.to }}</b></div>
-                </div>
-                <div class="ml-auto text-[11.5px] text-ink-sub text-right">
-                  <div>{{ selected.date }}</div>
-                  <div class="mt-1 flex gap-1.5 justify-end">
-                    <button class="tbtn" @click="reply"><Icon name="reply" :size="13" /> Reply</button>
-                    <button class="tbtn" @click="forward"><Icon name="forward" :size="13" /> Forward</button>
-                    <button class="tbtn" @click="showSource" title="View Source"><Icon name="code-2" :size="13" /></button>
-                    <button class="tbtn" @click="archiveMail" title="Archive"><Icon name="archive" :size="13" /></button>
-                    <button class="tbtn tbtn-danger" @click="deleteMail" title="Delete"><Icon name="trash-2" :size="13" /></button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- Body -->
-            <div class="py-4 px-5 pb-7 text-[13.5px] leading-relaxed text-ink bg-white flex-1 overflow-auto scroll-y">
-              <p v-for="(p,i) in selected.body" :key="i" class="m-0 mb-3 last:mb-0">{{ p }}</p>
-              <div v-if="selected.signature" class="mt-5 pt-3 border-t border-dashed border-line text-[12px] text-ink-sub leading-snug">
-                <b class="text-ink">{{ selected.signature.name }}</b><br />
-                {{ selected.signature.role }}
-              </div>
-              <!-- Attachments -->
-              <div v-if="selected.attachments&&selected.attachments.length" class="mt-4 border-t border-line-soft pt-2">
-                <div class="text-[10.5px] uppercase text-ink-mute tracking-wider font-semibold mb-1.5 flex items-center gap-1.5">
-                  <Icon name="paperclip" :size="11" />
-                  {{ selected.attachments.length }} attachment{{ selected.attachments.length>1?'s':'' }}
-                </div>
-                <div class="flex flex-wrap gap-1.5">
-                  <a v-for="(a,i) in selected.attachments" :key="i"
-                     href="#" @click.prevent
-                     class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-line text-[11.5px] text-ink no-underline hover:border-accent-2 hover:bg-accent-soft"
-                     :title="a.size+' · Download'">
-                    <Icon :name="extIcon(a.ext)" :size="12" :class="extColor(a.ext)" />
-                    <span class="font-medium">{{ a.name }}</span>
-                    <span class="text-ink-mute text-[10.5px]">· {{ a.size }}</span>
-                    <Icon name="download" :size="11" class="text-accent-2 ml-0.5" />
-                  </a>
-                </div>
-              </div>
-            </div>
-          </template>
-        </div>
+        <!-- Reading pane (third column) -->
+        <ReadingPane
+          :message="selected"
+          @reply="reply"
+          @forward="forward"
+          @source="showSource"
+          @archive="archiveMail"
+          @delete="deleteMail"
+        />
       </template>
 
       <!-- ── CONTACTS PANE ─────────────────────────────────────────────── -->
