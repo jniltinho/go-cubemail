@@ -252,7 +252,11 @@ export const useMailStore = defineStore('mail', () => {
     composer.value = {
       to:   s.from?.addr,
       subj: 'Re: ' + s.subject,
-      body: `\n\n— On ${s.fullDate}, ${s.from?.name} wrote —\n${(s.body || []).join('\n')}`,
+      quoted: {
+        header: `On ${s.fullDate}, ${s.from?.name} &lt;${s.from?.addr}&gt; wrote:`,
+        html:   s.htmlBody || null,
+        text:   s.body     || [],
+      },
     }
   }
 
@@ -261,7 +265,11 @@ export const useMailStore = defineStore('mail', () => {
     composer.value = {
       to:   '',
       subj: 'Fwd: ' + s.subject,
-      body: `\n\n— Forwarded from ${s.from?.name} —\n${(s.body || []).join('\n')}`,
+      quoted: {
+        header: `---------- Forwarded message ----------<br>From: ${s.from?.name} &lt;${s.from?.addr}&gt;<br>Date: ${s.fullDate}<br>Subject: ${s.subject}`,
+        html:   s.htmlBody || null,
+        text:   s.body     || [],
+      },
     }
   }
 

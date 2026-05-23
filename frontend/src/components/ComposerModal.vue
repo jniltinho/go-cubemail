@@ -50,13 +50,30 @@ function onFilesSelected(e) {
 
 function removeAttachment(i) { attachments.value.splice(i, 1) }
 
+function buildInitHtml() {
+  const q = props.prefill?.quoted
+  if (q) {
+    const esc = s => String(s).replace(/&(?![a-z#]+;)/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const quotedContent = q.html
+      ? q.html
+      : (q.text || []).map(l => l.trim() ? `<p>${esc(l)}</p>` : '<p>&nbsp;</p>').join('')
+    return (
+      '<p><br></p>' +
+      `<p style="margin:12px 0 4px;font-size:13px;color:#555;">${q.header}</p>` +
+      `<blockquote style="margin:0 0 1em 0;padding:6px 12px;border-left:3px solid #C8D4E8;color:#444;">${quotedContent}</blockquote>`
+    )
+  }
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return body.value
+    .split('\n')
+    .map(l => l.trim() === '' ? '<p>&nbsp;</p>' : `<p>${esc(l)}</p>`)
+    .join('')
+}
+
 onMounted(() => {
   if (!taRef.value) return
 
-  const html = body.value
-    .split('\n')
-    .map(l => l.trim() === '' ? '<p>&nbsp;</p>' : `<p>${l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`)
-    .join('')
+  const html = buildInitHtml()
 
   let editor = null
   let suppress = false
