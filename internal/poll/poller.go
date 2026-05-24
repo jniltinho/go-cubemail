@@ -1,6 +1,7 @@
 package poll
 
 import (
+	"context"
 	"log/slog"
 	"time"
 
@@ -9,13 +10,20 @@ import (
 )
 
 // Start launches the background goroutine that checks for new mail every 10 minutes.
-func Start(secretKey string, tlsEnabled bool, timeout time.Duration, hub *Hub) {
+// It stops cleanly when ctx is cancelled.
+func Start(ctx context.Context, secretKey string, tlsEnabled bool, timeout time.Duration, hub *Hub) {
 	go func() {
 		unseen := make(map[string]uint32) // sessID → last known unseen count
 		ticker := time.NewTicker(10 * time.Minute)
 		defer ticker.Stop()
-		for range ticker.C {
-			checkAll(secretKey, tlsEnabled, timeout, hub, unseen)
+		for {
+			select {
+			case <-ctx.Done():
+				slog.Info("Mail poller stopped")
+				return
+			case <-ticker.C:
+				checkAll(secretKey, tlsEnabled, timeout, hub, unseen)
+			}
 		}
 	}()
 }

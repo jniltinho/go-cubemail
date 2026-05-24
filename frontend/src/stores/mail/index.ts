@@ -5,7 +5,7 @@ import { useAuthStore } from '../auth'
 import { useDialogStore } from '../dialog'
 import { useToastStore } from '../toast'
 import { applyAccent, buildCalCells } from '../../utils/helpers'
-import { MOCK_MAIL, MOCK_FOLDERS, MOCK_CONTACTS, CAL_EVENTS } from './mockData'
+import { CAL_EVENTS } from './mockData'
 import { useMailApi } from './api'
 import { useFolderActions } from './folderActions'
 import type { MailMessage, Folder, Contact, CalCell } from '../../types'
@@ -18,9 +18,10 @@ export const useMailStore = defineStore('mail', () => {
 
   // ── State ──────────────────────────────────────────────────────────────────
   const accent      = ref('#1B3A6B')
-  const mails       = ref<MailMessage[]>(MOCK_MAIL.map(m => ({ ...m })))
-  const folders     = ref<Folder[]>(MOCK_FOLDERS.map(f => ({ ...f })))
-  const contacts       = ref<Contact[]>(MOCK_CONTACTS)
+  const loading     = ref(false)
+  const mails       = ref<MailMessage[]>([])
+  const folders     = ref<Folder[]>([])
+  const contacts       = ref<Contact[]>([])
   const contactModal   = ref(false)
   const editingContact = ref<Contact | null>(null)
   const calCells    = ref<CalCell[]>(buildCalCells(CAL_EVENTS))
@@ -88,8 +89,13 @@ export const useMailStore = defineStore('mail', () => {
   })
 
   async function loadFromApi(): Promise<void> {
-    await _loadFromApi()
-    await fetchContacts()
+    loading.value = true
+    try {
+      await _loadFromApi()
+      await fetchContacts()
+    } finally {
+      loading.value = false
+    }
   }
 
   const { reloadFolders, setFolder, onFolderMenu } = useFolderActions({
@@ -334,7 +340,7 @@ export const useMailStore = defineStore('mail', () => {
 
   return {
     // state
-    accent, mails, folders, contacts, contactModal, editingContact, calCells, calDow,
+    accent, loading, mails, folders, contacts, contactModal, editingContact, calCells, calDow,
     view, folder, selectedId, selectedIds, query, composer, sourceMail, sourceRaw,
     // computed
     visibleMails, counts, selected, currentFolderLabel,

@@ -33,6 +33,7 @@ import SourceViewer   from './components/SourceViewer.vue'
 import ContactModal   from './components/ContactModal.vue'
 import DialogModal     from './components/DialogModal.vue'
 import ToastContainer  from './components/ToastContainer.vue'
+import SpinnerIcon     from './components/SpinnerIcon.vue'
 
 const auth = useAuthStore()
 const mail = useMailStore()
@@ -49,15 +50,19 @@ function onKey(e) {
   else if (e.key === 'c')                      mail.compose()
 }
 
-watch(() => auth.isAuthenticated, (authed) => {
-  if (authed) startSSE(mail, auth)
-  else { evtSource?.close(); evtSource = null }
+watch(() => auth.isAuthenticated, async (authed) => {
+  if (authed) {
+    startSSE(mail, auth)
+    await mail.loadFromApi()
+  } else {
+    evtSource?.close()
+    evtSource = null
+  }
 })
 
 onMounted(async () => {
   window.addEventListener('keydown', onKey)
   await auth.checkSession()
-  if (auth.isAuthenticated) await mail.loadFromApi()
 })
 
 onBeforeUnmount(() => {
@@ -69,6 +74,12 @@ onBeforeUnmount(() => {
 <template>
   <!-- Login page -->
   <LoginView v-if="!auth.isAuthenticated" />
+
+  <!-- Loading screen -->
+  <div v-else-if="mail.loading" class="flex flex-col h-full items-center justify-center bg-gray-50 gap-3">
+    <SpinnerIcon />
+    <span class="text-sm text-gray-500">Loading mailbox…</span>
+  </div>
 
   <!-- Main app -->
   <div v-else class="flex flex-col h-full">

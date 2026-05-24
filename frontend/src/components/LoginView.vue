@@ -78,7 +78,10 @@ async function onSubmit() {
             :disabled="auth.loginBusy"
           >
             <template v-if="auth.loginBusy">
-              <span class="inline-block w-3 h-3 border-2 border-[#14305A]/25 border-t-[#14305A] animate-spin"></span>
+              <svg class="w-3 h-3 animate-spin" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="20" cy="20" r="16" stroke="#14305A" stroke-width="6" stroke-opacity="0.25" />
+                <path d="M20 4 A16 16 0 0 1 36 20" stroke="#14305A" stroke-width="6" stroke-linecap="round" />
+              </svg>
               Signing in…
             </template>
             <template v-else>Sign In</template>

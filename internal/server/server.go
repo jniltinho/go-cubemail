@@ -3,11 +3,15 @@
 package server
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/labstack/echo/v5"
@@ -28,7 +32,11 @@ var AppVersion = "dev"
 func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 	session.InitDB(db)
 
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
 	poll.Start(
+		ctx,
 		cfg.Server.SecretKey,
 		cfg.IMAP.TLS,
 		time.Duration(cfg.IMAP.TimeoutSec)*time.Second,
@@ -73,8 +81,14 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 	// ── Session cleanup goroutine ─────────────────────────────────────────────
 	go func() {
 		ticker := time.NewTicker(10 * time.Minute)
-		for range ticker.C {
-			session.Cleanup(30 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				session.Cleanup(30 * time.Minute)
+			}
 		}
 	}()
 
@@ -88,11 +102,12 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 	h := handler.New(cfg, db)
 	registerRoutes(e, cfg, h, distFS)
 
-	// ── Start server ─────────────────────────────────────────────────────────
+	// ── Start server + graceful shutdown on SIGINT/SIGTERM ───────────────────
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	var srv *http.Server
 	if cfg.Server.TLSCert != "" && cfg.Server.TLSKey != "" {
-		e.Logger.Info("Starting server with TLS/HTTPS")
-		srv := &http.Server{
+		slog.Info("Starting server with TLS/HTTPS")
+		srv = &http.Server{
 			Addr:              addr,
 			Handler:           e,
 			ReadTimeout:       30 * time.Second,
@@ -100,7 +115,33 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 			IdleTimeout:       120 * time.Second,
 			ReadHeaderTimeout: 10 * time.Second,
 		}
-		return srv.ListenAndServeTLS(cfg.Server.TLSCert, cfg.Server.TLSKey)
+	} else {
+		srv = &http.Server{
+			Addr:              addr,
+			Handler:           e,
+			ReadTimeout:       30 * time.Second,
+			WriteTimeout:      60 * time.Second,
+			IdleTimeout:       120 * time.Second,
+			ReadHeaderTimeout: 10 * time.Second,
+		}
 	}
-	return e.Start(addr)
+
+	go func() {
+		<-ctx.Done()
+		slog.Info("Shutting down server…")
+		shutCtx, shutCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutCancel()
+		_ = srv.Shutdown(shutCtx)
+	}()
+
+	var listenErr error
+	if cfg.Server.TLSCert != "" && cfg.Server.TLSKey != "" {
+		listenErr = srv.ListenAndServeTLS(cfg.Server.TLSCert, cfg.Server.TLSKey)
+	} else {
+		listenErr = srv.ListenAndServe()
+	}
+	if listenErr == http.ErrServerClosed {
+		return nil
+	}
+	return listenErr
 }
