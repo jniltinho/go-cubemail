@@ -8,7 +8,6 @@ frontend/node_modules/
 *.db
 *.db-shm
 *.db-wal
-.env
 config.toml
 config.local.toml
 

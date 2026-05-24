@@ -5,7 +5,6 @@ import type { useAuthStore } from '../auth'
 import { formatDate } from '../../utils/helpers'
 import { FOLDER_ID_MAP } from './mockData'
 
-const API_BASE = '/api/v1'
 
 type AuthStore = ReturnType<typeof useAuthStore>
 

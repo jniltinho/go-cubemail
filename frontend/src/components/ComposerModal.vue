@@ -221,7 +221,7 @@ async function send() {
 
   sending.value = true
   try {
-    await axios.post('/api/v1/compose/send', fd)
+    await axios.post(`${API_BASE}/compose/send`, fd)
     toastStore.success('Message sent successfully.')
     emit('close')
   } catch (e) {

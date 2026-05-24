@@ -10,7 +10,6 @@ import { useMailApi } from './api'
 import { useFolderActions } from './folderActions'
 import type { MailMessage, Folder, Contact, CalCell } from '../../types'
 
-const API_BASE = '/api/v1'
 
 export const useMailStore = defineStore('mail', () => {
   const auth   = useAuthStore()

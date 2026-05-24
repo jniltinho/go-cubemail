@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
+  define: {
+    API_BASE: JSON.stringify('/api/v1'),
+  },
   server: {
     port: 5173,
     proxy: {

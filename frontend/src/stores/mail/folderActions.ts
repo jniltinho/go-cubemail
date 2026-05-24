@@ -5,7 +5,6 @@ import type { useAuthStore } from '../auth'
 import type { useDialogStore } from '../dialog'
 import { FOLDER_ID_MAP } from './mockData'
 
-const API_BASE = '/api/v1'
 
 type AuthStore   = ReturnType<typeof useAuthStore>
 type DialogStore = ReturnType<typeof useDialogStore>
