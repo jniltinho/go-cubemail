@@ -28,7 +28,7 @@ There is no email session database — all message reading/writing occurs in rea
 | ORM / App DB | GORM | v2.x |
 | App Database | SQLite (dev) / MariaDB (prod) | — |
 | Email reading protocol | IMAP (`emersion/go-imap`) | v2.x |
-| Email sending protocol | SMTP (`jordan-wright/email`) | — |
+| Email sending protocol | SMTP (Local `pkg/email` wrapper) | — |
 | HTML sanitization | bluemonday | v1.0+ |
 | Web authentication | Cookie session (`gorilla/sessions`) | v1.4+ |
 | Config file | TOML | — |
@@ -678,7 +678,7 @@ gorm.io/driver/sqlite
 gorm.io/driver/mysql                 (MariaDB support)
 github.com/emersion/go-imap/v2       v2.0.0-beta.8
 github.com/emersion/go-message       v0.18.2
-github.com/jordan-wright/email       (SMTP sending)
+Local `pkg/email`                     (SMTP sending / MIME composition)
 github.com/gorilla/sessions          v1.4+
 github.com/microcosm-cc/bluemonday  v1.0.27
 golang.org/x/time                    (rate limiting)

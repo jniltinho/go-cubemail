@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jordan-wright/email"
+	"go-cubemail/pkg/email"
 )
 
 // Message holds all fields needed to compose an outgoing email.

@@ -5,7 +5,6 @@ go 1.26.0
 require (
 	github.com/emersion/go-imap/v2 v2.0.0-beta.8
 	github.com/emersion/go-message v0.18.2
-	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/labstack/echo/v5 v5.1.1
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/spf13/cobra v1.9.1
