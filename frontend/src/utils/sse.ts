@@ -7,10 +7,28 @@ type AuthStore = ReturnType<typeof useAuthStore>
 let pollTimer: ReturnType<typeof setInterval> | null = null
 const POLL_INTERVAL_MS = 10 * 60 * 1000
 
+function playNotificationSound(): void {
+  const ctx = new AudioContext()
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+  osc.type = 'sine'
+  osc.frequency.setValueAtTime(880, ctx.currentTime)
+  gain.gain.setValueAtTime(0.3, ctx.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
+  osc.start(ctx.currentTime)
+  osc.stop(ctx.currentTime + 0.8)
+}
+
 export function startSSE(mail: MailStore, auth: AuthStore): void {
   stopSSE()
   pollTimer = setInterval(async () => {
-    if (auth.isAuthenticated) await mail.fetchFolderMessages('inbox')
+    if (!auth.isAuthenticated) return
+    const before = mail.mails.filter(m => m.folder === 'inbox').length
+    await mail.fetchFolderMessages('inbox')
+    const after = mail.mails.filter(m => m.folder === 'inbox').length
+    if (after > before) playNotificationSound()
   }, POLL_INTERVAL_MS)
 }
 
