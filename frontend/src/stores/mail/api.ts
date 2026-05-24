@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { MailMessage, Folder } from '../../types'
 import type { useAuthStore } from '../auth'
 import { formatDate } from '../../utils/helpers'
-import { FOLDER_ID_MAP } from './mockData'
+import { FOLDER_ID_MAP } from './constants'
 
 
 type AuthStore = ReturnType<typeof useAuthStore>
