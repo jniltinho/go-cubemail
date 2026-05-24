@@ -15,7 +15,7 @@ func NewContactRepo(db *gorm.DB) *ContactRepo {
 
 func (r *ContactRepo) List(userID uint) ([]model.Contact, error) {
 	var contacts []model.Contact
-	err := r.db.Where("user_id = ?", userID).Order("last_name, first_name").Find(&contacts).Error
+	err := r.db.Where("user_id = ?", userID).Order("first_name, last_name").Find(&contacts).Error
 	return contacts, err
 }
 

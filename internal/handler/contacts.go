@@ -1,6 +1,10 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/csv"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -150,4 +154,196 @@ func (h *ContactsHandler) Delete(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (h *ContactsHandler) Export(c *echo.Context) error {
+	userID, err := h.getUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "user lookup failed"})
+	}
+	contacts, err := h.repo.List(userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	var buf bytes.Buffer
+	w := csv.NewWriter(&buf)
+	_ = w.Write([]string{"First Name", "Last Name", "Email", "Title", "Company", "Phone", "Notes"})
+	for _, ct := range contacts {
+		_ = w.Write([]string{ct.FirstName, ct.LastName, ct.Email, ct.Title, ct.Company, ct.Phone, ct.Notes})
+	}
+	w.Flush()
+
+	c.Response().Header().Set("Content-Disposition", "attachment; filename=\"contacts.csv\"")
+	c.Response().Header().Set("Content-Type", "text/csv; charset=utf-8")
+	_, err = c.Response().Write(buf.Bytes())
+	return err
+}
+
+func (h *ContactsHandler) Import(c *echo.Context) error {
+	userID, err := h.getUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "user lookup failed"})
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "no file uploaded"})
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to open file"})
+	}
+	defer src.Close()
+
+	content, err := io.ReadAll(src)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to read file"})
+	}
+
+	var contacts []model.Contact
+	name := strings.ToLower(file.Filename)
+	if strings.HasSuffix(name, ".vcf") || strings.HasSuffix(name, ".vcard") {
+		contacts, err = parseVCard(content, userID)
+	} else {
+		contacts, err = parseCSV(content, userID)
+	}
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+
+	imported := 0
+	for i := range contacts {
+		if err := h.repo.Create(&contacts[i]); err == nil {
+			imported++
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{"imported": imported, "total": len(contacts)})
+}
+
+// parseCSV handles Gmail-style and Outlook-style CSV exports.
+func parseCSV(content []byte, userID uint) ([]model.Contact, error) {
+	r := csv.NewReader(bytes.NewReader(content))
+	records, err := r.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("invalid CSV: %w", err)
+	}
+	if len(records) < 2 {
+		return nil, fmt.Errorf("CSV has no data rows")
+	}
+
+	idx := make(map[string]int)
+	for i, h := range records[0] {
+		idx[strings.ToLower(strings.TrimSpace(h))] = i
+	}
+
+	col := func(row []string, keys ...string) string {
+		for _, k := range keys {
+			if i, ok := idx[k]; ok && i < len(row) {
+				if v := strings.TrimSpace(row[i]); v != "" {
+					return v
+				}
+			}
+		}
+		return ""
+	}
+
+	var contacts []model.Contact
+	for _, row := range records[1:] {
+		email := col(row, "email", "e-mail address", "email address", "e-mail 1 - value")
+		if email == "" {
+			continue
+		}
+		first := col(row, "first name", "given name", "firstname")
+		last := col(row, "last name", "family name", "surname", "lastname")
+		if first == "" && last == "" {
+			first, last = splitName(col(row, "name", "full name"))
+		}
+		contacts = append(contacts, model.Contact{
+			UserID:    userID,
+			FirstName: first,
+			LastName:  last,
+			Email:     email,
+			Title:     col(row, "title", "job title", "occupation"),
+			Company:   col(row, "company", "organization", "org"),
+			Phone:     col(row, "phone", "mobile", "tel", "telephone", "mobile phone", "home phone"),
+			Notes:     col(row, "notes", "note", "description"),
+		})
+	}
+	return contacts, nil
+}
+
+// parseVCard handles single and multi-contact .vcf files (vCard 2.1, 3.0, 4.0).
+func parseVCard(content []byte, userID uint) ([]model.Contact, error) {
+	lines := strings.Split(strings.ReplaceAll(string(content), "\r\n", "\n"), "\n")
+
+	// Unfold continuation lines (RFC 2425)
+	var unfolded []string
+	for _, line := range lines {
+		if len(line) > 0 && (line[0] == ' ' || line[0] == '\t') && len(unfolded) > 0 {
+			unfolded[len(unfolded)-1] += line[1:]
+		} else {
+			unfolded = append(unfolded, line)
+		}
+	}
+
+	var contacts []model.Contact
+	var cur *model.Contact
+	for _, line := range unfolded {
+		line = strings.TrimRight(line, "\r")
+		up := strings.ToUpper(line)
+
+		if up == "BEGIN:VCARD" {
+			cur = &model.Contact{UserID: userID}
+			continue
+		}
+		if up == "END:VCARD" {
+			if cur != nil && cur.Email != "" {
+				contacts = append(contacts, *cur)
+			}
+			cur = nil
+			continue
+		}
+		if cur == nil {
+			continue
+		}
+
+		propRaw, val, ok := strings.Cut(line, ":")
+		if !ok {
+			continue
+		}
+		// Strip parameters (e.g. EMAIL;TYPE=INTERNET → EMAIL)
+		prop := strings.ToUpper(strings.SplitN(propRaw, ";", 2)[0])
+
+		switch prop {
+		case "FN":
+			cur.FirstName, cur.LastName = splitName(val)
+		case "N":
+			// N:LastName;FirstName;Additional;Prefix;Suffix
+			parts := strings.SplitN(val, ";", 5)
+			if len(parts) >= 1 {
+				cur.LastName = parts[0]
+			}
+			if len(parts) >= 2 {
+				cur.FirstName = parts[1]
+			}
+		case "EMAIL":
+			if cur.Email == "" {
+				cur.Email = strings.TrimSpace(val)
+			}
+		case "TITLE":
+			cur.Title = val
+		case "ORG":
+			cur.Company = strings.SplitN(val, ";", 2)[0]
+		case "TEL":
+			if cur.Phone == "" {
+				cur.Phone = val
+			}
+		case "NOTE":
+			cur.Notes = val
+		}
+	}
+	return contacts, nil
 }

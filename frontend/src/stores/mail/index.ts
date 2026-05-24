@@ -3,6 +3,7 @@ import { ref, computed, watch, watchEffect, nextTick } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '../auth'
 import { useDialogStore } from '../dialog'
+import { useToastStore } from '../toast'
 import { applyAccent, buildCalCells } from '../../utils/helpers'
 import { MOCK_MAIL, MOCK_FOLDERS, MOCK_CONTACTS, CAL_EVENTS } from './mockData'
 import { useMailApi } from './api'
@@ -14,6 +15,7 @@ const API_BASE = '/api/v1'
 export const useMailStore = defineStore('mail', () => {
   const auth   = useAuthStore()
   const dialog = useDialogStore()
+  const toast  = useToastStore()
 
   // ── State ──────────────────────────────────────────────────────────────────
   const accent      = ref('#1B3A6B')
@@ -259,18 +261,22 @@ export const useMailStore = defineStore('mail', () => {
   function openEditContact(c: Contact): void { editingContact.value = c;    contactModal.value = true }
   function closeContactModal():         void { contactModal.value = false; editingContact.value = null }
 
+  function sortContacts(list: Contact[]): Contact[] {
+    return [...list].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+  }
+
   async function fetchContacts(): Promise<void> {
     if (!auth.isApiOnline) return
     try {
       const res = await axios.get(`${API_BASE}/contacts`)
-      contacts.value = (res.data as Contact[])
+      contacts.value = sortContacts(res.data as Contact[])
     } catch {}
   }
 
   async function saveContact(data: Omit<Contact, 'id'>): Promise<void> {
     try {
       const res = await axios.post(`${API_BASE}/contacts`, data)
-      contacts.value = [...contacts.value, res.data as Contact]
+      contacts.value = sortContacts([...contacts.value, res.data as Contact])
     } catch {}
   }
 
@@ -278,7 +284,7 @@ export const useMailStore = defineStore('mail', () => {
     try {
       const res = await axios.put(`${API_BASE}/contacts/${id}`, data)
       const updated = res.data as Contact
-      contacts.value = contacts.value.map(c => c.id === id ? updated : c)
+      contacts.value = sortContacts(contacts.value.map(c => c.id === id ? updated : c))
     } catch {}
   }
 
@@ -287,6 +293,23 @@ export const useMailStore = defineStore('mail', () => {
       await axios.delete(`${API_BASE}/contacts/${id}`)
       contacts.value = contacts.value.filter(c => c.id !== id)
     } catch {}
+  }
+
+  async function importContacts(file: File): Promise<void> {
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await axios.post(`${API_BASE}/contacts/import`, fd)
+      const { imported, total } = res.data
+      await fetchContacts()
+      if (imported === 0) {
+        toast.warning(`No contacts found in file (${total} rows checked).`)
+      } else {
+        toast.success(`Imported ${imported} contact${imported !== 1 ? 's' : ''} successfully.`)
+      }
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Failed to import contacts.')
+    }
   }
 
   async function showSource(): Promise<void> {
@@ -321,6 +344,6 @@ export const useMailStore = defineStore('mail', () => {
     selectMsg, toggleSelect, toggleRead, archiveMail, deleteMail,
     reply, forward, compose, closeComposer, showSource, closeSource, copySource,
     moveMail, setFolder, onFolderMenu,
-    openContactModal, openEditContact, closeContactModal, fetchContacts, saveContact, updateContact, deleteContact,
+    openContactModal, openEditContact, closeContactModal, fetchContacts, saveContact, updateContact, deleteContact, importContacts,
   }
 })

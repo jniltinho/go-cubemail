@@ -60,7 +60,9 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 
 	// Contacts
 	api.GET("/contacts", h.Contacts.Index)
+	api.GET("/contacts/export", h.Contacts.Export)
 	api.POST("/contacts", h.Contacts.Create)
+	api.POST("/contacts/import", h.Contacts.Import)
 	api.PUT("/contacts/:id", h.Contacts.Update)
 	api.DELETE("/contacts/:id", h.Contacts.Delete)
 
