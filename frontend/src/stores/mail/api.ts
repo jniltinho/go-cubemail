@@ -42,6 +42,7 @@ export function useMailApi({ auth, folders, mails, folder, selectedId }: MailApi
       }))
       mails.value = [...mails.value.filter(m => m.folder !== folderId), ...fetched]
       selectedId.value = fetched[0]?.id ?? null
+      if (fetched[0]?.id) await fetchMessageBody(fetched[0].id)
 
       const folderObj = folders.value.find(f => f.id === folderId)
       if (folderObj) {
