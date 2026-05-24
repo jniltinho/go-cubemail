@@ -28,8 +28,9 @@ import MailList      from './components/MailList.vue'
 import ReadingPane   from './components/ReadingPane.vue'
 import ContactsPane  from './components/ContactsPane.vue'
 import CalendarPane  from './components/CalendarPane.vue'
-import ComposerModal from './components/ComposerModal.vue'
-import SourceViewer  from './components/SourceViewer.vue'
+import ComposerModal  from './components/ComposerModal.vue'
+import SourceViewer   from './components/SourceViewer.vue'
+import ContactModal   from './components/ContactModal.vue'
 import DialogModal     from './components/DialogModal.vue'
 import ToastContainer  from './components/ToastContainer.vue'
 
@@ -72,27 +73,28 @@ onBeforeUnmount(() => {
   <!-- Main app -->
   <div v-else class="flex flex-col h-full">
     <AppBar />
-    <AppToolbar v-if="mail.view === 'mail'" />
+    <AppToolbar />
 
     <!-- 3-column layout -->
     <div
       class="grid flex-1 bg-app-bg min-h-0"
       style="grid-template-columns: 220px 380px 1fr"
     >
-      <AppSidebar />
+      <AppSidebar v-if="mail.view === 'mail' || mail.view === 'contacts' || mail.view === 'calendar'" />
 
       <template v-if="mail.view === 'mail'">
         <MailList />
         <ReadingPane />
       </template>
-      <ContactsPane  v-else-if="mail.view === 'contacts'" />
-      <CalendarPane  v-else-if="mail.view === 'calendar'" />
+      <ContactsPane  v-else-if="mail.view === 'contacts'" style="grid-column:2/4" />
+      <CalendarPane  v-else-if="mail.view === 'calendar'" style="grid-column:2/4" />
     </div>
   </div>
 
   <!-- Modals (outside layout flow) -->
   <ComposerModal v-if="mail.composer !== null" :prefill="mail.composer" @close="mail.closeComposer()" />
   <SourceViewer  v-if="mail.sourceMail" />
+  <ContactModal  v-if="mail.contactModal" />
   <DialogModal />
   <ToastContainer />
 </template>

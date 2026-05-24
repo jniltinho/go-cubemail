@@ -8,6 +8,7 @@ type Contact struct {
 	FirstName string
 	LastName  string
 	Email     string `gorm:"not null"`
+	Title     string
 	Phone     string
 	Company   string
 	Notes     string

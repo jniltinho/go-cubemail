@@ -19,7 +19,9 @@ export const useMailStore = defineStore('mail', () => {
   const accent      = ref('#1B3A6B')
   const mails       = ref<MailMessage[]>(MOCK_MAIL.map(m => ({ ...m })))
   const folders     = ref<Folder[]>(MOCK_FOLDERS.map(f => ({ ...f })))
-  const contacts    = ref<Contact[]>(MOCK_CONTACTS)
+  const contacts       = ref<Contact[]>(MOCK_CONTACTS)
+  const contactModal   = ref(false)
+  const editingContact = ref<Contact | null>(null)
   const calCells    = ref<CalCell[]>(buildCalCells(CAL_EVENTS))
   const calDow      = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -80,9 +82,14 @@ export const useMailStore = defineStore('mail', () => {
   })
 
   // ── Composables ────────────────────────────────────────────────────────────
-  const { fetchFolderMessages, loadFromApi, fetchMessageBody } = useMailApi({
+  const { fetchFolderMessages, loadFromApi: _loadFromApi, fetchMessageBody } = useMailApi({
     auth, folders, mails, folder, selectedId,
   })
+
+  async function loadFromApi(): Promise<void> {
+    await _loadFromApi()
+    await fetchContacts()
+  }
 
   const { reloadFolders, setFolder, onFolderMenu } = useFolderActions({
     auth, dialog, folders, mails, folder, view, selectedId, fetchFolderMessages,
@@ -246,8 +253,41 @@ export const useMailStore = defineStore('mail', () => {
     }
   }
 
-  function compose():       void { composer.value = {} }
-  function closeComposer(): void { composer.value = null }
+  function compose():            void { composer.value = {} }
+  function closeComposer():      void { composer.value = null }
+  function openContactModal():          void { editingContact.value = null; contactModal.value = true }
+  function openEditContact(c: Contact): void { editingContact.value = c;    contactModal.value = true }
+  function closeContactModal():         void { contactModal.value = false; editingContact.value = null }
+
+  async function fetchContacts(): Promise<void> {
+    if (!auth.isApiOnline) return
+    try {
+      const res = await axios.get(`${API_BASE}/contacts`)
+      contacts.value = (res.data as Contact[])
+    } catch {}
+  }
+
+  async function saveContact(data: Omit<Contact, 'id'>): Promise<void> {
+    try {
+      const res = await axios.post(`${API_BASE}/contacts`, data)
+      contacts.value = [...contacts.value, res.data as Contact]
+    } catch {}
+  }
+
+  async function updateContact(id: number, data: Omit<Contact, 'id'>): Promise<void> {
+    try {
+      const res = await axios.put(`${API_BASE}/contacts/${id}`, data)
+      const updated = res.data as Contact
+      contacts.value = contacts.value.map(c => c.id === id ? updated : c)
+    } catch {}
+  }
+
+  async function deleteContact(id: number): Promise<void> {
+    try {
+      await axios.delete(`${API_BASE}/contacts/${id}`)
+      contacts.value = contacts.value.filter(c => c.id !== id)
+    } catch {}
+  }
 
   async function showSource(): Promise<void> {
     const m = selected.value
@@ -272,7 +312,7 @@ export const useMailStore = defineStore('mail', () => {
 
   return {
     // state
-    accent, mails, folders, contacts, calCells, calDow,
+    accent, mails, folders, contacts, contactModal, editingContact, calCells, calDow,
     view, folder, selectedId, selectedIds, query, composer, sourceMail, sourceRaw,
     // computed
     visibleMails, counts, selected, currentFolderLabel,
@@ -281,5 +321,6 @@ export const useMailStore = defineStore('mail', () => {
     selectMsg, toggleSelect, toggleRead, archiveMail, deleteMail,
     reply, forward, compose, closeComposer, showSource, closeSource, copySource,
     moveMail, setFolder, onFolderMenu,
+    openContactModal, openEditContact, closeContactModal, fetchContacts, saveContact, updateContact, deleteContact,
   }
 })

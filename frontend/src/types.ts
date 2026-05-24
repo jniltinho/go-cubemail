@@ -33,9 +33,13 @@ export interface Folder {
 }
 
 export interface Contact {
-  email: string
+  id?: number
   name: string
-  title: string
+  email: string
+  title?: string
+  company?: string
+  phone?: string
+  notes?: string
 }
 
 export interface CalEvent {

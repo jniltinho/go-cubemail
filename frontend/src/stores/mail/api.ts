@@ -75,6 +75,7 @@ export function useMailApi({ auth, folders, mails, folder, selectedId }: MailApi
     }
   }
 
+
   async function fetchMessageBody(msgId: string): Promise<void> {
     const msg = mails.value.find(m => m.id === msgId)
     if (!msg || !auth.isApiOnline) return

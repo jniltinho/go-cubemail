@@ -10,6 +10,8 @@ const auth = useAuthStore()
 const moveOpen = ref(false)
 const moveBtn  = ref(null)
 
+const notMail = computed(() => mail.view !== 'mail')
+
 const moveFolders = computed(() =>
   mail.folders.filter(f => f.id !== mail.folder)
 )
@@ -39,24 +41,25 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
     <button class="tbtn tbtn-primary" type="button" @click="mail.compose()">
       <Icon name="pencil-line" :size="14" /> New Message
     </button>
+
     <div class="w-px h-[18px] bg-line mx-1"></div>
-    <button class="tbtn" type="button" @click="refresh()">
+    <button class="tbtn" type="button" :disabled="notMail" @click="refresh()">
       <Icon name="refresh-cw" :size="14" /> Refresh
     </button>
-    <button class="tbtn" type="button" :disabled="!mail.selected" @click="mail.reply()">
+    <button class="tbtn" type="button" :disabled="notMail || !mail.selected" @click="mail.reply()">
       <Icon name="reply" :size="14" /> Reply
     </button>
-    <button class="tbtn" type="button" :disabled="!mail.selected" @click="mail.reply()">
+    <button class="tbtn" type="button" :disabled="notMail || !mail.selected" @click="mail.reply()">
       <Icon name="reply-all" :size="14" /> Reply All
     </button>
-    <button class="tbtn" type="button" :disabled="!mail.selected" @click="mail.forward()">
+    <button class="tbtn" type="button" :disabled="notMail || !mail.selected" @click="mail.forward()">
       <Icon name="forward" :size="14" /> Forward
     </button>
     <div class="w-px h-[18px] bg-line mx-1"></div>
-    <button class="tbtn tbtn-danger" type="button" :disabled="!mail.selected && !mail.selectedIds.size" @click="mail.deleteMail()">
+    <button class="tbtn tbtn-danger" type="button" :disabled="notMail || (!mail.selected && !mail.selectedIds.size)" @click="mail.deleteMail()">
       <Icon name="trash-2" :size="14" /> Delete
     </button>
-    <button class="tbtn" type="button" :disabled="!mail.selected && !mail.selectedIds.size" @click="mail.toggleRead()">
+    <button class="tbtn" type="button" :disabled="notMail || (!mail.selected && !mail.selectedIds.size)" @click="mail.toggleRead()">
       <Icon name="circle-dot" :size="14" /> Mark read/unread
     </button>
     <div class="w-px h-[18px] bg-line mx-1"></div>
@@ -66,7 +69,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
       <button
         class="tbtn"
         type="button"
-        :disabled="!mail.selected && !mail.selectedIds.size"
+        :disabled="notMail || (!mail.selected && !mail.selectedIds.size)"
         @click.stop="toggleMove()"
       >
         <Icon name="folder-input" :size="14" /> Move to…

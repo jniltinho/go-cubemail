@@ -81,7 +81,7 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 	}
 
 	// ── API handlers & Routes ────────────────────────────────────────────────
-	h := handler.New(cfg)
+	h := handler.New(cfg, db)
 	registerRoutes(e, cfg, h, distFS)
 
 	// ── Start server ─────────────────────────────────────────────────────────
