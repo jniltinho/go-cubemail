@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import axios from 'axios'
 import Icon from './Icon.vue'
 import { extIcon, extColor } from '../utils/helpers'
+import { useMailStore } from '../stores/mail'
 import tinymce from 'tinymce'
 import 'tinymce/themes/silver'
 import 'tinymce/icons/default'
@@ -35,6 +36,7 @@ const props = withDefaults(defineProps<{
 }>(), { prefill: () => ({}) })
 const emit = defineEmits<{ close: [] }>()
 
+const mailStore   = useMailStore()
 const to          = ref(props.prefill?.to   || '')
 const cc          = ref('')
 const subj        = ref(props.prefill?.subj || '')
@@ -44,9 +46,61 @@ const sent        = ref(false)
 const sending     = ref(false)
 const sendError   = ref('')
 const taRef       = ref(null)
+const toRef       = ref<HTMLInputElement | null>(null)
 const fileInputRef = ref(null)
 const attachments  = ref([])
 let destroyEditor  = null
+
+const showSuggestions = ref(false)
+const activeSuggestion = ref(-1)
+
+const currentTerm = computed(() => {
+  const parts = to.value.split(',')
+  return parts[parts.length - 1].trim().toLowerCase()
+})
+
+const suggestions = computed(() => {
+  const term = currentTerm.value
+  if (!term) return []
+  return mailStore.contacts
+    .filter(c => c.name.toLowerCase().includes(term) || c.email.toLowerCase().includes(term))
+    .slice(0, 8)
+})
+
+function onToInput() {
+  showSuggestions.value = true
+  activeSuggestion.value = -1
+}
+
+function onToBlur() {
+  setTimeout(() => { showSuggestions.value = false }, 150)
+}
+
+function onToKeydown(e: KeyboardEvent) {
+  if (!showSuggestions.value || !suggestions.value.length) return
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    activeSuggestion.value = Math.min(activeSuggestion.value + 1, suggestions.value.length - 1)
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    activeSuggestion.value = Math.max(activeSuggestion.value - 1, 0)
+  } else if (e.key === 'Enter' && activeSuggestion.value >= 0) {
+    e.preventDefault()
+    selectSuggestion(suggestions.value[activeSuggestion.value])
+  } else if (e.key === 'Escape') {
+    showSuggestions.value = false
+  }
+}
+
+function selectSuggestion(contact: { name: string; email: string }) {
+  const parts = to.value.split(',').map(p => p.trim()).filter(Boolean)
+  parts.pop()
+  parts.push(contact.email)
+  to.value = parts.join(', ')
+  showSuggestions.value = false
+  activeSuggestion.value = -1
+  toRef.value?.focus()
+}
 
 function fmtSize(bytes) {
   if (bytes < 1024) return bytes + ' B'
@@ -202,9 +256,40 @@ function backdrop(e) {
       </div>
 
       <template v-else>
-        <div class="composer-field">
+        <div class="composer-field" style="position:relative">
           <label>To</label>
-          <input v-model="to" placeholder="recipient@example.com" />
+          <input
+            ref="toRef"
+            v-model="to"
+            placeholder="recipient@example.com"
+            autocomplete="off"
+            @input="onToInput"
+            @blur="onToBlur"
+            @keydown="onToKeydown"
+          />
+          <div
+            v-if="showSuggestions && suggestions.length"
+            class="absolute left-0 z-50 bg-white border border-line shadow-md py-1 w-full"
+            style="top:100%"
+          >
+            <button
+              v-for="(c, i) in suggestions"
+              :key="c.email"
+              type="button"
+              class="w-full text-left px-3 py-1.5 flex items-center gap-2.5 hover:bg-accent hover:text-white"
+              :class="i === activeSuggestion ? 'bg-accent text-white' : 'text-ink'"
+              @mousedown.prevent="selectSuggestion(c)"
+            >
+              <span class="w-[26px] h-[26px] bg-accent text-white grid place-items-center font-bold text-[11px] flex-shrink-0 rounded-sm"
+                    :class="i === activeSuggestion ? 'bg-white !text-accent' : ''">
+                {{ c.name.slice(0,2).toUpperCase() }}
+              </span>
+              <span class="flex flex-col min-w-0">
+                <span class="text-[12.5px] font-semibold truncate">{{ c.name }}</span>
+                <span class="text-[11px] opacity-75 truncate">{{ c.email }}</span>
+              </span>
+            </button>
+          </div>
         </div>
         <div v-if="showCc" class="composer-field">
           <label>Cc</label>

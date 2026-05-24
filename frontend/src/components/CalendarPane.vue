@@ -8,7 +8,7 @@ const mail = useMailStore()
 <template>
   <div class="bg-white overflow-hidden flex flex-col" style="grid-column:2/4">
     <!-- Toolbar -->
-    <div class="py-2 px-4 bg-panel-2 border-b border-line flex items-center gap-1.5 flex-shrink-0">
+    <div class="h-10 px-4 bg-panel-2 border-b border-line flex items-center gap-1.5 flex-shrink-0">
       <button class="tbtn" type="button"><Icon name="chevron-left" :size="13" /></button>
       <button class="tbtn" type="button"><Icon name="chevron-right" :size="13" /></button>
       <button class="tbtn" type="button">Today</button>
