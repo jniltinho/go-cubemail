@@ -25,10 +25,8 @@ export function startSSE(mail: MailStore, auth: AuthStore): void {
   stopSSE()
   pollTimer = setInterval(async () => {
     if (!auth.isAuthenticated) return
-    const before = mail.mails.filter(m => m.folder === 'inbox').length
-    await mail.fetchFolderMessages('inbox')
-    const after = mail.mails.filter(m => m.folder === 'inbox').length
-    if (after > before) playNotificationSound()
+    const hasNew = await mail.fetchFolderMessages('inbox', true)
+    if (hasNew) playNotificationSound()
   }, POLL_INTERVAL_MS)
 }
 

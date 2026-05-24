@@ -17,11 +17,11 @@ interface MailApiContext {
 }
 
 export function useMailApi({ auth, folders, mails, folder, selectedId }: MailApiContext) {
-  async function fetchFolderMessages(folderId: string): Promise<void> {
-    if (!auth.isApiOnline) return
+  async function fetchFolderMessages(folderId: string, onlyIfNew = false): Promise<boolean> {
+    if (!auth.isApiOnline) return false
     const folderDef = folders.value.find(f => f.id === folderId)
     const imapName  = folderDef?.name || folderDef?.label
-    if (!imapName) return
+    if (!imapName) return false
     try {
       const mailRes = await axios.get(`${API_BASE}/mail/${encodeURIComponent(imapName)}`)
       const fetched: MailMessage[] = (mailRes.data.messages || []).map((m: Record<string, unknown>) => ({
@@ -40,6 +40,12 @@ export function useMailApi({ auth, folders, mails, folder, selectedId }: MailApi
         htmlBody: '',
         body: [],
       }))
+
+      if (onlyIfNew) {
+        const currentIds = new Set(mails.value.filter(m => m.folder === folderId).map(m => m.id))
+        if (!fetched.some(m => !currentIds.has(m.id))) return false
+      }
+
       mails.value = [...mails.value.filter(m => m.folder !== folderId), ...fetched]
 
       if (folder.value === folderId) {
@@ -57,8 +63,10 @@ export function useMailApi({ auth, folders, mails, folder, selectedId }: MailApi
         const unread = fetched.filter(m => m.unread).length
         folderObj.count = unread > 0 ? `${unread}/${total}` : String(total)
       }
+      return true
     } catch (e) {
       console.error('fetchFolderMessages failed', e)
+      return false
     }
   }
 
