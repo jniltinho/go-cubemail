@@ -17,10 +17,11 @@ interface FolderActionsContext {
   folder: Ref<string>
   view: Ref<string>
   selectedId: Ref<string | null>
-  fetchFolderMessages: (folderId: string) => Promise<void>
+  selectedIds: Ref<Set<string>>
+  fetchFolderMessages: (folderId: string, onlyIfNew?: boolean) => Promise<boolean>
 }
 
-export function useFolderActions({ auth, dialog, folders, mails, folder, view, selectedId, fetchFolderMessages }: FolderActionsContext) {
+export function useFolderActions({ auth, dialog, folders, mails, folder, view, selectedId, selectedIds, fetchFolderMessages }: FolderActionsContext) {
   async function reloadFolders(): Promise<void> {
     if (!auth.isApiOnline) return
     const res = await axios.get(`${API_BASE}/folders`)
@@ -33,9 +34,10 @@ export function useFolderActions({ auth, dialog, folders, mails, folder, view, s
   }
 
   function setFolder(id: string): void {
-    folder.value = id
-    view.value   = 'mail'
+    folder.value     = id
+    view.value       = 'mail'
     selectedId.value = null
+    selectedIds.value = new Set()
     fetchFolderMessages(id)
   }
 

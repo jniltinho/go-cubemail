@@ -99,7 +99,7 @@ export const useMailStore = defineStore('mail', () => {
   }
 
   const { reloadFolders, setFolder, onFolderMenu } = useFolderActions({
-    auth, dialog, folders, mails, folder, view, selectedId, fetchFolderMessages,
+    auth, dialog, folders, mails, folder, view, selectedId, selectedIds, fetchFolderMessages,
   })
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -109,6 +109,15 @@ export const useMailStore = defineStore('mail', () => {
     const msgs   = mails.value.filter(m => m.folder === folderId)
     const unread = msgs.filter(m => m.unread).length
     obj.count = unread > 0 ? `${unread}/${msgs.length}` : String(msgs.length)
+  }
+
+  function _adjustFolderCount(folderId: string, totalDelta: number, unreadDelta = 0): void {
+    const obj = folders.value.find(f => f.id === folderId)
+    if (!obj) return
+    const parts  = String(obj.count).split('/')
+    const total  = Math.max(0, (parts.length > 1 ? parseInt(parts[1]) : parseInt(parts[0])) + totalDelta)
+    const unread = Math.max(0, (parts.length > 1 ? parseInt(parts[0]) : 0) + unreadDelta)
+    obj.count = unread > 0 ? `${unread}/${total}` : String(total)
   }
 
   // ── Mail actions ───────────────────────────────────────────────────────────
@@ -137,6 +146,7 @@ export const useMailStore = defineStore('mail', () => {
     const nowUnread = !anyUnread
 
     targets.forEach(m => { m.unread = nowUnread })
+    selectedIds.value = new Set()
     _updateFolderCount(folder.value)
 
     if (auth.isApiOnline) {
@@ -160,11 +170,12 @@ export const useMailStore = defineStore('mail', () => {
     const s = selected.value; if (!s) return
     const idx = visibleMails.value.findIndex(m => m.id === s.id)
     const m   = mails.value.find(x => x.id === s.id)
+    const wasUnread = m?.unread ?? false
     if (m) m.folder = 'archive'
     const next = visibleMails.value[idx + 1] || visibleMails.value[idx - 1]
     selectedId.value = next?.id ?? null
-    _updateFolderCount(folder.value)
-    _updateFolderCount('archive')
+    _adjustFolderCount(folder.value, -1, wasUnread ? -1 : 0)
+    _adjustFolderCount('archive', 1, wasUnread ? 1 : 0)
   }
 
   async function moveMail(destFolderId: string): Promise<void> {
@@ -178,15 +189,14 @@ export const useMailStore = defineStore('mail', () => {
     const dstDef  = folders.value.find(f => f.id === destFolderId)
     const dstName = dstDef?.name || dstDef?.label || destFolderId
 
-    ids.forEach(id => {
-      const m = mails.value.find(m => m.id === id)
-      if (m) m.folder = destFolderId
-    })
+    const targets = ids.map(id => mails.value.find(m => m.id === id)).filter((m): m is MailMessage => !!m)
+    const unreadCount = targets.filter(m => m.unread).length
+    targets.forEach(m => { m.folder = destFolderId })
     selectedId.value  = null
     selectedIds.value = new Set()
 
-    _updateFolderCount(folder.value)
-    _updateFolderCount(destFolderId)
+    _adjustFolderCount(folder.value, -ids.length, -unreadCount)
+    _adjustFolderCount(destFolderId, ids.length, unreadCount)
 
     if (auth.isApiOnline) {
       await Promise.all(ids.map(id => {
@@ -213,24 +223,27 @@ export const useMailStore = defineStore('mail', () => {
     const remaining = visibleMails.value.filter(m => !ids.includes(m.id))
     const next      = remaining[firstIdx] || remaining[firstIdx - 1] || null
 
+    const targets = ids.map(id => mails.value.find(m => m.id === id)).filter((m): m is MailMessage => !!m)
+    const unreadCount = targets.filter(m => m.unread).length
+
     if (inTrash) {
       mails.value = mails.value.filter(m => !ids.includes(m.id))
     } else {
-      ids.forEach(id => {
-        const m = mails.value.find(m => m.id === id)
-        if (m) m.folder = 'trash'
-      })
-      _updateFolderCount('trash')
+      targets.forEach(m => { m.folder = 'trash' })
+      _adjustFolderCount('trash', ids.length, unreadCount)
     }
 
     selectedId.value  = next?.id ?? null
     selectedIds.value = new Set()
-    _updateFolderCount(folder.value)
+    _adjustFolderCount(folder.value, -ids.length, -unreadCount)
 
     if (auth.isApiOnline) {
-      await Promise.all(ids.map(id =>
-        axios.delete(`${API_BASE}/mail/${encodeURIComponent(currentLabel)}/${id}`).catch(() => {})
-      ))
+      await Promise.all([
+        ...ids.map(id =>
+          axios.delete(`${API_BASE}/mail/${encodeURIComponent(currentLabel)}/${id}`).catch(() => {})
+        ),
+        ...(next ? [fetchMessageBody(next.id)] : []),
+      ])
     }
   }
 

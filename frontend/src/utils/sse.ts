@@ -5,7 +5,7 @@ type MailStore = ReturnType<typeof useMailStore>
 type AuthStore = ReturnType<typeof useAuthStore>
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
-const POLL_INTERVAL_MS = 10 * 60 * 1000
+const POLL_INTERVAL_MS = 2 * 60 * 1000
 
 function playNotificationSound(): void {
   const ctx = new AudioContext()
