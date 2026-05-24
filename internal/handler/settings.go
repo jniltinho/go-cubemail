@@ -1,20 +1,9 @@
 package handler
 
-import (
-	"net/http"
+import "go-cubemail/internal/config"
 
-	"go-cubemail/internal/config"
-	"github.com/labstack/echo/v5"
-)
-
+// SettingsHandler is reserved for future user-settings management endpoints.
+// No routes are currently registered for this handler.
 type SettingsHandler struct {
 	cfg *config.Config
-}
-
-func (h *SettingsHandler) Index(c *echo.Context) error {
-	return c.Render(http.StatusOK, "settings/index.html", nil)
-}
-
-func (h *SettingsHandler) Save(c *echo.Context) error {
-	return c.Redirect(http.StatusSeeOther, "/settings")
 }

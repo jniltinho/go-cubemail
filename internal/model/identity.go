@@ -1,5 +1,7 @@
 package model
 
+// Identity represents a sender identity (display name, email, optional reply-to, signature)
+// that a user can select when composing messages.
 type Identity struct {
 	ID          uint   `gorm:"primaryKey"`
 	UserID      uint   `gorm:"index;not null"`

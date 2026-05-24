@@ -4,16 +4,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/labstack/echo/v5"
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/imap"
 	"go-cubemail/internal/session"
-	"github.com/labstack/echo/v5"
 )
 
+// SearchHandler handles full-text search across IMAP mailboxes.
 type SearchHandler struct {
 	cfg *config.Config
 }
 
+// Results searches the given mailbox (default: INBOX) using an OR across Subject and From fields.
+// Query parameter: q (search text), mailbox (optional folder name).
 func (h *SearchHandler) Results(c *echo.Context) error {
 	q := c.QueryParam("q")
 	mailbox := c.QueryParam("mailbox")
@@ -38,7 +41,7 @@ func (h *SearchHandler) Results(c *echo.Context) error {
 		return err
 	}
 
-	// OR across Subject, From and To so any matching field returns results
+	// OR across Subject and From so either matching field returns the message.
 	uids, err := conn.Search(&imap.SearchCriteria{Subject: q, From: q})
 	if err != nil {
 		return err
@@ -49,8 +52,7 @@ func (h *SearchHandler) Results(c *echo.Context) error {
 		return err
 	}
 
-
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]any{
 		"mailbox":  mailbox,
 		"messages": envelopes,
 		"query":    q,

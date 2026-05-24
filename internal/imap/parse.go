@@ -11,14 +11,14 @@ import (
 	"github.com/emersion/go-message/mail"
 )
 
-// ParsedMessage contém o corpo e anexos extraídos de uma mensagem.
+// ParsedMessage holds the decoded body parts and attachments of a MIME message.
 type ParsedMessage struct {
 	TextPlain   string
 	TextHTML    string
 	Attachments []Attachment
 }
 
-// Attachment descreve um arquivo anexado.
+// Attachment describes a single file attached to an email message.
 type Attachment struct {
 	Filename    string
 	ContentType string
@@ -27,8 +27,9 @@ type Attachment struct {
 	Data        []byte
 }
 
-// ParseMessage faz o parse de uma mensagem MIME em bytes raw.
-// Imagens inline com cid: são convertidas para data: URI no HTML.
+// ParseMessage decodes a raw RFC822 message into its text bodies and attachments.
+// Inline images referenced by cid: URIs are replaced with base64 data: URIs so
+// they render correctly without a separate HTTP request.
 func ParseMessage(raw []byte) (*ParsedMessage, error) {
 	mr, err := mail.CreateReader(bytes.NewReader(raw))
 	if err != nil {
@@ -37,7 +38,7 @@ func ParseMessage(raw []byte) (*ParsedMessage, error) {
 
 	pm := &ParsedMessage{}
 	part := 0
-	// mapa de Content-ID → data URI para imagens inline
+	// Map Content-ID → data URI for resolving cid: references in HTML.
 	cidMap := make(map[string]string)
 
 	for {
@@ -75,7 +76,7 @@ func ParseMessage(raw []byte) (*ParsedMessage, error) {
 			})
 
 		case contentID != "" && strings.HasPrefix(mediatype, "image/"):
-			// Imagem inline referenciada por cid: → converter para data: URI
+			// Inline image referenced by cid: — convert to a data URI.
 			b64 := base64.StdEncoding.EncodeToString(data)
 			cidMap[contentID] = fmt.Sprintf("data:%s;base64,%s", mediatype, b64)
 
@@ -87,7 +88,7 @@ func ParseMessage(raw []byte) (*ParsedMessage, error) {
 		}
 	}
 
-	// Substituir referências cid: pelo data: URI correspondente
+	// Replace cid: references in the HTML body with the corresponding data URIs.
 	if pm.TextHTML != "" && len(cidMap) > 0 {
 		for cid, dataURI := range cidMap {
 			pm.TextHTML = strings.ReplaceAll(pm.TextHTML, "cid:"+cid, dataURI)
@@ -96,5 +97,3 @@ func ParseMessage(raw []byte) (*ParsedMessage, error) {
 
 	return pm, nil
 }
-
-

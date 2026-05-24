@@ -12,6 +12,12 @@ import (
 	"go-cubemail/internal/session"
 )
 
+// MailboxHandler handles IMAP folder and message-list operations.
+type MailboxHandler struct {
+	cfg *config.Config
+}
+
+// imapConn opens an authenticated IMAP connection using the current session credentials.
 func (h *MailboxHandler) imapConn(s *session.IMAPSession) (*imap.Client, error) {
 	pass, err := s.Password(h.cfg.Server.SecretKey)
 	if err != nil {
@@ -21,10 +27,9 @@ func (h *MailboxHandler) imapConn(s *session.IMAPSession) (*imap.Client, error) 
 		time.Duration(h.cfg.IMAP.TimeoutSec)*time.Second, s.Username, pass, h.cfg.Server.Debug)
 }
 
-type MailboxHandler struct {
-	cfg *config.Config
-}
-
+// resolveCreateDelimiter returns the hierarchy delimiter to use when creating a subfolder.
+// It queries the parent folder's delimiter from the server; falls back to the client-supplied
+// value or "/" when neither is available.
 func (h *MailboxHandler) resolveCreateDelimiter(conn *imap.Client, parent, requested string) string {
 	if parent == "" {
 		if requested != "" {
@@ -53,17 +58,12 @@ func (h *MailboxHandler) resolveCreateDelimiter(conn *imap.Client, parent, reque
 	return "/"
 }
 
+// List returns a paginated list of message envelopes for the given mailbox, ordered newest first.
 func (h *MailboxHandler) List(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	s := c.Get("imap_session").(*session.IMAPSession)
 
-	pass, err := s.Password(h.cfg.Server.SecretKey)
-	if err != nil {
-		return err
-	}
-
-	conn, err := imap.Connect(s.IMAPHost, s.IMAPPort, h.cfg.IMAP.TLS,
-		time.Duration(h.cfg.IMAP.TimeoutSec)*time.Second, s.Username, pass, h.cfg.Server.Debug)
+	conn, err := h.imapConn(s)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (h *MailboxHandler) List(c *echo.Context) error {
 		return err
 	}
 
-	// Inverter para mostrar os mais recentes primeiro
+	// Reverse UIDs so newest messages appear first.
 	for i, j := 0, len(uids)-1; i < j; i, j = i+1, j-1 {
 		uids[i], uids[j] = uids[j], uids[i]
 	}
@@ -102,7 +102,7 @@ func (h *MailboxHandler) List(c *echo.Context) error {
 		return err
 	}
 
-	// Reordenar para manter a ordem requisitada (mais recente primeiro)
+	// Rebuild in the original reversed order since FetchEnvelopes may reorder results.
 	envMap := make(map[goimap.UID]imap.Envelope)
 	for _, e := range fetched {
 		envMap[e.UID] = e
@@ -114,7 +114,7 @@ func (h *MailboxHandler) List(c *echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]any{
 		"mailbox":  mailbox,
 		"messages": envelopes,
 		"page":     page,
@@ -123,15 +123,10 @@ func (h *MailboxHandler) List(c *echo.Context) error {
 	})
 }
 
+// FoldersJSON returns the full list of IMAP folders with tree-structure metadata.
 func (h *MailboxHandler) FoldersJSON(c *echo.Context) error {
 	s := c.Get("imap_session").(*session.IMAPSession)
-	pass, err := s.Password(h.cfg.Server.SecretKey)
-	if err != nil {
-		return err
-	}
-
-	conn, err := imap.Connect(s.IMAPHost, s.IMAPPort, h.cfg.IMAP.TLS,
-		time.Duration(h.cfg.IMAP.TimeoutSec)*time.Second, s.Username, pass, h.cfg.Server.Debug)
+	conn, err := h.imapConn(s)
 	if err != nil {
 		return err
 	}
@@ -144,6 +139,7 @@ func (h *MailboxHandler) FoldersJSON(c *echo.Context) error {
 	return c.JSON(http.StatusOK, folders)
 }
 
+// CreateSubfolder creates a new IMAP folder, optionally nested under a parent folder.
 func (h *MailboxHandler) CreateSubfolder(c *echo.Context) error {
 	parent := c.FormValue("parent")
 	name := c.FormValue("name")
@@ -171,6 +167,7 @@ func (h *MailboxHandler) CreateSubfolder(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok", "name": fullName})
 }
 
+// RenameFolder renames an existing IMAP folder.
 func (h *MailboxHandler) RenameFolder(c *echo.Context) error {
 	name := c.FormValue("name")
 	newname := c.FormValue("newname")
@@ -189,6 +186,7 @@ func (h *MailboxHandler) RenameFolder(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// DeleteFolder recursively deletes an IMAP folder and all its subfolders.
 func (h *MailboxHandler) DeleteFolder(c *echo.Context) error {
 	name := c.FormValue("name")
 	if name == "" {
@@ -206,16 +204,11 @@ func (h *MailboxHandler) DeleteFolder(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// UnreadCountJSON returns the number of unseen messages in the named folder.
 func (h *MailboxHandler) UnreadCountJSON(c *echo.Context) error {
 	name := c.Param("name")
 	s := c.Get("imap_session").(*session.IMAPSession)
-	pass, err := s.Password(h.cfg.Server.SecretKey)
-	if err != nil {
-		return err
-	}
-
-	conn, err := imap.Connect(s.IMAPHost, s.IMAPPort, h.cfg.IMAP.TLS,
-		time.Duration(h.cfg.IMAP.TimeoutSec)*time.Second, s.Username, pass, h.cfg.Server.Debug)
+	conn, err := h.imapConn(s)
 	if err != nil {
 		return err
 	}

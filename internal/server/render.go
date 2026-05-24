@@ -33,20 +33,17 @@ func (t *TemplateRenderer) Render(c *echo.Context, w io.Writer, name string, dat
 	} else if m, ok := data.(map[string]any); ok {
 		m["CurrentPath"] = currentPath
 		viewData = m
-	} else if m, ok := data.(map[string]interface{}); ok {
-		m["CurrentPath"] = currentPath
-		viewData = m
 	}
 
-	// Templates marcados como fragmentos AJAX não usam layout.
-	// Convenção: "message.html" e qualquer template prefixado com "partial_"
-	// são renderizados diretamente pelo seu próprio nome (sem layout wrapper).
+	// AJAX fragment templates do not use a layout wrapper.
+	// Convention: "message.html" and any template prefixed with "partial_" are
+	// executed directly by their own name, without a layout wrapper.
 	baseName := name
 	if idx := strings.LastIndex(name, "/"); idx >= 0 {
 		baseName = name[idx+1:]
 	}
 	if baseName == "message.html" || strings.HasPrefix(baseName, "partial_") {
-		// Fragmentos não têm {{define}}: executa o template raiz diretamente.
+		// Fragments have no {{define}} block: execute the root template directly.
 		return tmpl.Execute(w, viewData)
 	}
 
@@ -104,7 +101,7 @@ func loadTemplates(embeddedFiles embed.FS) (*TemplateRenderer, error) {
 		// Key: path relative to web/templates/ (e.g. "mailbox/index.html")
 		tmplKey := strings.TrimPrefix(filePath, "web/templates/")
 
-		// Fragmentos AJAX: renderizados sem layout, apenas o próprio arquivo.
+		// AJAX fragments are rendered without a layout — only the template file itself.
 		isFragment := name == "message.html" || strings.HasPrefix(name, "partial_")
 
 		var tmpl *template.Template
@@ -114,10 +111,10 @@ func loadTemplates(embeddedFiles embed.FS) (*TemplateRenderer, error) {
 			tmpl, parseErr = template.New(name).Funcs(funcMap).ParseFS(embeddedFiles,
 				loginLayoutFile, filePath)
 		} else if isFragment {
-			// Sem layout — só o próprio arquivo.
+			// No layout wrapper — parse only the fragment file itself.
 			tmpl, parseErr = template.New(name).Funcs(funcMap).ParseFS(embeddedFiles, filePath)
 		} else {
-			// Páginas normais: layout + partials + página.
+			// Normal page: layout + partials + the page template itself.
 			parseFiles := append([]string{layoutFile}, append(partials, filePath)...)
 			tmpl, parseErr = template.New(name).Funcs(funcMap).ParseFS(embeddedFiles, parseFiles...)
 		}

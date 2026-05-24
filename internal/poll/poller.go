@@ -20,6 +20,8 @@ func Start(secretKey string, tlsEnabled bool, timeout time.Duration, hub *Hub) {
 	}()
 }
 
+// checkAll iterates all active sessions, connects to IMAP, counts messages in INBOX,
+// and pushes a "new-mail" event to the hub when the count increases.
 func checkAll(secretKey string, tlsEnabled bool, timeout time.Duration, hub *Hub, state map[string]uint32) {
 	sessions := session.All()
 	for sessID, s := range sessions {

@@ -2,7 +2,9 @@ package imap
 
 import "github.com/emersion/go-imap/v2"
 
-// SearchCriteria parametriza uma busca IMAP.
+// SearchCriteria defines filter parameters for an IMAP search request.
+// Text fields (Subject, From, To, Body) are combined with OR so that a match
+// in any field returns the message.
 type SearchCriteria struct {
 	Subject string
 	From    string
@@ -12,12 +14,12 @@ type SearchCriteria struct {
 	Flagged bool
 }
 
-// Search executa uma busca IMAP e retorna UIDs correspondentes.
-// Campos de texto (Subject, From, To, Body) são combinados com OR.
+// Search executes a UID search on the currently selected mailbox and returns matching UIDs.
+// Text criteria are OR'd together; Unseen and Flagged are applied as AND conditions.
 func (c *Client) Search(criteria *SearchCriteria) ([]imap.UID, error) {
 	sc := &imap.SearchCriteria{}
 
-	// Critérios de texto: usa OR para que qualquer campo baste
+	// Build OR chain for all text fields: OR(a, OR(b, c)) ...
 	var textCriteria []imap.SearchCriteria
 	if criteria.Subject != "" {
 		textCriteria = append(textCriteria, imap.SearchCriteria{
@@ -36,7 +38,7 @@ func (c *Client) Search(criteria *SearchCriteria) ([]imap.UID, error) {
 		textCriteria = append(textCriteria, imap.SearchCriteria{Body: []string{criteria.Body}})
 	}
 
-	// Encadeia OR progressivamente: OR(a, OR(b, c)) …
+	// Progressively merge criteria into OR pairs.
 	for len(textCriteria) > 1 {
 		last := textCriteria[len(textCriteria)-1]
 		prev := textCriteria[len(textCriteria)-2]

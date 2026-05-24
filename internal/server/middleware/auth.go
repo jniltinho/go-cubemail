@@ -1,3 +1,5 @@
+// Package middleware provides Echo middleware functions for go-cubemail:
+// authentication, CSRF protection, rate limiting, and security headers.
 package middleware
 
 import (

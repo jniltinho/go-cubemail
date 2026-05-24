@@ -16,10 +16,13 @@ import (
 	"go-cubemail/internal/session"
 )
 
+// MessageHandler handles reading, flagging, moving, and deleting individual email messages.
 type MessageHandler struct {
 	cfg *config.Config
 }
 
+// messageDownloadName returns a filesystem-safe filename for downloading a message as .eml.
+// Special characters that are invalid in filenames are replaced or removed.
 func messageDownloadName(subject string, uid uint64) string {
 	name := strings.TrimSpace(subject)
 	if name == "" {
@@ -45,6 +48,7 @@ func messageDownloadName(subject string, uid uint64) string {
 	return name + ".eml"
 }
 
+// imapConn opens an authenticated IMAP connection using the current session credentials.
 func (h *MessageHandler) imapConn(s *session.IMAPSession) (*imappkg.Client, error) {
 	pass, err := s.Password(h.cfg.Server.SecretKey)
 	if err != nil {
@@ -54,6 +58,22 @@ func (h *MessageHandler) imapConn(s *session.IMAPSession) (*imappkg.Client, erro
 		time.Duration(h.cfg.IMAP.TimeoutSec)*time.Second, s.Username, pass, h.cfg.Server.Debug)
 }
 
+// findTrashFolder resolves the real Trash folder name from IMAP mailbox attributes.
+// Returns "Trash" as a fallback when no folder is flagged with the \Trash attribute.
+func (h *MessageHandler) findTrashFolder(conn *imappkg.Client) string {
+	trashFolder := "Trash"
+	if boxes, err := conn.ListMailboxes(); err == nil {
+		for _, mb := range boxes {
+			if mb.IsTrash {
+				return mb.Name
+			}
+		}
+	}
+	return trashFolder
+}
+
+// Read fetches a message's envelope, sanitized HTML body, plain-text body, and attachment list.
+// The message is marked as seen. The HTML body is sanitized via bluemonday before returning.
 func (h *MessageHandler) Read(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)
@@ -79,39 +99,43 @@ func (h *MessageHandler) Read(c *echo.Context) error {
 
 	conn.MarkSeen(imap.UID(uid))
 
-	var safeHTML template.HTML = template.HTML("<p>O corpo da mensagem está vazio.</p>")
-	rawMsg, err := conn.FetchRawMessage(imap.UID(uid))
-	if err == nil {
-		parsedMsg, parseErr := imappkg.ParseMessage(rawMsg)
-		if parseErr == nil {
-			bodyPolicy := bluemonday.NewPolicy()
-			// Permitir todos os elementos comuns de e-mail HTML
-			bodyPolicy.AllowElements(
-				"html", "head", "body", "div", "span", "p", "br", "hr",
-				"h1", "h2", "h3", "h4", "h5", "h6",
-				"b", "strong", "i", "em", "u", "s", "strike", "sup", "sub",
-				"ul", "ol", "li", "blockquote", "pre", "code",
-				"table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption",
-				"img", "a", "font",
-			)
-			bodyPolicy.AllowAttrs("style").Globally()
-			bodyPolicy.AllowAttrs("class").Globally()
-			bodyPolicy.AllowAttrs("align", "valign", "bgcolor", "color", "width", "height", "border", "cellpadding", "cellspacing").OnElements("table", "td", "th", "tr")
-			bodyPolicy.AllowAttrs("src", "alt", "width", "height", "border").OnElements("img")
-			bodyPolicy.AllowAttrs("href", "target").OnElements("a")
-			bodyPolicy.AllowAttrs("face", "size", "color").OnElements("font")
-			bodyPolicy.AllowAttrs("colspan", "rowspan").OnElements("td", "th")
-			// Permitir src com cid: (imagens inline) e https/http
-			bodyPolicy.AllowURLSchemes("http", "https", "cid", "data", "mailto")
+	// Parse the raw message once and reuse the result for body, attachments, and plain text.
+	var parsed *imappkg.ParsedMessage
+	rawMsg, rawErr := conn.FetchRawMessage(imap.UID(uid))
+	if rawErr == nil {
+		parsed, _ = imappkg.ParseMessage(rawMsg)
+	}
 
-			if parsedMsg.TextHTML != "" {
-				safeHTML = template.HTML(bodyPolicy.Sanitize(parsedMsg.TextHTML))
-			} else if parsedMsg.TextPlain != "" {
-				safeHTML = template.HTML("<pre class='whitespace-pre-wrap font-sans text-sm'>" + bodyPolicy.Sanitize(parsedMsg.TextPlain) + "</pre>")
-			}
+	// Build sanitized HTML body allowing common email HTML elements.
+	safeHTML := template.HTML("<p>The message body is empty.</p>")
+	if parsed != nil {
+		bodyPolicy := bluemonday.NewPolicy()
+		bodyPolicy.AllowElements(
+			"html", "head", "body", "div", "span", "p", "br", "hr",
+			"h1", "h2", "h3", "h4", "h5", "h6",
+			"b", "strong", "i", "em", "u", "s", "strike", "sup", "sub",
+			"ul", "ol", "li", "blockquote", "pre", "code",
+			"table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption",
+			"img", "a", "font",
+		)
+		bodyPolicy.AllowAttrs("style").Globally()
+		bodyPolicy.AllowAttrs("class").Globally()
+		bodyPolicy.AllowAttrs("align", "valign", "bgcolor", "color", "width", "height", "border", "cellpadding", "cellspacing").OnElements("table", "td", "th", "tr")
+		bodyPolicy.AllowAttrs("src", "alt", "width", "height", "border").OnElements("img")
+		bodyPolicy.AllowAttrs("href", "target").OnElements("a")
+		bodyPolicy.AllowAttrs("face", "size", "color").OnElements("font")
+		bodyPolicy.AllowAttrs("colspan", "rowspan").OnElements("td", "th")
+		// Allow cid: and data: schemes for inline images embedded in the message.
+		bodyPolicy.AllowURLSchemes("http", "https", "cid", "data", "mailto")
+
+		if parsed.TextHTML != "" {
+			safeHTML = template.HTML(bodyPolicy.Sanitize(parsed.TextHTML))
+		} else if parsed.TextPlain != "" {
+			safeHTML = template.HTML("<pre class='whitespace-pre-wrap font-sans text-sm'>" + bodyPolicy.Sanitize(parsed.TextPlain) + "</pre>")
 		}
 	}
 
+	// Build attachment list with human-readable size labels.
 	type attachmentView struct {
 		Filename    string `json:"filename"`
 		Part        int    `json:"part"`
@@ -119,36 +143,32 @@ func (h *MessageHandler) Read(c *echo.Context) error {
 		ContentType string `json:"content_type"`
 	}
 	var attViews []attachmentView
-	if rawMsg != nil {
-		if p, e := imappkg.ParseMessage(rawMsg); e == nil {
-			for _, a := range p.Attachments {
-				label := ""
-				switch {
-				case a.Size >= 1048576:
-					label = fmt.Sprintf("%.1fMB", float64(a.Size)/1048576)
-				case a.Size >= 1024:
-					label = fmt.Sprintf("%.1fKB", float64(a.Size)/1024)
-				default:
-					label = fmt.Sprintf("%dB", a.Size)
-				}
-				attViews = append(attViews, attachmentView{
-					Filename:    a.Filename,
-					Part:        a.Part,
-					SizeLabel:   label,
-					ContentType: a.ContentType,
-				})
+	if parsed != nil {
+		for _, a := range parsed.Attachments {
+			var label string
+			switch {
+			case a.Size >= 1048576:
+				label = fmt.Sprintf("%.1fMB", float64(a.Size)/1048576)
+			case a.Size >= 1024:
+				label = fmt.Sprintf("%.1fKB", float64(a.Size)/1024)
+			default:
+				label = fmt.Sprintf("%dB", a.Size)
 			}
+			attViews = append(attViews, attachmentView{
+				Filename:    a.Filename,
+				Part:        a.Part,
+				SizeLabel:   label,
+				ContentType: a.ContentType,
+			})
 		}
 	}
 
 	plainBody := ""
-	if rawMsg != nil {
-		if parsedMsg, err := imappkg.ParseMessage(rawMsg); err == nil {
-			plainBody = parsedMsg.TextPlain
-		}
+	if parsed != nil {
+		plainBody = parsed.TextPlain
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]any{
 		"mailbox":     mailbox,
 		"uid":         uid,
 		"envelope":    envelopes[0],
@@ -158,6 +178,7 @@ func (h *MessageHandler) Read(c *echo.Context) error {
 	})
 }
 
+// Download serves the raw RFC822 message as a downloadable .eml attachment.
 func (h *MessageHandler) Download(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)
@@ -190,6 +211,7 @@ func (h *MessageHandler) Download(c *echo.Context) error {
 	return c.Blob(http.StatusOK, "message/rfc822", rawMsg)
 }
 
+// Raw serves the raw RFC822 message bytes as plain text.
 func (h *MessageHandler) Raw(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)
@@ -216,6 +238,8 @@ func (h *MessageHandler) Raw(c *echo.Context) error {
 	return c.Blob(http.StatusOK, "text/plain; charset=utf-8", rawMsg)
 }
 
+// Flag sets or clears the "seen" or "flagged" IMAP flag on a message.
+// The request must include form fields "flag" ("seen"|"flagged") and "value" ("1"|"0").
 func (h *MessageHandler) Flag(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)
@@ -254,6 +278,7 @@ func (h *MessageHandler) Flag(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// Move moves a message to the folder specified in the "dest" form field.
 func (h *MessageHandler) Move(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)
@@ -278,6 +303,8 @@ func (h *MessageHandler) Move(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// Delete moves a message to the Trash folder.
+// If the message is already in Trash, it is permanently deleted instead.
 func (h *MessageHandler) Delete(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)
@@ -296,16 +323,7 @@ func (h *MessageHandler) Delete(c *echo.Context) error {
 		return err
 	}
 
-	// Find real trash folder name via IMAP attributes
-	trashFolder := "Trash"
-	if boxes, lerr := conn.ListMailboxes(); lerr == nil {
-		for _, mb := range boxes {
-			if mb.IsTrash {
-				trashFolder = mb.Name
-				break
-			}
-		}
-	}
+	trashFolder := h.findTrashFolder(conn)
 
 	if mailbox == trashFolder {
 		err = conn.DeleteMessage(imap.UID(uid))
@@ -318,6 +336,8 @@ func (h *MessageHandler) Delete(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// EmptyTrash permanently deletes all messages in the Trash folder,
+// or moves all messages from the given mailbox to Trash if it is not the Trash folder.
 func (h *MessageHandler) EmptyTrash(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	s := c.Get("imap_session").(*session.IMAPSession)
@@ -327,24 +347,13 @@ func (h *MessageHandler) EmptyTrash(c *echo.Context) error {
 	}
 	defer conn.Close()
 
-	// Find real trash folder name
-	trashFolder := "Trash"
-	if boxes, lerr := conn.ListMailboxes(); lerr == nil {
-		for _, mb := range boxes {
-			if mb.IsTrash {
-				trashFolder = mb.Name
-				break
-			}
-		}
-	}
+	trashFolder := h.findTrashFolder(conn)
 
 	if mailbox == trashFolder {
-		// Permanently delete all messages in Trash
 		if err := conn.EmptyMailbox(mailbox); err != nil {
 			return err
 		}
 	} else {
-		// Move all messages to Trash
 		if err := conn.MoveAllMessages(mailbox, trashFolder); err != nil {
 			return err
 		}
@@ -352,6 +361,7 @@ func (h *MessageHandler) EmptyTrash(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// Attachment downloads a single attachment identified by its MIME part number.
 func (h *MessageHandler) Attachment(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)

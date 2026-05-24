@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
+// AuthHandler handles user authentication: login, logout, session introspection, and IMAP quota.
 type AuthHandler struct {
 	cfg *config.Config
 }
@@ -124,6 +125,7 @@ func (h *AuthHandler) Quota(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]int64{"used": q.UsageBytes, "limit": q.LimitBytes})
 }
 
+// newSessionID generates a cryptographically random 16-byte session identifier as hex.
 func newSessionID() string {
 	b := make([]byte, 16)
 	rand.Read(b)

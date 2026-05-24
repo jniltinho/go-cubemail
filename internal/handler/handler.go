@@ -6,7 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// Handlers agrupa todos os handlers da aplicação.
+// Handlers groups all domain-specific HTTP handler instances.
+// It is created once at startup and passed to the route registration function.
 type Handlers struct {
 	Auth     *AuthHandler
 	Mailbox  *MailboxHandler
@@ -17,7 +18,7 @@ type Handlers struct {
 	Search   *SearchHandler
 }
 
-// New inicializa todos os handlers com a configuração da aplicação.
+// New initialises all handler instances with the shared configuration and database connection.
 func New(cfg *config.Config, db *gorm.DB) *Handlers {
 	return &Handlers{
 		Auth:     &AuthHandler{cfg: cfg},

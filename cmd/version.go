@@ -1,5 +1,7 @@
 package cmd
 
+// versionCmd prints the binary version, git commit, and build date to stdout.
+
 import (
 	"fmt"
 

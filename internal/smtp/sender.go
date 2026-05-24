@@ -1,3 +1,6 @@
+// Package smtp provides email composition and delivery via SMTP/STARTTLS.
+// It handles inline image extraction (data: URIs → cid: references) and
+// returns the raw RFC822 bytes so the caller can save a copy to the Sent folder.
 package smtp
 
 import (
@@ -11,7 +14,7 @@ import (
 	"github.com/jordan-wright/email"
 )
 
-// Message representa um e-mail a ser enviado.
+// Message holds all fields needed to compose an outgoing email.
 type Message struct {
 	From        string
 	DisplayName string
@@ -24,14 +27,14 @@ type Message struct {
 	Attachments []Attachment
 }
 
-// Attachment descreve um arquivo para envio.
+// Attachment holds the binary content of a file to attach to an outgoing message.
 type Attachment struct {
 	Filename    string
 	ContentType string
 	Data        []byte
 }
 
-// Config agrupa as configurações do servidor SMTP.
+// Config holds SMTP server connection settings.
 type Config struct {
 	Host       string
 	Port       int
@@ -39,11 +42,11 @@ type Config struct {
 	TimeoutSec int
 }
 
-// dataURIRe captura src="data:<mime>;base64,<data>" dentro do HTML.
+// dataURIRe matches src="data:<mime>;base64,<data>" attributes inside HTML.
 var dataURIRe = regexp.MustCompile(`src="data:([^;]+);base64,([^"]+)"`)
 
-// extractInlineImages substitui data URIs no HTML por cid: references
-// e retorna a lista de inline attachments gerados.
+// extractInlineImages replaces data: URI image src attributes with cid: references,
+// returning the modified HTML and the list of inline attachments to embed.
 func extractInlineImages(html string) (string, []inlineImage) {
 	var inlines []inlineImage
 	idx := 0
@@ -55,7 +58,7 @@ func extractInlineImages(html string) (string, []inlineImage) {
 		mimeType := parts[1]
 		b64data := parts[2]
 
-		// Remove espaços/quebras que o TinyMCE pode ter inserido
+		// Strip whitespace that TinyMCE may insert inside long base64 strings.
 		b64data = strings.ReplaceAll(b64data, "\n", "")
 		b64data = strings.ReplaceAll(b64data, " ", "")
 
@@ -92,7 +95,8 @@ type inlineImage struct {
 	data     []byte
 }
 
-// Send envia um e-mail via SMTP e retorna os bytes brutos do e-mail.
+// Send delivers msg via SMTP (or STARTTLS when cfg.StartTLS is true) and returns
+// the raw RFC822 bytes so the caller can append a copy to the Sent folder.
 func Send(cfg Config, user, pass string, msg *Message) ([]byte, error) {
 	e := email.NewEmail()
 	if msg.DisplayName != "" {
@@ -106,7 +110,7 @@ func Send(cfg Config, user, pass string, msg *Message) ([]byte, error) {
 	e.Subject = msg.Subject
 	e.Text = []byte(msg.TextPlain)
 
-	// Extrai imagens inline (data URIs) do HTML antes de enviar
+	// Convert data: URI images to cid: inline attachments before sending.
 	htmlBody := msg.TextHTML
 	var inlines []inlineImage
 	if htmlBody != "" {
@@ -114,7 +118,6 @@ func Send(cfg Config, user, pass string, msg *Message) ([]byte, error) {
 		e.HTML = []byte(htmlBody)
 	}
 
-	// Adiciona imagens inline como partes CID
 	for _, img := range inlines {
 		part, err := e.Attach(bytes.NewReader(img.data), img.filename, img.mimeType)
 		if err != nil {
@@ -124,7 +127,6 @@ func Send(cfg Config, user, pass string, msg *Message) ([]byte, error) {
 		part.Header.Set("Content-Disposition", "inline")
 	}
 
-	// Adiciona anexos normais
 	for _, a := range msg.Attachments {
 		if _, err := e.Attach(bytes.NewReader(a.Data), a.Filename, a.ContentType); err != nil {
 			return nil, fmt.Errorf("attach %s: %w", a.Filename, err)
@@ -134,7 +136,6 @@ func Send(cfg Config, user, pass string, msg *Message) ([]byte, error) {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	auth := smtp.PlainAuth("", user, pass, cfg.Host)
 
-	// Gera os bytes brutos após montar tudo (inclusive inline images e anexos)
 	raw, err := e.Bytes()
 	if err != nil {
 		return nil, fmt.Errorf("build email: %w", err)

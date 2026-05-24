@@ -1,3 +1,5 @@
+// Package server initialises the Echo HTTP server, registers all middleware and routes,
+// starts background workers (session cleanup, new-mail poller), and manages TLS/plain-text startup.
 package server
 
 import (
@@ -21,6 +23,8 @@ import (
 // AppVersion can be set via ldflags: -ldflags "-X go-cubemail/internal/server.AppVersion=1.2.3"
 var AppVersion = "dev"
 
+// Start initialises the application and blocks until the server exits.
+// It wires the database, sessions, SSE poller, middleware stack, routes, and static files.
 func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 	session.InitDB(db)
 

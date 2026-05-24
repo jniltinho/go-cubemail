@@ -1,3 +1,5 @@
+// Package cmd defines the Cobra CLI commands for go-cubemail (serve, migrate, version).
+// Configuration is loaded from config.toml via Viper and can be overridden with GORC_* env vars.
 package cmd
 
 import (
@@ -12,8 +14,11 @@ import (
 
 var (
 	cfgFile   string
+	// Version is injected at build time via -ldflags "-X go-cubemail/cmd.Version=x.y.z".
 	Version   = "dev"
+	// BuildDate is injected at build time.
 	BuildDate = "unknown"
+	// GitCommit is injected at build time.
 	GitCommit = "unknown"
 )
 
@@ -24,6 +29,8 @@ var rootCmd = &cobra.Command{
 
 var globalFS embed.FS
 
+// Execute sets the embedded filesystem and runs the root Cobra command.
+// It is called from main() with the compiled-in web/dist filesystem.
 func Execute(fs embed.FS) {
 	globalFS = fs
 	if err := rootCmd.Execute(); err != nil {
@@ -37,6 +44,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "path to config.toml (default: ./config.toml)")
 }
 
+// initConfig loads configuration from disk and environment variables via Viper.
+// Search order: --config flag → ./config.toml → /etc/go-cubemail/config.toml.
+// Environment variables prefixed with GORC_ override any file values.
 func initConfig() {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)

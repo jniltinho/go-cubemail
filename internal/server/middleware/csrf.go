@@ -51,6 +51,7 @@ func CSRF() echo.MiddlewareFunc {
 	}
 }
 
+// newCSRFToken generates a cryptographically random 16-byte token encoded as hex.
 func newCSRFToken() (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {

@@ -1,7 +1,10 @@
+// Package config defines the application configuration structures and the Load function
+// that populates them from Viper (config.toml + GORC_* environment variables).
 package config
 
 import "github.com/spf13/viper"
 
+// Config is the root configuration object passed throughout the application.
 type Config struct {
 	Server   ServerConfig
 	IMAP     IMAPConfig
@@ -12,24 +15,29 @@ type Config struct {
 	Upload   UploadConfig
 }
 
+// ServerConfig holds HTTP server settings.
 type ServerConfig struct {
 	Host      string
 	Port      int
 	Debug     bool
+	// SecretKey is a 32-byte key used for AES-GCM password encryption in sessions.
 	SecretKey string `mapstructure:"secret_key"`
 	BaseURL   string `mapstructure:"base_url"`
 	TLSCert   string `mapstructure:"tls_cert"`
 	TLSKey    string `mapstructure:"tls_key"`
 }
 
+// IMAPConfig holds IMAP connection settings.
 type IMAPConfig struct {
-	Host          string
-	Port          int
-	TLS           bool
-	TimeoutSec    int  `mapstructure:"timeout_sec"`
+	Host       string
+	Port       int
+	TLS        bool
+	TimeoutSec int `mapstructure:"timeout_sec"`
+	// ShowHostInput allows users to enter a custom IMAP host on the login form.
 	ShowHostInput bool `mapstructure:"show_host_input"`
 }
 
+// SMTPConfig holds SMTP submission settings.
 type SMTPConfig struct {
 	Host       string
 	Port       int
@@ -37,11 +45,14 @@ type SMTPConfig struct {
 	TimeoutSec int  `mapstructure:"timeout_sec"`
 }
 
+// DatabaseConfig selects the database driver and connection string.
+// Supported drivers: "sqlite" (default), "mariadb".
 type DatabaseConfig struct {
 	Driver string
 	DSN    string
 }
 
+// SessionConfig controls the HTTP session cookie behaviour.
 type SessionConfig struct {
 	Name     string
 	MaxAge   int  `mapstructure:"max_age"`
@@ -49,6 +60,7 @@ type SessionConfig struct {
 	HTTPOnly bool `mapstructure:"http_only"`
 }
 
+// UIConfig contains default UI preferences applied to all users.
 type UIConfig struct {
 	Theme          string
 	RowsPerPage    int    `mapstructure:"rows_per_page"`
@@ -58,11 +70,14 @@ type UIConfig struct {
 	ComposeHTML    bool   `mapstructure:"compose_html"`
 }
 
+// UploadConfig configures attachment upload limits and temporary storage.
 type UploadConfig struct {
 	MaxSizeMB int    `mapstructure:"max_size_mb"`
 	TempDir   string `mapstructure:"temp_dir"`
 }
 
+// Load reads all configuration keys from Viper and returns a populated Config.
+// Call this after Viper has been initialised (e.g., inside a cobra RunE function).
 func Load() *Config {
 	cfg := &Config{}
 	cfg.Server.Host = viper.GetString("server.host")

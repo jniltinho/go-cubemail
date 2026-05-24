@@ -1,5 +1,8 @@
 package cmd
 
+// migrateCmd runs GORM AutoMigrate for all database models.
+// It is safe to run repeatedly; GORM only adds missing columns or tables.
+
 import (
 	"fmt"
 

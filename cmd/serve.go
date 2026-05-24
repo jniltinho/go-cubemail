@@ -1,5 +1,9 @@
 package cmd
 
+// serveCmd starts the HTTP server. It opens the configured database, initialises
+// the handler and session layers, and hands off to server.Start.
+// Port and debug-mode flags can override the config file values.
+
 import (
 	"log/slog"
 	"os"

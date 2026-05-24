@@ -2,22 +2,24 @@ package imap
 
 import (
 	"fmt"
+
 	"github.com/emersion/go-imap/v2"
 )
 
-// Envelope resume cabeçalhos de uma mensagem para listagem.
+// Envelope contains the message headers needed to render a mailbox listing row.
 type Envelope struct {
-	UID       imap.UID  `json:"uid"`
-	Subject   string    `json:"subject"`
-	From      string    `json:"from"`
-	FromEmail string    `json:"from_email"`
-	To        string    `json:"to"`
-	Date      string    `json:"date"`
-	Seen      bool      `json:"seen"`
-	Flagged   bool      `json:"flagged"`
+	UID       imap.UID `json:"uid"`
+	Subject   string   `json:"subject"`
+	From      string   `json:"from"`
+	FromEmail string   `json:"from_email"`
+	To        string   `json:"to"`
+	Date      string   `json:"date"`
+	Seen      bool     `json:"seen"`
+	Flagged   bool     `json:"flagged"`
 }
 
-// FetchEnvelopes busca envelopes de uma lista de UIDs.
+// FetchEnvelopes retrieves the envelope (headers and flags) for a slice of UIDs.
+// The mailbox must be selected before calling this method.
 func (c *Client) FetchEnvelopes(uids []imap.UID) ([]Envelope, error) {
 	if len(uids) == 0 {
 		return nil, nil
@@ -70,7 +72,8 @@ func (c *Client) FetchEnvelopes(uids []imap.UID) ([]Envelope, error) {
 	return result, nil
 }
 
-// FetchRawMessage baixa o conteúdo RFC822 completo de uma mensagem
+// FetchRawMessage downloads the complete RFC822 bytes of a message using BODY.PEEK[]
+// (does not alter the \Seen flag).
 func (c *Client) FetchRawMessage(uid imap.UID) ([]byte, error) {
 	seqSet := imap.UIDSetNum(uid)
 	section := &imap.FetchItemBodySection{Peek: true}
@@ -79,7 +82,6 @@ func (c *Client) FetchRawMessage(uid imap.UID) ([]byte, error) {
 		UID:         true,
 		BodySection: []*imap.FetchItemBodySection{section},
 	}).Collect()
-	
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +92,7 @@ func (c *Client) FetchRawMessage(uid imap.UID) ([]byte, error) {
 	return msgs[0].FindBodySection(section), nil
 }
 
-// MarkSeen marca uma mensagem como lida.
+// MarkSeen sets the \Seen flag on the message with the given UID.
 func (c *Client) MarkSeen(uid imap.UID) error {
 	return c.Client.Store(imap.UIDSetNum(uid), &imap.StoreFlags{
 		Op:    imap.StoreFlagsAdd,
@@ -98,7 +100,7 @@ func (c *Client) MarkSeen(uid imap.UID) error {
 	}, nil).Close()
 }
 
-// MarkUnseen desmarca a flag \Seen.
+// MarkUnseen removes the \Seen flag from the message with the given UID.
 func (c *Client) MarkUnseen(uid imap.UID) error {
 	return c.Client.Store(imap.UIDSetNum(uid), &imap.StoreFlags{
 		Op:    imap.StoreFlagsDel,
@@ -106,7 +108,7 @@ func (c *Client) MarkUnseen(uid imap.UID) error {
 	}, nil).Close()
 }
 
-// MarkFlagged marca/desmarca a flag \Flagged.
+// MarkFlagged adds or removes the \Flagged flag on the message with the given UID.
 func (c *Client) MarkFlagged(uid imap.UID, flagged bool) error {
 	op := imap.StoreFlagsAdd
 	if !flagged {
@@ -118,13 +120,13 @@ func (c *Client) MarkFlagged(uid imap.UID, flagged bool) error {
 	}, nil).Close()
 }
 
-// MoveMessage move uma mensagem para outra pasta.
+// MoveMessage moves a single message to the named destination folder using IMAP MOVE.
 func (c *Client) MoveMessage(uid imap.UID, dest string) error {
 	_, err := c.Client.Move(imap.UIDSetNum(uid), dest).Wait()
 	return err
 }
 
-// DeleteMessage marca como \Deleted e executa EXPUNGE.
+// DeleteMessage permanently removes a message by setting \Deleted and running EXPUNGE.
 func (c *Client) DeleteMessage(uid imap.UID) error {
 	if err := c.Client.Store(imap.UIDSetNum(uid), &imap.StoreFlags{
 		Op:    imap.StoreFlagsAdd,

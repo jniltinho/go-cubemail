@@ -1,3 +1,5 @@
+// Package imap provides a thin wrapper around the go-imap/v2 client library,
+// exposing higher-level methods for mailbox management, message operations, and quota queries.
 package imap
 
 import (
@@ -5,28 +7,29 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/emersion/go-imap/v2/imapclient"
 )
 
-// Client é um wrapper sobre imapclient.Client.
+// Client wraps imapclient.Client with higher-level convenience methods.
 type Client struct {
 	*imapclient.Client
 }
 
-// Connect abre uma conexão IMAP e autentica com LOGIN.
+// Connect dials an IMAP server (TLS or plain), authenticates with LOGIN, and returns a Client.
+// When debug is true, raw IMAP commands and responses are written to stdout.
 func Connect(host string, port int, useTLS bool, timeout time.Duration, user, pass string, debug bool) (*Client, error) {
-	addr := fmt.Sprintf("%s:%d", host, port)
+	addr := net.JoinHostPort(host, strconv.Itoa(port))
 	dialer := &net.Dialer{Timeout: timeout}
 
-	var inner *imapclient.Client
-	
 	opts := &imapclient.Options{}
 	if debug {
 		opts.DebugWriter = os.Stdout
 	}
 
+	var inner *imapclient.Client
 	if useTLS {
 		tlsCfg := &tls.Config{ServerName: host}
 		conn, err := tls.DialWithDialer(dialer, "tcp", addr, tlsCfg)

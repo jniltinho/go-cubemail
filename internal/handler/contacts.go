@@ -17,12 +17,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// ContactsHandler handles CRUD operations for user contacts and CSV/vCard import-export.
 type ContactsHandler struct {
 	cfg  *config.Config
 	repo *repository.ContactRepo
 	db   *gorm.DB
 }
 
+// contactRequest is the JSON body for create/update contact endpoints.
 type contactRequest struct {
 	Name    string `json:"name"`
 	Email   string `json:"email"`
@@ -32,6 +34,7 @@ type contactRequest struct {
 	Notes   string `json:"notes"`
 }
 
+// contactResponse is the JSON shape returned by all contact endpoints.
 type contactResponse struct {
 	ID      uint   `json:"id"`
 	Name    string `json:"name"`
@@ -42,6 +45,8 @@ type contactResponse struct {
 	Notes   string `json:"notes"`
 }
 
+// getUserID resolves the database user ID from the IMAP session username,
+// creating a User record on first login if one does not yet exist.
 func (h *ContactsHandler) getUserID(c *echo.Context) (uint, error) {
 	s := c.Get("imap_session").(*session.IMAPSession)
 	var user model.User
@@ -50,6 +55,7 @@ func (h *ContactsHandler) getUserID(c *echo.Context) (uint, error) {
 	return user.ID, err
 }
 
+// toResponse converts a model.Contact to the API response shape.
 func toResponse(c model.Contact) contactResponse {
 	name := strings.TrimSpace(c.FirstName + " " + c.LastName)
 	return contactResponse{
@@ -63,6 +69,8 @@ func toResponse(c model.Contact) contactResponse {
 	}
 }
 
+// splitName splits a full name string on the first space.
+// The entire string is returned as first if no space is found.
 func splitName(full string) (first, last string) {
 	full = strings.TrimSpace(full)
 	if f, l, ok := strings.Cut(full, " "); ok {
@@ -71,6 +79,7 @@ func splitName(full string) (first, last string) {
 	return full, ""
 }
 
+// Index returns all contacts for the authenticated user, ordered by name.
 func (h *ContactsHandler) Index(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {
@@ -87,6 +96,7 @@ func (h *ContactsHandler) Index(c *echo.Context) error {
 	return c.JSON(http.StatusOK, out)
 }
 
+// Create adds a new contact. Both name and email are required.
 func (h *ContactsHandler) Create(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {
@@ -116,6 +126,7 @@ func (h *ContactsHandler) Create(c *echo.Context) error {
 	return c.JSON(http.StatusCreated, toResponse(ct))
 }
 
+// Update replaces all fields of an existing contact identified by :id.
 func (h *ContactsHandler) Update(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {
@@ -144,6 +155,7 @@ func (h *ContactsHandler) Update(c *echo.Context) error {
 	return c.JSON(http.StatusOK, toResponse(*ct))
 }
 
+// Delete permanently removes a contact by :id.
 func (h *ContactsHandler) Delete(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {
@@ -156,6 +168,7 @@ func (h *ContactsHandler) Delete(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// Export streams all contacts as a downloadable CSV file.
 func (h *ContactsHandler) Export(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {
@@ -180,6 +193,8 @@ func (h *ContactsHandler) Export(c *echo.Context) error {
 	return err
 }
 
+// Import parses an uploaded .csv or .vcf file and bulk-inserts contacts.
+// Returns the count of successfully imported contacts.
 func (h *ContactsHandler) Import(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {

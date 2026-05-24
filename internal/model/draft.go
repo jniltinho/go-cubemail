@@ -2,6 +2,8 @@ package model
 
 import "time"
 
+// Draft stores a saved email composition in the database.
+// Placeholder: not yet used — planned for future draft persistence support.
 type Draft struct {
 	ID        uint   `gorm:"primaryKey"`
 	UserID    uint   `gorm:"index;not null"`

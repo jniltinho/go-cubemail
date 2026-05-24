@@ -2,6 +2,8 @@ package middleware
 
 import "github.com/labstack/echo/v5"
 
+// SecurityHeaders sets defensive HTTP response headers on every request:
+// X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and CSP.
 func SecurityHeaders() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {

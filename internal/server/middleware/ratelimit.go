@@ -9,6 +9,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// ipLimiter associates a token-bucket rate limiter with a timestamp for cleanup.
 type ipLimiter struct {
 	limiter  *rate.Limiter
 	lastSeen time.Time

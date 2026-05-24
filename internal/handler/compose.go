@@ -1,3 +1,6 @@
+// Package handler implements the HTTP request handlers for the go-cubemail API.
+// Each handler type is responsible for a specific domain (auth, mailbox, messages, etc.)
+// and is wired to routes in the server package.
 package handler
 
 import (
@@ -5,38 +8,32 @@ import (
 	"strings"
 	"time"
 
+	goimap "github.com/emersion/go-imap/v2"
+	"github.com/labstack/echo/v5"
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/imap"
 	"go-cubemail/internal/session"
 	smtppkg "go-cubemail/internal/smtp"
-	"github.com/labstack/echo/v5"
-	goimap "github.com/emersion/go-imap/v2"
 )
 
+// ComposeHandler handles email composition and sending.
 type ComposeHandler struct {
 	cfg *config.Config
 }
 
-func (h *ComposeHandler) New(c *echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{"mode": "new"})
+// imapConn opens an authenticated IMAP connection using the current session credentials.
+func (h *ComposeHandler) imapConn(s *session.IMAPSession) (*imap.Client, error) {
+	pass, err := s.Password(h.cfg.Server.SecretKey)
+	if err != nil {
+		return nil, err
+	}
+	return imap.Connect(s.IMAPHost, s.IMAPPort, h.cfg.IMAP.TLS,
+		time.Duration(h.cfg.IMAP.TimeoutSec)*time.Second, s.Username, pass, h.cfg.Server.Debug)
 }
 
-func (h *ComposeHandler) Reply(c *echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"mode":    "reply",
-		"mailbox": c.Param("mailbox"),
-		"uid":     c.Param("uid"),
-	})
-}
-
-func (h *ComposeHandler) Forward(c *echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"mode":    "forward",
-		"mailbox": c.Param("mailbox"),
-		"uid":     c.Param("uid"),
-	})
-}
-
+// Send composes and delivers an email via SMTP, then appends a copy to the Sent folder.
+// The Sent folder name is resolved from IMAP mailbox attributes to support servers with
+// non-standard folder names (e.g. "[Gmail]/Sent Mail").
 func (h *ComposeHandler) Send(c *echo.Context) error {
 	s := c.Get("imap_session").(*session.IMAPSession)
 	pass, err := s.Password(h.cfg.Server.SecretKey)
@@ -56,8 +53,7 @@ func (h *ComposeHandler) Send(c *echo.Context) error {
 
 	form, err := c.MultipartForm()
 	if err == nil && form != nil {
-		files := form.File["attachments"]
-		for _, file := range files {
+		for _, file := range form.File["attachments"] {
 			src, err := file.Open()
 			if err != nil {
 				continue
@@ -66,14 +62,13 @@ func (h *ComposeHandler) Send(c *echo.Context) error {
 			src.Read(data)
 			src.Close()
 
-			contentType := file.Header.Get("Content-Type")
-			if contentType == "" {
-				contentType = "application/octet-stream"
+			ct := file.Header.Get("Content-Type")
+			if ct == "" {
+				ct = "application/octet-stream"
 			}
-
 			msg.Attachments = append(msg.Attachments, smtppkg.Attachment{
 				Filename:    file.Filename,
-				ContentType: contentType,
+				ContentType: ct,
 				Data:        data,
 			})
 		}
@@ -91,10 +86,8 @@ func (h *ComposeHandler) Send(c *echo.Context) error {
 		return c.JSON(http.StatusBadGateway, map[string]string{"error": err.Error()})
 	}
 
-	// Salva na pasta Sent (detecta o nome real via atributos IMAP)
-	conn, err := imap.Connect(s.IMAPHost, s.IMAPPort, h.cfg.IMAP.TLS,
-		time.Duration(h.cfg.IMAP.TimeoutSec)*time.Second, s.Username, pass, h.cfg.Server.Debug)
-	if err == nil {
+	// Save a copy to the Sent folder; resolve the real folder name via IMAP attributes.
+	if conn, imapErr := h.imapConn(s); imapErr == nil {
 		defer conn.Close()
 		sentFolder := "Sent"
 		if boxes, lerr := conn.ListMailboxes(); lerr == nil {
@@ -111,18 +104,18 @@ func (h *ComposeHandler) Send(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "sent"})
 }
 
+// SaveDraft is a stub endpoint reserved for future draft persistence support.
 func (h *ComposeHandler) SaveDraft(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// UploadAttachment is a stub endpoint reserved for future attachment upload support.
 func (h *ComposeHandler) UploadAttachment(c *echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]interface{}{"files": []interface{}{}})
+	return c.JSON(http.StatusOK, map[string]any{"files": []any{}})
 }
 
-func (h *ComposeHandler) ServeAttachment(c *echo.Context) error {
-	return c.String(http.StatusNotImplemented, "TODO")
-}
-
+// splitAddrs splits a comma-separated list of email addresses into a trimmed slice.
+// Returns nil for an empty input.
 func splitAddrs(s string) []string {
 	if s == "" {
 		return nil

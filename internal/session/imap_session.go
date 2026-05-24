@@ -1,3 +1,6 @@
+// Package session manages in-memory IMAP session state with optional database persistence.
+// Sessions are stored in an in-memory map protected by a RWMutex, and persisted to the
+// database so they survive a server restart. Passwords are encrypted with AES-GCM.
 package session
 
 import (
@@ -17,11 +20,13 @@ import (
 
 var globalDB *gorm.DB
 
+// IMAPSession holds the IMAP connection parameters and encrypted credentials for one user.
+// It is stored in memory and persisted to the database to survive server restarts.
 type IMAPSession struct {
 	IMAPHost    string
 	IMAPPort    int
 	Username    string
-	EncPassword string
+	EncPassword string    // AES-GCM encrypted password (base64-encoded)
 	LastUsed    time.Time
 }
 

@@ -2,7 +2,8 @@ package model
 
 import "time"
 
-// Session representa uma sessão de usuário persistida no banco de dados.
+// Session persists an active HTTP session to the database so it survives server restarts.
+// The password is stored AES-GCM encrypted; the key lives only in the server configuration.
 type Session struct {
 	ID          string    `gorm:"primaryKey;type:varchar(191)"`
 	IMAPHost    string    `gorm:"type:varchar(255)"`

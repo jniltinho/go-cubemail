@@ -7,24 +7,26 @@ import (
 	"github.com/emersion/go-imap/v2"
 )
 
-// MailboxInfo resume informações de uma pasta IMAP.
+// MailboxInfo describes a single IMAP folder including tree-structure metadata
+// computed from the hierarchy delimiter and standard mailbox attributes.
 type MailboxInfo struct {
 	Name        string
 	Delim       string
 	Unseen      uint32
 	Messages    uint32
 	IsTrash     bool
-	NoSelect    bool   // true when folder is a hierarchy placeholder (\Noselect)
-	IsSystem    bool   // true for INBOX, Sent, Drafts, Trash — no rename/delete
-	IconType    string // inbox | drafts | sent | trash | junk | folder
-	DisplayName string // last segment of the path (for tree display)
-	ParentName  string // full name of parent folder (empty for top-level)
-	HasChildren bool   // true if this folder has at least one subfolder
+	NoSelect    bool   // true when the folder is a hierarchy placeholder (\Noselect)
+	IsSystem    bool   // true for INBOX, Sent, Drafts, Trash — cannot be renamed or deleted
+	IconType    string // "inbox" | "drafts" | "sent" | "trash" | "junk" | "folder"
+	DisplayName string // last path segment (used for tree display)
+	ParentName  string // full name of the parent folder; empty for top-level
+	HasChildren bool   // true if at least one subfolder exists under this folder
 	Depth       int    // nesting level (0 = top-level)
-	PaddingLeft int    // left padding in px for tree indentation
+	PaddingLeft int    // left-padding in px for tree indentation in the UI
 }
 
-// ListMailboxes retorna todas as pastas.
+// ListMailboxes returns all IMAP folders with unseen/message counts and tree metadata.
+// Folders are sorted in standard email order: INBOX → Drafts → Sent → Trash → Junk → others.
 func (c *Client) ListMailboxes() ([]MailboxInfo, error) {
 	listCmd := c.Client.List("", "*", &imap.ListOptions{
 		ReturnStatus: &imap.StatusOptions{NumUnseen: true, NumMessages: true},
@@ -68,6 +70,7 @@ func (c *Client) ListMailboxes() ([]MailboxInfo, error) {
 				mi.IconType = "junk"
 			}
 		}
+		// Fall back to well-known names when server does not set attributes.
 		switch mi.Name {
 		case "Trash", "Lixeira", "Deleted Items", "Deleted Messages":
 			mi.IsTrash = true
@@ -86,7 +89,7 @@ func (c *Client) ListMailboxes() ([]MailboxInfo, error) {
 			mi.IsSystem = true
 			mi.IconType = "junk"
 		}
-		// Tree structure: compute depth, display name and parent from path
+		// Compute depth, display name, and parent from the hierarchy path.
 		if mi.Delim != "" && strings.Contains(mi.Name, mi.Delim) {
 			parts := strings.Split(mi.Name, mi.Delim)
 			mi.DisplayName = parts[len(parts)-1]
@@ -99,7 +102,8 @@ func (c *Client) ListMailboxes() ([]MailboxInfo, error) {
 
 		result = append(result, mi)
 	}
-	// Mark folders that have at least one direct child
+
+	// Mark folders that have at least one direct child.
 	for i := range result {
 		if result[i].Delim == "" {
 			continue
@@ -113,7 +117,7 @@ func (c *Client) ListMailboxes() ([]MailboxInfo, error) {
 		}
 	}
 
-	// Sort by standard email order, keeping subfolders grouped with their parent
+	// Sort in standard email folder order; subfolders stay grouped with their parent.
 	folderPriority := func(mi MailboxInfo) int {
 		root := mi.Name
 		if mi.Delim != "" && strings.Contains(mi.Name, mi.Delim) {
@@ -144,7 +148,7 @@ func (c *Client) ListMailboxes() ([]MailboxInfo, error) {
 	return result, nil
 }
 
-// UnreadCount retorna a contagem de não-lidos de uma pasta.
+// UnreadCount returns the number of unseen messages in the given mailbox.
 func (c *Client) UnreadCount(mailbox string) (uint32, error) {
 	data, err := c.Client.Status(mailbox, &imap.StatusOptions{NumUnseen: true}).Wait()
 	if err != nil {
@@ -156,7 +160,7 @@ func (c *Client) UnreadCount(mailbox string) (uint32, error) {
 	return *data.NumUnseen, nil
 }
 
-// MessageCount returns the total number of messages in the mailbox.
+// MessageCount returns the total number of messages in the given mailbox.
 func (c *Client) MessageCount(mailbox string) (uint32, error) {
 	data, err := c.Client.Status(mailbox, &imap.StatusOptions{NumMessages: true}).Wait()
 	if err != nil {
@@ -168,35 +172,37 @@ func (c *Client) MessageCount(mailbox string) (uint32, error) {
 	return *data.NumMessages, nil
 }
 
-// SelectMailbox seleciona uma pasta para operações subsequentes.
+// SelectMailbox issues an IMAP SELECT command so subsequent operations target the named folder.
 func (c *Client) SelectMailbox(mailbox string) error {
 	_, err := c.Client.Select(mailbox, nil).Wait()
 	return err
 }
 
-// CreateMailbox cria uma nova pasta.
+// CreateMailbox creates a new IMAP folder with the given name.
 func (c *Client) CreateMailbox(name string) error {
 	return c.Client.Create(name, nil).Wait()
 }
 
-// RenameMailbox renomeia uma pasta.
+// RenameMailbox renames an existing IMAP folder.
 func (c *Client) RenameMailbox(oldName, newName string) error {
 	return c.Client.Rename(oldName, newName, nil).Wait()
 }
 
-// DeleteMailbox remove uma pasta.
+// DeleteMailbox deletes the named IMAP folder.
 func (c *Client) DeleteMailbox(name string) error {
 	return c.Client.Delete(name).Wait()
 }
 
-// DeleteMailboxRecursive apaga uma pasta e todas as suas subpastas.
+// DeleteMailboxRecursive deletes a folder and all of its subfolders.
+// Subfolders are deleted deepest-first to avoid errors on servers that
+// require children to be deleted before their parent.
 func (c *Client) DeleteMailboxRecursive(name string) error {
 	all, err := c.ListMailboxes()
 	if err != nil {
 		return err
 	}
 
-	// Descobre o delimitador da pasta alvo.
+	// Determine the hierarchy delimiter for this folder.
 	delim := "."
 	for _, m := range all {
 		if m.Name == name && m.Delim != "" {
@@ -205,7 +211,7 @@ func (c *Client) DeleteMailboxRecursive(name string) error {
 		}
 	}
 
-	// Coleta subpastas em ordem de profundidade decrescente (mais profundas primeiro).
+	// Collect subfolders and sort deepest-first.
 	prefix := name + delim
 	var children []string
 	for _, m := range all {
@@ -225,7 +231,7 @@ func (c *Client) DeleteMailboxRecursive(name string) error {
 	return c.Client.Delete(name).Wait()
 }
 
-// MoveAllMessages move todas as mensagens de uma pasta para o destino.
+// MoveAllMessages moves every message in mailbox to dest using IMAP MOVE.
 func (c *Client) MoveAllMessages(mailbox, dest string) error {
 	if err := c.SelectMailbox(mailbox); err != nil {
 		return err
@@ -241,7 +247,8 @@ func (c *Client) MoveAllMessages(mailbox, dest string) error {
 	return err
 }
 
-// EmptyMailbox apaga todas as mensagens de uma pasta.
+// EmptyMailbox permanently deletes all messages in the given mailbox
+// by flagging them \Deleted and issuing EXPUNGE.
 func (c *Client) EmptyMailbox(mailbox string) error {
 	if err := c.SelectMailbox(mailbox); err != nil {
 		return err
@@ -264,14 +271,14 @@ func (c *Client) EmptyMailbox(mailbox string) error {
 	return c.Client.Expunge().Close()
 }
 
-// QuotaInfo holds storage usage and limit in bytes.
+// QuotaInfo holds IMAP storage usage and limit converted to bytes.
 type QuotaInfo struct {
 	UsageBytes int64
 	LimitBytes int64
 }
 
 // GetQuota fetches the STORAGE quota via GETQUOTAROOT on INBOX.
-// Returns nil without error if the server does not support the QUOTA extension.
+// Returns nil without error when the server does not support the QUOTA extension.
 func (c *Client) GetQuota() (*QuotaInfo, error) {
 	data, err := c.Client.GetQuotaRoot("INBOX").Wait()
 	if err != nil {
@@ -279,7 +286,7 @@ func (c *Client) GetQuota() (*QuotaInfo, error) {
 	}
 	for _, qd := range data {
 		if res, ok := qd.Resources[imap.QuotaResourceStorage]; ok {
-			// IMAP QUOTA reports storage in 1 KB blocks (RFC 2087), convert to bytes
+			// IMAP QUOTA reports storage in 1 KB blocks (RFC 2087), convert to bytes.
 			return &QuotaInfo{
 				UsageBytes: res.Usage * 1024,
 				LimitBytes: res.Limit * 1024,
@@ -289,7 +296,7 @@ func (c *Client) GetQuota() (*QuotaInfo, error) {
 	return nil, nil
 }
 
-// AppendMessage adiciona uma mensagem crua em uma pasta.
+// AppendMessage saves a raw RFC822 message to the named mailbox with the given flags.
 func (c *Client) AppendMessage(mailbox string, flags []imap.Flag, raw []byte) error {
 	cmd := c.Client.Append(mailbox, int64(len(raw)), &imap.AppendOptions{
 		Flags: flags,
