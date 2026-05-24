@@ -1,25 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed } from 'vue'
 import axios from 'axios'
 import Icon from './Icon.vue'
+import TinyEditor from './TinyEditor.vue'
 import { extIcon, extColor } from '../utils/helpers'
 import { useMailStore } from '../stores/mail'
 import { useToastStore } from '../stores/toast'
-import tinymce from 'tinymce'
-import 'tinymce/themes/silver'
-import 'tinymce/icons/default'
-import 'tinymce/models/dom'
-import 'tinymce/plugins/autolink'
-import 'tinymce/plugins/lists'
-import 'tinymce/plugins/link'
-import 'tinymce/plugins/image'
-import 'tinymce/plugins/table'
-import 'tinymce/plugins/code'
-import 'tinymce/plugins/emoticons'
-import 'tinymce/plugins/emoticons/js/emojis'
-import 'tinymce/plugins/charmap'
-import 'tinymce/plugins/searchreplace'
-import 'tinymce/plugins/wordcount'
 
 interface ComposerPrefill {
   to?: string
@@ -42,15 +28,12 @@ const toastStore  = useToastStore()
 const to          = ref(props.prefill?.to   || '')
 const cc          = ref('')
 const subj        = ref(props.prefill?.subj || '')
-const body        = ref(props.prefill?.body || '')
 const showCc      = ref(false)
 const sending     = ref(false)
 const sendError   = ref('')
-const taRef       = ref(null)
 const toRef       = ref<HTMLInputElement | null>(null)
 const fileInputRef = ref(null)
 const attachments  = ref([])
-let destroyEditor  = null
 
 const showSuggestions = ref(false)
 const activeSuggestion = ref(-1)
@@ -132,82 +115,19 @@ function buildInitHtml() {
       `<blockquote style="margin:0 0 1em 0;padding:6px 12px;border-left:3px solid #C8D4E8;color:#444;">${quotedContent}</blockquote>`
     )
   }
+  const rawBody = props.prefill?.body || ''
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  return body.value
+  return rawBody
     .split('\n')
     .map(l => l.trim() === '' ? '<p>&nbsp;</p>' : `<p>${esc(l)}</p>`)
     .join('')
 }
 
-onMounted(() => {
-  if (!taRef.value) return
-
-  const html = buildInitHtml()
-
-  let editor = null
-  let suppress = false
-
-  tinymce.init({
-    target: taRef.value,
-    base_url: '/tinymce',
-    suffix: '.min',
-    inline: false,
-    menubar: false,
-    branding: false,
-    promotion: false,
-    statusbar: false,
-    license_key: 'gpl',
-    height: 433,
-    placeholder: 'Write your message…',
-    plugins: 'autolink lists link image table code emoticons charmap searchreplace wordcount',
-    toolbar:
-      'fontfamily fontsize | ' +
-      'bold italic underline strikethrough | forecolor backcolor | ' +
-      'alignleft aligncenter alignright | bullist numlist outdent indent | ' +
-      'link image table emoticons | removeformat | code',
-    font_family_formats:
-      'Arial=arial,helvetica,sans-serif;' +
-      'Comic Sans MS=comic sans ms,cursive;' +
-      'Courier New=courier new,courier,monospace;' +
-      'Georgia=georgia,palatino;' +
-      'Segoe UI=segoe ui,helvetica neue,arial,sans-serif;' +
-      'Tahoma=tahoma,arial,helvetica,sans-serif;' +
-      'Times New Roman=times new roman,times;' +
-      'Trebuchet MS=trebuchet ms,geneva;' +
-      'Verdana=verdana,geneva;',
-    toolbar_mode: 'wrap',
-    content_style: [
-      'body { font-family: "Segoe UI","Helvetica Neue",Arial,sans-serif;',
-      '       font-size: 13.5px; color: #1A1F2A; line-height: 1.6; margin: 10px 12px; }',
-      'p { margin: 0 0 10px; }',
-    ].join(' '),
-    skin: 'oxide',
-    content_css: 'default',
-    setup(ed) {
-      editor = ed
-      ed.on('init', () => {
-        suppress = true
-        ed.setContent(html)
-        suppress = false
-      })
-      ed.on('input change keyup undo redo', () => {
-        if (!suppress) body.value = ed.getContent()
-      })
-    }
-  })
-
-  destroyEditor = () => { try { editor?.remove() } catch {} }
-})
-
-onBeforeUnmount(() => destroyEditor?.())
+const body = ref(buildInitHtml())
 
 async function send() {
   sendError.value = ''
   if (!to.value.trim()) { sendError.value = 'Please enter a recipient.'; return }
-
-  // Ensure TinyMCE content is synced to body.value
-  const activeEditor = tinymce.activeEditor
-  if (activeEditor) body.value = activeEditor.getContent()
 
   const plainText = body.value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
 
@@ -296,10 +216,8 @@ function backdrop(e) {
           <label>Subject</label>
           <input v-model="subj" placeholder="Subject" />
         </div>
-        <!-- TinyMCE rich editor -->
-        <div class="composer-field composer-rich" style="grid-template-columns:1fr">
-          <textarea ref="taRef" placeholder="Write your message…"></textarea>
-        </div>
+
+        <TinyEditor v-model="body" />
 
         <!-- Attachments bar -->
         <div v-if="attachments.length" class="flex flex-wrap gap-1.5 px-3 py-2 bg-panel-2 border-t border-line-soft">
