@@ -106,9 +106,20 @@ onMounted(() => {
     placeholder: 'Write your message…',
     plugins: 'autolink lists link image table code emoticons charmap searchreplace wordcount',
     toolbar:
+      'fontfamily fontsize | ' +
       'bold italic underline strikethrough | forecolor backcolor | ' +
       'alignleft aligncenter alignright | bullist numlist outdent indent | ' +
       'link image table emoticons | removeformat | code',
+    font_family_formats:
+      'Arial=arial,helvetica,sans-serif;' +
+      'Comic Sans MS=comic sans ms,cursive;' +
+      'Courier New=courier new,courier,monospace;' +
+      'Georgia=georgia,palatino;' +
+      'Segoe UI=segoe ui,helvetica neue,arial,sans-serif;' +
+      'Tahoma=tahoma,arial,helvetica,sans-serif;' +
+      'Times New Roman=times new roman,times;' +
+      'Trebuchet MS=trebuchet ms,geneva;' +
+      'Verdana=verdana,geneva;',
     toolbar_mode: 'wrap',
     content_style: [
       'body { font-family: "Segoe UI","Helvetica Neue",Arial,sans-serif;',
