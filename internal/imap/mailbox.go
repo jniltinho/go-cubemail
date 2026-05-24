@@ -193,6 +193,22 @@ func (c *Client) DeleteMailbox(name string) error {
 	return c.Client.Delete(name).Wait()
 }
 
+// EnsureSystemFolders creates Drafts, Sent, and Trash if they do not already exist.
+// Missing folders are created silently; existing ones are left untouched.
+func (c *Client) EnsureSystemFolders() {
+	existing := make(map[string]struct{})
+	if mailboxes, err := c.ListMailboxes(); err == nil {
+		for _, m := range mailboxes {
+			existing[strings.ToLower(m.Name)] = struct{}{}
+		}
+	}
+	for _, name := range []string{"Drafts", "Sent", "Trash"} {
+		if _, ok := existing[strings.ToLower(name)]; !ok {
+			_ = c.CreateMailbox(name)
+		}
+	}
+}
+
 // DeleteMailboxRecursive deletes a folder and all of its subfolders.
 // Subfolders are deleted deepest-first to avoid errors on servers that
 // require children to be deleted before their parent.

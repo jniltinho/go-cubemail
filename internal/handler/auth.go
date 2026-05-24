@@ -50,6 +50,7 @@ func (h *AuthHandler) DoLogin(c *echo.Context) error {
 		c.Logger().Error("IMAP Login failed", "user", username, "host", imapHost, "port", h.cfg.IMAP.Port, "error", err)
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials or server unreachable."})
 	}
+	conn.EnsureSystemFolders()
 	conn.Close()
 
 	sessID := newSessionID()

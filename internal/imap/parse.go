@@ -95,5 +95,14 @@ func ParseMessage(raw []byte) (*ParsedMessage, error) {
 		}
 	}
 
+	// Fallback for non-MIME messages: extract the raw body after the header separator.
+	if pm.TextPlain == "" && pm.TextHTML == "" {
+		if _, body, ok := bytes.Cut(raw, []byte("\r\n\r\n")); ok {
+			pm.TextPlain = strings.TrimSpace(string(body))
+		} else if _, body, ok := bytes.Cut(raw, []byte("\n\n")); ok {
+			pm.TextPlain = strings.TrimSpace(string(body))
+		}
+	}
+
 	return pm, nil
 }
