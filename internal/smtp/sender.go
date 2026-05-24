@@ -1,4 +1,4 @@
-// Package smtp provides email composition and delivery via SMTP/STARTTLS.
+// Package smtp provides email composition and delivery via SMTP/STARTTLS/SSL.
 // It handles inline image extraction (data: URIs → cid: references) and
 // returns the raw RFC822 bytes so the caller can save a copy to the Sent folder.
 package smtp
@@ -7,11 +7,12 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"net/smtp"
+	netmail "net/mail"
 	"regexp"
 	"strings"
+	"time"
 
-	"go-cubemail/pkg/email"
+	"github.com/wneessen/go-mail"
 )
 
 // Message holds all fields needed to compose an outgoing email.
@@ -95,61 +96,138 @@ type inlineImage struct {
 	data     []byte
 }
 
-// Send delivers msg via SMTP (or STARTTLS when cfg.StartTLS is true) and returns
-// the raw RFC822 bytes so the caller can append a copy to the Sent folder.
-func Send(cfg Config, user, pass string, msg *Message) ([]byte, error) {
-	e := email.NewEmail()
-	if msg.DisplayName != "" {
-		e.From = fmt.Sprintf("%s <%s>", msg.DisplayName, msg.From)
-	} else {
-		e.From = msg.From
-	}
-	e.To = msg.To
-	e.Cc = msg.Cc
-	e.Bcc = msg.Bcc
-	e.Subject = msg.Subject
-	e.Text = []byte(msg.TextPlain)
+// buildMessage constructs a wneessen/go-mail Msg from the provided Message struct.
+func buildMessage(msg *Message) (*mail.Msg, error) {
+	m := mail.NewMsg()
 
-	// Convert data: URI images to cid: inline attachments before sending.
+	// Set From
+	if msg.DisplayName != "" {
+		if err := m.FromFormat(msg.DisplayName, msg.From); err != nil {
+			return nil, fmt.Errorf("set from address: %w", err)
+		}
+	} else {
+		if err := m.From(msg.From); err != nil {
+			return nil, fmt.Errorf("set from address: %w", err)
+		}
+	}
+
+	// Set To
+	for _, toStr := range msg.To {
+		addr, err := netmail.ParseAddress(toStr)
+		if err != nil {
+			if err := m.AddTo(toStr); err != nil {
+				return nil, fmt.Errorf("invalid To address %s: %w", toStr, err)
+			}
+		} else {
+			if err := m.AddToFormat(addr.Name, addr.Address); err != nil {
+				return nil, fmt.Errorf("invalid To address %s: %w", toStr, err)
+			}
+		}
+	}
+
+	// Set Cc
+	for _, ccStr := range msg.Cc {
+		addr, err := netmail.ParseAddress(ccStr)
+		if err != nil {
+			if err := m.AddCc(ccStr); err != nil {
+				return nil, fmt.Errorf("invalid Cc address %s: %w", ccStr, err)
+			}
+		} else {
+			if err := m.AddCcFormat(addr.Name, addr.Address); err != nil {
+				return nil, fmt.Errorf("invalid Cc address %s: %w", ccStr, err)
+			}
+		}
+	}
+
+	// Set Bcc
+	for _, bccStr := range msg.Bcc {
+		addr, err := netmail.ParseAddress(bccStr)
+		if err != nil {
+			if err := m.AddBcc(bccStr); err != nil {
+				return nil, fmt.Errorf("invalid Bcc address %s: %w", bccStr, err)
+			}
+		} else {
+			if err := m.AddBccFormat(addr.Name, addr.Address); err != nil {
+				return nil, fmt.Errorf("invalid Bcc address %s: %w", bccStr, err)
+			}
+		}
+	}
+
+	// Set Subject
+	m.Subject(msg.Subject)
+
+	// Set Body (Plain text and HTML)
 	htmlBody := msg.TextHTML
 	var inlines []inlineImage
 	if htmlBody != "" {
 		htmlBody, inlines = extractInlineImages(htmlBody)
-		e.HTML = []byte(htmlBody)
 	}
 
+	if msg.TextPlain != "" && htmlBody != "" {
+		m.SetBodyString(mail.TypeTextPlain, msg.TextPlain)
+		m.AddAlternativeString(mail.TypeTextHTML, htmlBody)
+	} else if msg.TextPlain != "" {
+		m.SetBodyString(mail.TypeTextPlain, msg.TextPlain)
+	} else if htmlBody != "" {
+		m.SetBodyString(mail.TypeTextHTML, htmlBody)
+	}
+
+	// Embed inline images
 	for _, img := range inlines {
-		part, err := e.Attach(bytes.NewReader(img.data), img.filename, img.mimeType)
-		if err != nil {
-			return nil, fmt.Errorf("attach inline %s: %w", img.filename, err)
-		}
-		part.Header.Set("Content-ID", fmt.Sprintf("<%s>", img.cid))
-		part.Header.Set("Content-Disposition", "inline")
+		m.EmbedReader(img.filename, bytes.NewReader(img.data), mail.WithFileContentID(img.cid), mail.WithFileContentType(mail.ContentType(img.mimeType)))
 	}
 
+	// Attachments
 	for _, a := range msg.Attachments {
-		if _, err := e.Attach(bytes.NewReader(a.Data), a.Filename, a.ContentType); err != nil {
-			return nil, fmt.Errorf("attach %s: %w", a.Filename, err)
-		}
+		m.AttachReader(a.Filename, bytes.NewReader(a.Data), mail.WithFileContentType(mail.ContentType(a.ContentType)))
 	}
 
-	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	auth := smtp.PlainAuth("", user, pass, cfg.Host)
-
-	raw, err := e.Bytes()
-	if err != nil {
-		return nil, fmt.Errorf("build email: %w", err)
-	}
-
-	if cfg.StartTLS {
-		if err := e.SendWithStartTLS(addr, auth, nil); err != nil {
-			return nil, err
-		}
-		return raw, nil
-	}
-	if err := e.Send(addr, auth); err != nil {
-		return nil, err
-	}
-	return raw, nil
+	return m, nil
 }
 
+// Send delivers msg via SMTP (or STARTTLS/SSL) and returns the raw RFC822 bytes
+// so the caller can append a copy to the Sent folder.
+func Send(cfg Config, user, pass string, msg *Message) ([]byte, error) {
+	m, err := buildMessage(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	// Configure client
+	var opts []mail.Option
+	opts = append(opts, mail.WithPort(cfg.Port))
+	opts = append(opts, mail.WithTimeout(time.Duration(cfg.TimeoutSec)*time.Second))
+
+	if user != "" || pass != "" {
+		opts = append(opts, mail.WithSMTPAuth(mail.SMTPAuthPlain))
+		opts = append(opts, mail.WithUsername(user))
+		opts = append(opts, mail.WithPassword(pass))
+	}
+
+	if cfg.Port == 465 {
+		opts = append(opts, mail.WithSSL())
+	} else if cfg.StartTLS {
+		opts = append(opts, mail.WithTLSPolicy(mail.TLSMandatory))
+	} else {
+		opts = append(opts, mail.WithTLSPolicy(mail.TLSOpportunistic))
+	}
+
+	client, err := mail.NewClient(cfg.Host, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("initialize smtp client: %w", err)
+	}
+
+	// Serialize message before sending to get the raw RFC822 bytes
+	var buf bytes.Buffer
+	if _, err := m.WriteTo(&buf); err != nil {
+		return nil, fmt.Errorf("serialize email: %w", err)
+	}
+	raw := buf.Bytes()
+
+	// Send message
+	if err := client.DialAndSend(m); err != nil {
+		return nil, fmt.Errorf("send email: %w", err)
+	}
+
+	return raw, nil
+}
