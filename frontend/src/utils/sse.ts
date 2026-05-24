@@ -16,9 +16,9 @@ type AuthStore = ReturnType<typeof useAuthStore>
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 /**
- * Polling check interval defined in milliseconds (2 minutes).
+ * Polling check interval defined in milliseconds (10 minutes).
  */
-const POLL_INTERVAL_MS = 2 * 60 * 1000
+const POLL_INTERVAL_MS = 10 * 60 * 1000
 
 /**
  * Synthesizes and plays a short alert notification sound using the Web Audio API.
