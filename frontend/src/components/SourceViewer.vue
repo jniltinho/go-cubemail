@@ -1,12 +1,27 @@
 <script setup lang="ts">
+/**
+ * @component SourceViewer
+ * @description The modal viewport window to view the raw MIME/RFC 822 source
+ * headers and email content. Features copy to clipboard, dynamic downloadable EML
+ * attachment generations, and clean dark-themed scrollable formatting.
+ */
+
 import { useMailStore } from '../stores/mail'
 import Icon from './Icon.vue'
 
+/** Mail store instance containing source raw fields */
 const mail = useMailStore()
 
+/** Copies the raw MIME message source content directly into the clipboard */
 function copy() { mail.copySource(mail.sourceRaw) }
+
+/** Closes the modal viewport if the user clicks on the outer background mask */
 function backdrop(e) { if (e.target === e.currentTarget) mail.closeSource() }
 
+/**
+ * Packs the raw RFC 822 source text inside a browser Blob structure and
+ * programmatically triggers a browser download for a ".eml" email file.
+ */
 function download() {
   const blob = new Blob([mail.sourceRaw], { type: 'message/rfc822' })
   const url = URL.createObjectURL(blob)

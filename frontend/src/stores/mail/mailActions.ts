@@ -1,27 +1,56 @@
+/**
+ * @file mailActions.ts
+ * @description Action modules defining batch or individual updates applicable on email messages.
+ * Handles archiving, moving, deleting, reading/unread states, and checking rows.
+ */
+
 import axios from 'axios'
 import { nextTick } from 'vue'
 import type { Ref, ComputedRef } from 'vue'
 import type { MailMessage, Folder } from '../../types'
 import type { useAuthStore } from '../auth'
 
-
 type AuthStore = ReturnType<typeof useAuthStore>
 
+/**
+ * Context containing reactive states and dependencies needed
+ * for executing mail action operations.
+ */
 interface MailActionsContext {
+  /** Authentication store instance */
   auth:             AuthStore
+  /** Reactive list reference of all email messages in memory */
   mails:            Ref<MailMessage[]>
+  /** Reactive list reference of folders */
   folders:          Ref<Folder[]>
+  /** Active folder identifier */
   folder:           Ref<string>
+  /** Active email message UID */
   selectedId:       Ref<string | null>
+  /** Set of batch selected email UIDs */
   selectedIds:      Ref<Set<string>>
+  /** Filtered list of emails visible under the active folder */
   visibleMails:     ComputedRef<MailMessage[]>
+  /** Callback utility to request details of specific message body */
   fetchMessageBody: (id: string) => Promise<void>
 }
 
+/**
+ * Composable defining batch or individual actions on email messages.
+ * 
+ * @param context - The context containing reactive stores and references.
+ * @returns Actions controller methods.
+ */
 export function useMailActions({
   auth, mails, folders, folder, selectedId, selectedIds, visibleMails, fetchMessageBody,
 }: MailActionsContext) {
 
+  /**
+   * Recalculates total and unread email metrics for a given folder in-place
+   * from local memory and updates the folder count label.
+   * 
+   * @param folderId - Frontend target folder ID (e.g. "inbox").
+   */
   function _updateFolderCount(folderId: string): void {
     const obj = folders.value.find(f => f.id === folderId)
     if (!obj) return
@@ -30,6 +59,14 @@ export function useMailActions({
     obj.count = unread > 0 ? `${unread}/${msgs.length}` : String(msgs.length)
   }
 
+  /**
+   * Increments or decrements folder email counters using numerical delta offsets
+   * to avoid full in-memory list recalculations.
+   * 
+   * @param folderId - Target folder ID.
+   * @param totalDelta - Amount to add to total email counts.
+   * @param unreadDelta - Amount to add to unread email counts.
+   */
   function _adjustFolderCount(folderId: string, totalDelta: number, unreadDelta = 0): void {
     const obj = folders.value.find(f => f.id === folderId)
     if (!obj) return
@@ -39,29 +76,56 @@ export function useMailActions({
     obj.count = unread > 0 ? `${unread}/${total}` : String(total)
   }
 
+  /**
+   * Evaluates the target email UIDs eligible for actions. Returns all batch checked
+   * elements if any exist, falling back to the single active selected email.
+   * 
+   * @returns Array of target email UIDs.
+   */
   function _resolveIds(): string[] {
     return selectedIds.value.size > 0
       ? [...selectedIds.value]
       : (selectedId.value ? [selectedId.value] : [])
   }
 
+  /**
+   * Resolves the original backend IMAP folder name string (e.g. "INBOX")
+   * for the active folder viewed on the client.
+   * 
+   * @returns The resolved backend mailbox folder name.
+   */
   function _resolveMailbox(): string {
     const def = folders.value.find(f => f.id === folder.value)
     return def?.name || def?.label || 'INBOX'
   }
 
+  /**
+   * Selects an email message, focusing it on the reading panel, and requests
+   * detailed plain/HTML body contents from the server.
+   * 
+   * @param id - The unique email UID.
+   */
   async function selectMsg(id: string): Promise<void> {
     selectedId.value = id
     await nextTick()
     if (auth.isApiOnline) await fetchMessageBody(id)
   }
 
+  /**
+   * Alternates batch checkbox selections of a specific email row.
+   * 
+   * @param id - Target email UID.
+   */
   function toggleSelect(id: string): void {
     const s = new Set(selectedIds.value)
     s.has(id) ? s.delete(id) : s.add(id)
     selectedIds.value = s
   }
 
+  /**
+   * Toggles seen/unseen read flags on the server for all targeted emails,
+   * syncing unread counts and updating local variables.
+   */
   async function toggleRead(): Promise<void> {
     const ids = _resolveIds()
     if (!ids.length) return
@@ -90,6 +154,10 @@ export function useMailActions({
     }
   }
 
+  /**
+   * Quick action to move selected/active message into the "Archive" folder,
+   * adjusting counts and auto-focusing adjacent list entries.
+   */
   function archiveMail(): void {
     const s = mails.value.find(m => m.id === selectedId.value)
     if (!s) return
@@ -102,6 +170,12 @@ export function useMailActions({
     _adjustFolderCount('archive', 1, wasUnread ? 1 : 0)
   }
 
+  /**
+   * Relocates target email messages (batch or single) into a destination IMAP folder.
+   * Updates folder properties locally and posts move triggers to the backend APIs.
+   * 
+   * @param destFolderId - Frontend destination folder ID key (e.g. "archive").
+   */
   async function moveMail(destFolderId: string): Promise<void> {
     const ids = _resolveIds()
     if (!ids.length) return
@@ -129,6 +203,11 @@ export function useMailActions({
     }
   }
 
+  /**
+   * Deletes target email messages (batch or single).
+   * If already viewing the Lixeira (trash), deletes permanently from local memory.
+   * Otherwise, redirects items to "Lixeira" (trash) and notifies backend endpoints.
+   */
   async function deleteMail(): Promise<void> {
     const ids = _resolveIds()
     if (!ids.length) return

@@ -1,11 +1,21 @@
 <script setup lang="ts">
+/**
+ * @component AppBar
+ * @description The application's top navigation bar. Displays the brand,
+ * tabs for view navigation (Mail, Contacts, Calendar), global search bar,
+ * active user email, and logout controls.
+ */
+
 import { useAuthStore } from '../stores/auth'
 import { useMailStore } from '../stores/mail'
 import Icon from './Icon.vue'
 
+/** Authentication store instance */
 const auth = useAuthStore()
+/** Mail and UI navigation store instance */
 const mail = useMailStore()
 
+/** Navigation tabs metadata */
 const TABS = [
   { id: 'mail',     label: 'Mail',     icon: 'mail' },
   { id: 'contacts', label: 'Contacts', icon: 'users' },

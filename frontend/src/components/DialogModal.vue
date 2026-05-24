@@ -1,17 +1,36 @@
 <script setup lang="ts">
+/**
+ * @component DialogModal
+ * @description The HTML Teleport portal component for custom modal dialogs.
+ * Provides custom visual styling and keyboard controls for Alert, Confirm, and Prompt
+ * modal boxes. Intercepts ESC and Enter buttons for easy navigation, autofocuses inputs,
+ * and resolves the prompt promise in the Dialog store.
+ */
+
 import { ref, watch, nextTick, computed } from 'vue'
 import { useDialogStore } from '../stores/dialog'
 
+/** Dialog store instance containing layout type and response callbacks */
 const dialog = useDialogStore()
 
+/** Input text value for prompts */
 const inputValue = ref('')
-const inputRef   = ref(null)
-const okRef      = ref(null)
+/** Reference to prompt text input field */
+const inputRef   = ref<HTMLInputElement | null>(null)
+/** Reference to OK confirm button */
+const okRef      = ref<HTMLButtonElement | null>(null)
 
+/** Computes true if active dialog is a text prompt input box */
 const isPrompt  = computed(() => dialog.state?.type === 'prompt')
+/** Computes true if active dialog is a binary confirmation question */
 const isConfirm = computed(() => dialog.state?.type === 'confirm')
+/** Computes true if active dialog is a simple alert notification box */
 const isAlert   = computed(() => dialog.state?.type === 'alert')
 
+/**
+ * Monitors the dialog store state, setting default values and autofocusing 
+ * either the text input field or the default action button upon render.
+ */
 watch(() => dialog.state, async (s) => {
   if (!s) return
   inputValue.value = s.defaultValue ?? ''
@@ -20,24 +39,36 @@ watch(() => dialog.state, async (s) => {
   else okRef.value?.focus()
 })
 
+/** Resolves the active dialog with positive value (true, input text, or void) */
 function onOk() {
   if (isPrompt.value)  dialog.respond(inputValue.value.trim() || null)
   else if (isConfirm.value) dialog.respond(true)
   else                      dialog.respond()
 }
 
+/** Resolves the active dialog with a negative or default cancel value (false, null, or void) */
 function onCancel() {
   if (isAlert.value) dialog.respond()
   else if (isPrompt.value)  dialog.respond(null)
   else                      dialog.respond(false)
 }
 
-function onKey(e) {
+/**
+ * Handles global keydown listening for Escape to cancel or Enter to confirm.
+ * 
+ * @param e - The keyboard event.
+ */
+function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape') { e.preventDefault(); onCancel() }
   if (e.key === 'Enter' && !isPrompt.value) { e.preventDefault(); onOk() }
 }
 
-function onInputKey(e) {
+/**
+ * Handles keyboard events inside the text prompt input box.
+ * 
+ * @param e - The keyboard event.
+ */
+function onInputKey(e: KeyboardEvent) {
   if (e.key === 'Enter') { e.preventDefault(); onOk() }
   if (e.key === 'Escape') { e.preventDefault(); onCancel() }
 }

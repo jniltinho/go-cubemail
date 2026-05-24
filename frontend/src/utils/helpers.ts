@@ -1,6 +1,18 @@
+/**
+ * @file helpers.ts
+ * @description Miscellanous utility functions for date formatting, string manipulation,
+ * monthly calendar cell generations, and raw RFC 822 MIME mail source building.
+ */
+
 import type { CalCell, CalEvent, MailMessage } from '../types'
 
-// Applies a Go-style format string (reference: 02/01/2006 15:04:05) to a Date.
+/**
+ * Formats a raw date string using a format string similar to Go's layout reference (02/01/2006 15:04:05).
+ * 
+ * @param raw - The raw date string to parse.
+ * @param goFmt - The target Go-style format string (optional, defaults to '02/01/2006 15:04').
+ * @returns The formatted date/time representation string, or the raw input if parsing fails.
+ */
 export function formatDate(raw: string, goFmt?: string): string {
   if (!raw) return ''
   let d = new Date(raw)
@@ -21,10 +33,22 @@ export function formatDate(raw: string, goFmt?: string): string {
     .replace('05',   pad(d.getSeconds()))
 }
 
+/**
+ * Extracts the initials from a name string (maximum of two uppercase initials).
+ * 
+ * @param name - The full name of the contact.
+ * @returns The initials representation (e.g. "Helena Vargas" -> "HV").
+ */
 export function initials(name: string): string {
   return (name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('')
 }
 
+/**
+ * Resolves a Lucide icon component name for a given file extension.
+ * 
+ * @param ext - The file extension (e.g. "pdf", "docx").
+ * @returns The target Lucide icon name (e.g. "file-text").
+ */
 export function extIcon(ext: string): string {
   const e = (ext || '').toUpperCase()
   if (['PDF', 'DOC', 'DOCX'].includes(e)) return 'file-text'
@@ -34,6 +58,12 @@ export function extIcon(ext: string): string {
   return 'file'
 }
 
+/**
+ * Resolves a Tailwind CSS color utility class for a given file extension.
+ * 
+ * @param ext - The file extension.
+ * @returns The target CSS color class (e.g. "text-[#B22B2B]").
+ */
 export function extColor(ext: string): string {
   const e = (ext || '').toUpperCase()
   if (e === 'PDF') return 'text-[#B22B2B]'
@@ -43,6 +73,12 @@ export function extColor(ext: string): string {
   return 'text-ink-sub'
 }
 
+/**
+ * Calculates derived dark and light accent colors from a primary hex color
+ * and injects them as dynamic CSS custom variables on the document root element.
+ * 
+ * @param hex - The base hex primary accent color (e.g. "#1B3A6B").
+ */
 export function applyAccent(hex: string): void {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
@@ -58,6 +94,13 @@ export function applyAccent(hex: string): void {
   s.setProperty('--row-selected',  lighten(0.80))
 }
 
+/**
+ * Compiles structural RFC 822 MIME mail headers and multi-part boundary segments
+ * from a given `MailMessage` model definition.
+ * 
+ * @param m - The email message data object.
+ * @returns The compiled MIME format raw source string.
+ */
 export function buildRawSource(m: MailMessage | null): string {
   if (!m) return ''
   const msgId    = `<${m.id}.${(m.fullDate || '').replace(/\D/g, '') || Date.now()}@webmail.test>`
@@ -96,6 +139,13 @@ export function buildRawSource(m: MailMessage | null): string {
   return lines.join('\n')
 }
 
+/**
+ * Builds a month-view grid array containing exactly 42 calendar day cells (CalCell),
+ * incorporating dimmed trailing and leading days from adjacent months.
+ * 
+ * @param events - Map of scheduled events, keyed by day of the month numbers.
+ * @returns Array with 42 CalCell instances representing the month's layout.
+ */
 export function buildCalCells(events: Record<number, CalEvent[]> = {}): CalCell[] {
   const CAL_FIRST_WEEKDAY = 5, CAL_DAYS = 31, CAL_PREV_DAYS = 30, TODAY = 22
   const cells: CalCell[] = []

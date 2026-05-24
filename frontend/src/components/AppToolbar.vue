@@ -1,38 +1,67 @@
 <script setup lang="ts">
+/**
+ * @component AppToolbar
+ * @description The secondary operations toolbar. Houses primary actions like 
+ * creating messages, fetching folders, replying, deleting, marking as read/unread, 
+ * moving selected messages to another folder, and displaying visible item counts.
+ */
+
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useMailStore } from '../stores/mail'
 import { useAuthStore } from '../stores/auth'
 import Icon from './Icon.vue'
 
+/** Mail store instance */
 const mail = useMailStore()
+/** Authentication store instance */
 const auth = useAuthStore()
 
+/** Whether the Move to dropdown is currently expanded */
 const moveOpen = ref(false)
-const moveBtn  = ref(null)
+/** Reference element of the Move to dropdown button */
+const moveBtn  = ref<HTMLElement | null>(null)
 
+/** Computes true if the current view is not the core Mail list pane */
 const notMail = computed(() => mail.view !== 'mail')
 
+/** List of target folders excluding the folder currently viewed */
 const moveFolders = computed(() =>
   mail.folders.filter(f => f.id !== mail.folder)
 )
 
+/**
+ * Refreshes the currently viewed mailbox folder list and updates quota information.
+ */
 function refresh() {
   mail.fetchFolderMessages(mail.folder)
   auth.fetchQuota()
 }
 
+/** Toggles expansion state of the Move to dropdown */
 function toggleMove() { moveOpen.value = !moveOpen.value }
 
+/**
+ * Dispatcher to move chosen mail(s) to a folder and closes the dropdown menu.
+ * 
+ * @param folderId - ID of the destination folder.
+ */
 function pickFolder(folderId) {
   mail.moveMail(folderId)
   moveOpen.value = false
 }
 
+/**
+ * Closes the Move to dropdown if the user clicks anywhere outside the trigger button.
+ * 
+ * @param e - The document click event payload.
+ */
 function onDocClick(e) {
-  if (moveBtn.value && !moveBtn.value.contains(e.target)) moveOpen.value = false
+  if (moveBtn.value && !moveBtn.value.contains(e.target as Node)) moveOpen.value = false
 }
 
+/** Registers click listeners on mount to support closing the dropdown on outside clicks */
 onMounted(()  => document.addEventListener('click', onDocClick))
+/** Tears down the document level click listener */
 onUnmounted(() => document.removeEventListener('click', onDocClick))
 </script>
 

@@ -1,12 +1,28 @@
 <script setup lang="ts">
+/**
+ * @component ReadingPane
+ * @description The main email reading viewport. Shows the email header details
+ * (subject, sender, recipients, dates), lists and links attachments, and renders
+ * the email body inside a sandboxed iframe if HTML exists, falling back to clean
+ * plain text with support for automatic signature sections.
+ */
+
 import { computed } from 'vue'
 import { useMailStore } from '../stores/mail'
 import { extIcon, extColor } from '../utils/helpers'
 import Icon from './Icon.vue'
 
+/** Mail store instance containing selection and action API calls */
 const mail = useMailStore()
+/** Computed alias of the currently selected email message */
 const m    = computed(() => mail.selected)
 
+/**
+ * Formats an ISO raw date string to a full localized display layout.
+ * 
+ * @param raw - The raw date string.
+ * @returns The formatted date/time string (e.g. "24/05/2026 19:57").
+ */
 function formatFullDate(raw) {
   if (!raw) return ''
   let d = new Date(raw)
@@ -20,6 +36,10 @@ function formatFullDate(raw) {
   return `${dd}/${mm}/${d.getFullYear()} ${hh}:${min}`
 }
 
+/**
+ * Sandboxes the raw HTML body inside a standardized document block for
+ * rendering secure and responsive content in the iframe.
+ */
 const srcdoc = computed(() => {
   const html = m.value?.htmlBody
   if (!html) return ''

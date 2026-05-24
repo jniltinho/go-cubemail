@@ -1,5 +1,13 @@
+/**
+ * @file mockData.ts
+ * @description Mock data structures for demonstration and fallback purposes.
+ */
+
 import type { CalEvent } from '../../types'
 
+/**
+ * Mock calendar events, keyed by day of the month.
+ */
 export const CAL_EVENTS: Record<number, CalEvent[]> = {
   4:  [{ t: 'Sprint kickoff', k: 'alt' }],
   6:  [{ t: 'Design review' }],

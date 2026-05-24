@@ -1,12 +1,24 @@
 <script setup lang="ts">
+/**
+ * @component ContactModal
+ * @description The modal viewport window to add or update contact registry data.
+ * Displays field inputs for name, email, job title, company name, phone, and optional notes.
+ * Shows delete buttons on editing contexts, binds reactive updates, and handles form validations.
+ */
+
 import { reactive, ref, watch } from 'vue'
 import { useMailStore } from '../stores/mail'
 import Icon from './Icon.vue'
 
+/** Mail store instance containing contact CRUD integrations */
 const mail = useMailStore()
 
+/**
+ * Returns true if the composer modal is opened in "edit contact" mode.
+ */
 const isEdit = () => !!mail.editingContact
 
+/** The reactive form fields payload object */
 const form = reactive({
   name:    '',
   email:   '',
@@ -16,6 +28,10 @@ const form = reactive({
   notes:   '',
 })
 
+/**
+ * Syncs the reactive form state with mail store editing fields
+ * when opening the modal or choosing a different editing contact.
+ */
 watch(
   () => mail.editingContact,
   (c) => {
@@ -29,14 +45,22 @@ watch(
   { immediate: true }
 )
 
+/** True if the contact payload save request is in progress */
 const saving  = ref(false)
+/** True if the contact deletion request is in progress */
 const deleting = ref(false)
+/** Holds validation or API error messages */
 const error   = ref('')
 
+/** Closes the modal if user clicks on the backdrop grey mask */
 function backdrop(e: MouseEvent) {
   if (e.target === e.currentTarget) mail.closeContactModal()
 }
 
+/**
+ * Asserts name/email inputs are not empty, and dispatches the update or save
+ * payload call to the mail store contact actions. Closes the modal on success.
+ */
 async function submit() {
   error.value = ''
   if (!form.name.trim() || !form.email.trim()) {
@@ -53,6 +77,10 @@ async function submit() {
   mail.closeContactModal()
 }
 
+/**
+ * Dispatches contact deletion request on the mail store contact actions API
+ * and closes the modal viewport.
+ */
 async function remove() {
   if (!mail.editingContact?.id) return
   deleting.value = true

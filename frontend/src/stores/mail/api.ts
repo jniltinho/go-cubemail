@@ -1,3 +1,9 @@
+/**
+ * @file api.ts
+ * @description Integration module between the mail store and the backend APIs.
+ * Handles folder reloading, querying messages, and retrieving complete email bodies from the server.
+ */
+
 import axios from 'axios'
 import type { Ref } from 'vue'
 import type { MailMessage, Folder } from '../../types'
@@ -5,18 +11,43 @@ import type { useAuthStore } from '../auth'
 import { formatDate } from '../../utils/helpers'
 import { FOLDER_ID_MAP } from './constants'
 
-
 type AuthStore = ReturnType<typeof useAuthStore>
 
+/**
+ * Shared context containing reactive states and dependencies
+ * needed for executing mail API network requests.
+ */
 interface MailApiContext {
+  /** Authentication store instance */
   auth: AuthStore
+  /** Reactive list reference of folders on the frontend */
   folders: Ref<Folder[]>
+  /** Reactive list reference of all loaded email messages in memory */
   mails: Ref<MailMessage[]>
+  /** Reactive identifier of the active/selected folder */
   folder: Ref<string>
+  /** Reactive UID of the currently selected/open email */
   selectedId: Ref<string | null>
 }
 
+/**
+ * Composable wrapping HTTP requests for backend IMAP mailbox integration.
+ * 
+ * @param context - The context containing reactive stores and references.
+ * @returns Object containing API communication methods.
+ */
 export function useMailApi({ auth, folders, mails, folder, selectedId }: MailApiContext) {
+  
+  /**
+   * Fetches messages from a specific folder on the backend IMAP server.
+   * If successful, merges the fetched emails into local memory, updates
+   * total and unread email counters for the folder, and initiates message body
+   * fetches for the first email if the active folder changed.
+   * 
+   * @param folderId - Folder identifier to fetch (e.g. "inbox").
+   * @param onlyIfNew - If true, evaluates if new UIDs exist before updating the state.
+   * @returns Promise resolving to `true` if new messages were found/loaded, `false` otherwise.
+   */
   async function fetchFolderMessages(folderId: string, onlyIfNew = false): Promise<boolean> {
     if (!auth.isApiOnline) return false
     const folderDef = folders.value.find(f => f.id === folderId)
@@ -70,6 +101,11 @@ export function useMailApi({ auth, folders, mails, folder, selectedId }: MailApi
     }
   }
 
+  /**
+   * Performs the initial data load on connection.
+   * Resolves logged in profile parameters, fetches active IMAP folders,
+   * maps folder labels to frontend routes, and fetches messages for the active folder.
+   */
   async function loadFromApi(): Promise<void> {
     if (!auth.isApiOnline) return
     try {
@@ -90,7 +126,12 @@ export function useMailApi({ auth, folders, mails, folder, selectedId }: MailApi
     }
   }
 
-
+  /**
+   * Fetches the detailed HTML/plain body and attachments of a specific message
+   * from the IMAP server and updates the message entry in the local store list.
+   * 
+   * @param msgId - Unique IMAP UID of the message.
+   */
   async function fetchMessageBody(msgId: string): Promise<void> {
     const msg = mails.value.find(m => m.id === msgId)
     if (!msg || !auth.isApiOnline) return

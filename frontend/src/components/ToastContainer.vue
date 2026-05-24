@@ -1,5 +1,14 @@
 <script setup lang="ts">
+/**
+ * @component ToastContainer
+ * @description Teleports to body and renders the overlay stack container for 
+ * quick-feedback toast notifications. Transitions toast elements on insertion
+ * and deletion, and features dismissal controls.
+ */
+
 import { useToastStore } from '../stores/toast'
+
+/** Toast store instance containing notifications stack lists */
 const toast = useToastStore()
 </script>
 

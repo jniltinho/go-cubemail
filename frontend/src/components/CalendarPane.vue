@@ -1,7 +1,14 @@
 <script setup lang="ts">
+/**
+ * @component CalendarPane
+ * @description The monthly calendar grid view panel. Displays a grid layout 
+ * of calendar days (cells), mock events for May 2026, and controls to switch views.
+ */
+
 import { useMailStore } from '../stores/mail'
 import Icon from './Icon.vue'
 
+/** Mail store instance containing calendar cell details */
 const mail = useMailStore()
 </script>
 

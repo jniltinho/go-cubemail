@@ -1,8 +1,16 @@
 <script setup lang="ts">
+/**
+ * @component MailList
+ * @description The middle column mail list panel. Renders the list of emails
+ * in the active folder, supports single and batch checkbox selections, lists attachments/stars
+ * indicators, handles row clicks to open emails, and implements empty state messages.
+ */
+
 import { useMailStore } from '../stores/mail'
 import { formatDate } from '../utils/helpers'
 import Icon from './Icon.vue'
 
+/** Mail store instance containing visible mails and selection state */
 const mail = useMailStore()
 </script>
 

@@ -1,15 +1,33 @@
 <script setup lang="ts">
+/**
+ * @component ContactsPane
+ * @description The layout panel displaying the list of user contacts.
+ * Features buttons to add, import (CSV/VCF), and export contacts. Hovering
+ * over contact cards displays inline edit actions. Clicking contact emails
+ * pre-fills the mail composer.
+ */
+
 import { ref } from 'vue'
 import { useMailStore } from '../stores/mail'
 import { initials } from '../utils/helpers'
 import Icon from './Icon.vue'
 
+/** Mail store instance containing contact lists and modifiers */
 const mail = useMailStore()
+/** Reference to hidden CSV/VCF file input selector */
 const fileInputRef = ref<HTMLInputElement | null>(null)
+/** True if a file import is currently uploading */
 const importing = ref(false)
 
+/** Triggers click programmatically on hidden file input selector */
 function openImport() { fileInputRef.value?.click() }
 
+/**
+ * Handles CSV/VCF file selection events, uploading the file payload via
+ * contacts API importing triggers.
+ * 
+ * @param e - The HTML DOM file selection event.
+ */
 async function onFileSelected(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
@@ -19,6 +37,9 @@ async function onFileSelected(e: Event) {
   ;(e.target as HTMLInputElement).value = ''
 }
 
+/**
+ * Redirects user window directly to contacts export downloadable API link.
+ */
 function exportContacts() {
   window.location.href = '/api/v1/contacts/export'
 }

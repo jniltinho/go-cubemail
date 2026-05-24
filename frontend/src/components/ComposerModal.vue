@@ -1,4 +1,12 @@
 <script setup lang="ts">
+/**
+ * @component ComposerModal
+ * @description The modal viewport for writing and sending email messages.
+ * Integrates with TinyMCE (via TinyEditor component) to support styled emails,
+ * implements dynamic contact autocomplete suggestions as the user types in the "To" input,
+ * handles multi-file attachments uploads with size formatting, and displays API errors.
+ */
+
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import Icon from './Icon.vue'
@@ -7,6 +15,7 @@ import { extIcon, extColor } from '../utils/helpers'
 import { useMailStore } from '../stores/mail'
 import { useToastStore } from '../stores/toast'
 
+/** Data structures to prefill the email composer modal */
 interface ComposerPrefill {
   to?: string
   subj?: string
@@ -18,31 +27,55 @@ interface ComposerPrefill {
   }
 }
 
+/** Component properties with standard default values */
 const props = withDefaults(defineProps<{
   prefill?: ComposerPrefill
 }>(), { prefill: () => ({}) })
+
+/** Custom events emitted by the composer */
 const emit = defineEmits<{ close: [] }>()
 
+/** Mail store instance containing autocomplete contact targets */
 const mailStore   = useMailStore()
+/** Toast notifications store instance */
 const toastStore  = useToastStore()
-const to          = ref(props.prefill?.to   || '')
-const cc          = ref('')
-const subj        = ref(props.prefill?.subj || '')
-const showCc      = ref(false)
-const sending     = ref(false)
-const sendError   = ref('')
-const toRef       = ref<HTMLInputElement | null>(null)
-const fileInputRef = ref(null)
-const attachments  = ref([])
 
+/** Primary recipient input model string */
+const to          = ref(props.prefill?.to   || '')
+/** Carbon Copy (Cc) recipient input model string */
+const cc          = ref('')
+/** Subject line input model string */
+const subj        = ref(props.prefill?.subj || '')
+/** Visibility status of the CC field row */
+const showCc      = ref(false)
+/** True if the mail payload is currently uploading */
+const sending     = ref(false)
+/** Holds backend transmission error details, if any */
+const sendError   = ref('')
+/** Reference element for the primary To input field */
+const toRef       = ref<HTMLInputElement | null>(null)
+/** Reference element for the hidden multi-file input picker */
+const fileInputRef = ref<HTMLInputElement | null>(null)
+/** List of selected files queued to be attached */
+const attachments  = ref<File[]>([])
+
+/** Visibility of autocomplete contact suggestions dropdown list */
 const showSuggestions = ref(false)
+/** Index of the highlighted contact suggestion in the dropdown list */
 const activeSuggestion = ref(-1)
 
+/**
+ * Extracts and returns the last partially typed email address query segment.
+ */
 const currentTerm = computed(() => {
   const parts = to.value.split(',')
   return parts[parts.length - 1].trim().toLowerCase()
 })
 
+/**
+ * Filters the master contacts roster using the parsed search term.
+ * Limits the results list to a maximum of 8 suggestions.
+ */
 const suggestions = computed(() => {
   const term = currentTerm.value
   if (!term) return []
@@ -51,15 +84,22 @@ const suggestions = computed(() => {
     .slice(0, 8)
 })
 
+/** Shows the autocomplete recommendations and resets active suggestion focus indices */
 function onToInput() {
   showSuggestions.value = true
   activeSuggestion.value = -1
 }
 
+/** Hides the autocomplete recommendations after a slight delay to allow click events */
 function onToBlur() {
   setTimeout(() => { showSuggestions.value = false }, 150)
 }
 
+/**
+ * Handles ArrowUp/ArrowDown, Enter, and Escape navigation inside autocomplete listings.
+ * 
+ * @param e - The keydown keyboard event.
+ */
 function onToKeydown(e: KeyboardEvent) {
   if (!showSuggestions.value || !suggestions.value.length) return
   if (e.key === 'ArrowDown') {
@@ -76,6 +116,11 @@ function onToKeydown(e: KeyboardEvent) {
   }
 }
 
+/**
+ * Appends the chosen contact email address to the end of the recipients input field.
+ * 
+ * @param contact - The highlighted contact item.
+ */
 function selectSuggestion(contact: { name: string; email: string }) {
   const parts = to.value.split(',').map(p => p.trim()).filter(Boolean)
   parts.pop()
@@ -86,22 +131,39 @@ function selectSuggestion(contact: { name: string; email: string }) {
   toRef.value?.focus()
 }
 
+/**
+ * Formats file sizes to a short human-readable string (B, KB, MB).
+ * 
+ * @param bytes - Size in bytes.
+ * @returns Formatted size representation.
+ */
 function fmtSize(bytes) {
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB'
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
+
+/** Extracts the extension segment from a filename */
 function fileExt(name) { return name.split('.').pop() }
 
+/** Simulates click on the hidden file input element */
 function openFilePicker() { fileInputRef.value?.click() }
 
+/** Appends selected files to the attachments list queue and clears the picker input */
 function onFilesSelected(e) {
   for (const f of e.target.files) attachments.value.push(f)
   e.target.value = ''
 }
 
+/** Removes an attachment item from the file queue by index */
 function removeAttachment(i) { attachments.value.splice(i, 1) }
 
+/**
+ * Generates initial rich HTML editor content from composer prefill definitions.
+ * Wraps plain text blocks in paragraph tags and blockquotes quoted message sources.
+ * 
+ * @returns Initial HTML content string.
+ */
 function buildInitHtml() {
   const q = props.prefill?.quoted
   if (q) {
@@ -123,8 +185,14 @@ function buildInitHtml() {
     .join('')
 }
 
+/** The bound HTML body editor model content */
 const body = ref(buildInitHtml())
 
+/**
+ * Transmits the email payload. Asserts that recipients exist, strips HTML tags
+ * to generate a plain-text fallback segment, compiles a FormData payload, and posts
+ * the content to the backend. Closes the composer upon transmission success.
+ */
 async function send() {
   sendError.value = ''
   if (!to.value.trim()) { sendError.value = 'Please enter a recipient.'; return }
@@ -144,13 +212,14 @@ async function send() {
     await axios.post(`${API_BASE}/compose/send`, fd)
     toastStore.success('Message sent successfully.')
     emit('close')
-  } catch (e) {
+  } catch (e: any) {
     sendError.value = e.response?.data?.error || 'Failed to send. Please try again.'
   } finally {
     sending.value = false
   }
 }
 
+/** Closes the modal if user clicks on the outer grey background mask */
 function backdrop(e) {
   if (e.target === e.currentTarget) emit('close')
 }

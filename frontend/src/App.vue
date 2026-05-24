@@ -1,4 +1,11 @@
 <script setup lang="ts">
+/**
+ * @component App
+ * @description The root layout and orchestrator of the frontend application.
+ * Manages global keyboard shortcuts, monitors the authentication state,
+ * triggers SSE polling, and conditionally renders sub-views or modals.
+ */
+
 import { onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useMailStore } from './stores/mail'
@@ -11,16 +18,25 @@ import MailList      from './components/MailList.vue'
 import ReadingPane   from './components/ReadingPane.vue'
 import ContactsPane  from './components/ContactsPane.vue'
 import CalendarPane  from './components/CalendarPane.vue'
-import ComposerModal  from './components/ComposerModal.vue'
-import SourceViewer   from './components/SourceViewer.vue'
-import ContactModal   from './components/ContactModal.vue'
-import DialogModal     from './components/DialogModal.vue'
-import ToastContainer  from './components/ToastContainer.vue'
-import SpinnerIcon     from './components/SpinnerIcon.vue'
+import ComposerModal from './components/ComposerModal.vue'
+import SourceViewer  from './components/SourceViewer.vue'
+import ContactModal  from './components/ContactModal.vue'
+import DialogModal   from './components/DialogModal.vue'
+import ToastContainer from './components/ToastContainer.vue'
+import SpinnerIcon   from './components/SpinnerIcon.vue'
 
+/** Authentication state store instance */
 const auth = useAuthStore()
+/** Mail and application state store instance */
 const mail = useMailStore()
 
+/**
+ * Handles global keydown shortcuts when input fields are not focused and
+ * the mail composer is closed. Supports Vim-like J/K keys for navigation,
+ * R for reply, E for archiving, #/Delete for deleting, and C for composing.
+ * 
+ * @param e - The keyboard event payload.
+ */
 function onKey(e) {
   if (['INPUT', 'TEXTAREA'].includes(e.target.tagName) || mail.composer !== null) return
   const list = mail.visibleMails
@@ -33,6 +49,10 @@ function onKey(e) {
   else if (e.key === 'c')                      mail.compose()
 }
 
+/**
+ * Watches the user authentication state to establish or tear down
+ * the SSE polling connection and load inbox data from the API.
+ */
 watch(() => auth.isAuthenticated, async (authed) => {
   if (authed) {
     startSSE(mail, auth)
@@ -42,11 +62,19 @@ watch(() => auth.isAuthenticated, async (authed) => {
   }
 })
 
+/**
+ * Registers global keyboard listeners and initiates the session checks
+ * when the component is mounted.
+ */
 onMounted(async () => {
   window.addEventListener('keydown', onKey)
   await auth.checkSession()
 })
 
+/**
+ * Removes the global keyboard event listener and cleans up SSE
+ * timers before the component gets unmounted.
+ */
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey)
   stopSSE()

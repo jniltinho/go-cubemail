@@ -1,20 +1,38 @@
 <script setup lang="ts">
+/**
+ * @component AppSidebar
+ * @description The collapsible/resizable left-hand folders sidebar.
+ * Displays user folders (system & custom), offers the "New Folder" context trigger,
+ * and visualizes the active user's storage quota progress bar.
+ */
+
 import { computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useMailStore } from '../stores/mail'
 import FolderRow from './FolderRow.vue'
 import Icon from './Icon.vue'
 
+/** Authentication store instance */
 const auth = useAuthStore()
+/** Mail store instance */
 const mail = useMailStore()
 
+/**
+ * Formats a raw number of bytes to a human-readable size string (MB or GB).
+ * 
+ * @param bytes - The raw byte size value.
+ * @returns The formatted string representation (e.g. "256 MB", "1.24 GB").
+ */
 function formatBytes(bytes) {
   if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(2) + ' GB'
   return (bytes / 1024 ** 2).toFixed(0) + ' MB'
 }
 
+/** Computed string representation of used bytes */
 const quotaUsedLabel  = computed(() => formatBytes(auth.currentUser.quotaUsedBytes))
+/** Computed string representation of total bytes */
 const quotaTotalLabel = computed(() => formatBytes(auth.currentUser.quotaTotalBytes))
+/** Computed percentage of total quota currently consumed */
 const quotaPercent    = computed(() => {
   if (!auth.currentUser.quotaTotalBytes) return 0
   return Math.min(auth.currentUser.quotaUsedBytes / auth.currentUser.quotaTotalBytes * 100, 100).toFixed(1)

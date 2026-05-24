@@ -1,4 +1,11 @@
 <script setup lang="ts">
+/**
+ * @component TinyEditor
+ * @description The wrapper component for TinyMCE rich text editor integration.
+ * Loads themes, plugins, layouts, font maps, and binds model-value updates
+ * for seamless HTML mail text editing with proper setup and teardown handlers.
+ */
+
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import tinymce from 'tinymce'
 import 'tinymce/themes/silver'
@@ -16,17 +23,24 @@ import 'tinymce/plugins/charmap'
 import 'tinymce/plugins/searchreplace'
 import 'tinymce/plugins/wordcount'
 
+/** Component properties */
 const props = defineProps<{
+  /** The HTML content model value */
   modelValue?: string
 }>()
 
+/** Emitted event triggers */
 const emit = defineEmits<{
+  /** Triggers two-way binding updates of the rich text model */
   'update:modelValue': [value: string]
 }>()
 
+/** Reference element for the raw underlying textarea element */
 const taRef = ref<HTMLTextAreaElement | null>(null)
+/** Teardown function to cleanly remove the editor instance */
 let destroyEditor: (() => void) | null = null
 
+/** Mount hook to initialize TinyMCE with custom toolbar, fonts, and inline styles */
 onMounted(() => {
   if (!taRef.value) return
 
@@ -85,9 +99,12 @@ onMounted(() => {
   destroyEditor = () => { try { editor?.remove() } catch {} }
 })
 
+/** Cleans up the TinyMCE instance when the component is destroyed */
 onBeforeUnmount(() => destroyEditor?.())
 
+/** Exposes public component methods */
 defineExpose({
+  /** Retrieves the active rich editor's HTML code */
   getContent: () => tinymce.activeEditor?.getContent() ?? ''
 })
 </script>

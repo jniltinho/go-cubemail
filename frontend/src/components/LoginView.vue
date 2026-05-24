@@ -1,11 +1,24 @@
 <script setup lang="ts">
+/**
+ * @component LoginView
+ * @description The user authentication view panel. Collects email credentials
+ * and dispatches authentication operations. If successful, requests the mailbox
+ * loader initializer from the API base.
+ */
+
 import { useAuthStore } from '../stores/auth'
 import { useMailStore } from '../stores/mail'
 import Icon from './Icon.vue'
 
+/** Authentication store instance */
 const auth = useAuthStore()
+/** Mail store instance */
 const mail = useMailStore()
 
+/**
+ * Handles the login form submission. Validates fields via auth store triggers,
+ * and if the session is authorized, loads the primary mailbox data structures.
+ */
 async function onSubmit() {
   await auth.handleLogin()
   if (auth.isAuthenticated) await mail.loadFromApi()
