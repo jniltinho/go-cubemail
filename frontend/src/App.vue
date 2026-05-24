@@ -2,24 +2,7 @@
 import { onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useMailStore } from './stores/mail'
-
-let evtSource = null
-
-function startSSE(mail, auth) {
-  evtSource?.close()
-  evtSource = new EventSource('/api/v1/events')
-  evtSource.addEventListener('new-mail', () => {
-    mail.fetchFolderMessages('inbox')
-    if (mail.folder !== 'inbox') mail.fetchFolderMessages(mail.folder)
-  })
-  evtSource.onerror = () => {
-    evtSource.close()
-    evtSource = null
-    setTimeout(() => {
-      if (auth.isAuthenticated) startSSE(mail, auth)
-    }, 30_000)
-  }
-}
+import { startSSE, stopSSE } from './utils/sse'
 import LoginView     from './components/LoginView.vue'
 import AppBar        from './components/AppBar.vue'
 import AppToolbar    from './components/AppToolbar.vue'
@@ -55,8 +38,7 @@ watch(() => auth.isAuthenticated, async (authed) => {
     startSSE(mail, auth)
     await mail.loadFromApi()
   } else {
-    evtSource?.close()
-    evtSource = null
+    stopSSE()
   }
 })
 
@@ -67,7 +49,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey)
-  evtSource?.close()
+  stopSSE()
 })
 </script>
 

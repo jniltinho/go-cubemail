@@ -1,5 +1,5 @@
 // Package server initialises the Echo HTTP server, registers all middleware and routes,
-// starts background workers (session cleanup, new-mail poller), and manages TLS/plain-text startup.
+// starts background workers (session cleanup), and manages TLS/plain-text startup.
 package server
 
 import (
@@ -18,7 +18,6 @@ import (
 	echoMiddleware "github.com/labstack/echo/v5/middleware"
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/handler"
-	"go-cubemail/internal/poll"
 	appMiddleware "go-cubemail/internal/server/middleware"
 	"go-cubemail/internal/session"
 	"gorm.io/gorm"
@@ -34,14 +33,6 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-
-	poll.Start(
-		ctx,
-		cfg.Server.SecretKey,
-		cfg.IMAP.TLS,
-		time.Duration(cfg.IMAP.TimeoutSec)*time.Second,
-		poll.Default,
-	)
 
 	e := echo.New()
 

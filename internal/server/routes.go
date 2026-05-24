@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"io/fs"
 	"mime"
 	"net/http"
@@ -12,11 +11,10 @@ import (
 	"github.com/labstack/echo/v5"
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/handler"
-	"go-cubemail/internal/poll"
 	appMiddleware "go-cubemail/internal/server/middleware"
 )
 
-func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authRateLimit echo.MiddlewareFunc, cookieName string) {
+func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authRateLimit echo.MiddlewareFunc) {
 	// Public: app version
 	g.GET("/version", func(c *echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"version": AppVersion})
@@ -66,52 +64,13 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 	api.PUT("/contacts/:id", h.Contacts.Update)
 	api.DELETE("/contacts/:id", h.Contacts.Delete)
 
-	// Server-Sent Events: pushes "new-mail" when poller detects new unseen messages
-	g.GET("/events", func(c *echo.Context) error {
-		cookie, err := c.Cookie(cookieName)
-		if err != nil {
-			return echo.ErrUnauthorized
-		}
-		sessID := cookie.Value
-
-		c.Response().Header().Set("Content-Type", "text/event-stream")
-		c.Response().Header().Set("Cache-Control", "no-cache")
-		c.Response().Header().Set("X-Accel-Buffering", "no")
-		c.Response().WriteHeader(http.StatusOK)
-
-		ch := poll.Default.Subscribe(sessID)
-		defer poll.Default.Unsubscribe(sessID)
-
-		w := c.Response()
-
-		// Initial keepalive comment so the browser doesn't treat it as an error
-		fmt.Fprintf(w, ": keepalive\n\n")
-		if f, ok := w.(http.Flusher); ok {
-			f.Flush()
-		}
-
-		for {
-			select {
-			case event, ok := <-ch:
-				if !ok {
-					return nil
-				}
-				fmt.Fprintf(w, "event: %s\ndata: {}\n\n", event)
-				if f, ok := w.(http.Flusher); ok {
-					f.Flush()
-				}
-			case <-c.Request().Context().Done():
-				return nil
-			}
-		}
-	}, authMiddleware)
 }
 
 func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, distFS fs.FS) {
 	authRateLimit := appMiddleware.NewRateLimit(5, time.Minute)
 	authMiddleware := appMiddleware.RequireAuth(cfg.Session.Name)
 
-	registerAPIRoutes(e.Group("/api/v1"), h, authMiddleware, authRateLimit, cfg.Session.Name)
+	registerAPIRoutes(e.Group("/api/v1"), h, authMiddleware, authRateLimit)
 	// registerAPIRoutes(e.Group("/api/v2"), h, authMiddleware, authRateLimit)
 
 	// ── SPA + Static file handler ────────────────────────────────────────────
