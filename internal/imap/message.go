@@ -2,6 +2,7 @@ package imap
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/emersion/go-imap/v2"
 )
@@ -49,14 +50,15 @@ func (c *Client) FetchEnvelopes(uids []imap.UID) ([]Envelope, error) {
 					env.From = env.FromEmail
 				}
 			}
-			if len(m.Envelope.To) > 0 {
-				addr := m.Envelope.To[0]
+			toAddrs := make([]string, 0, len(m.Envelope.To))
+			for _, addr := range m.Envelope.To {
 				if addr.Name != "" {
-					env.To = addr.Name + " <" + addr.Mailbox + "@" + addr.Host + ">"
+					toAddrs = append(toAddrs, addr.Name+" <"+addr.Mailbox+"@"+addr.Host+">")
 				} else {
-					env.To = addr.Mailbox + "@" + addr.Host
+					toAddrs = append(toAddrs, addr.Mailbox+"@"+addr.Host)
 				}
 			}
+			env.To = strings.Join(toAddrs, ", ")
 			env.Date = m.Envelope.Date.Format("02/01/2006 15:04")
 		}
 		for _, f := range m.Flags {

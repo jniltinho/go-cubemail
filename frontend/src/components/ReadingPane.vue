@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useMailStore } from '../stores/mail'
-import { initials, extIcon, extColor } from '../utils/helpers'
+import { extIcon, extColor } from '../utils/helpers'
 import Icon from './Icon.vue'
 
 const mail = useMailStore()
@@ -56,8 +56,8 @@ const srcdoc = computed(() => {
         </h1>
         <div class="flex items-start gap-3">
           <!-- Sender avatar -->
-          <div class="w-9 h-9 bg-accent text-white grid place-items-center font-bold text-[14px] flex-shrink-0 mt-0.5">
-            {{ initials(m.from?.name) }}
+          <div class="w-9 h-9 bg-accent text-white grid place-items-center flex-shrink-0 mt-0.5">
+            <Icon name="user" :size="34" />
           </div>
           <!-- From / To -->
           <div class="flex-1 min-w-0 text-[13px] leading-snug">

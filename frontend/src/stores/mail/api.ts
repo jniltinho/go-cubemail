@@ -28,7 +28,7 @@ export function useMailApi({ auth, folders, mails, folder, selectedId }: MailApi
         id:       String(m.uid),
         folder:   folderId,
         from:     { name: m.from || '', addr: m.from_email || '' },
-        to:       auth.currentUser.email,
+        to:       String(m.to || ''),
         subject:  m.subject || '(No Subject)',
         rawDate:  m.date || '',
         date:     formatDate(String(m.date || ''), auth.datetimeFormat),
