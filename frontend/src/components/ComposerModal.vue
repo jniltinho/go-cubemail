@@ -245,8 +245,6 @@ function backdrop(e) {
         <!-- Footer actions -->
         <div class="py-2 px-2.5 bg-panel-2 border-t border-line flex items-center gap-1.5">
           <button class="tbtn" type="button" @click="openFilePicker"><Icon name="paperclip" :size="13" /> Attach</button>
-          <button class="tbtn" type="button"><Icon name="signature" :size="13" /> Signature</button>
-          <button class="tbtn" type="button"><Icon name="clock" :size="13" /> Schedule send</button>
           <div class="ml-auto flex gap-1.5">
             <button class="tbtn" type="button" :disabled="sending" @click="$emit('close')">Discard</button>
             <button class="tbtn tbtn-primary" type="button" :disabled="sending" @click="send">

@@ -6,6 +6,17 @@ const mail = useMailStore()
 
 function copy() { mail.copySource(mail.sourceRaw) }
 function backdrop(e) { if (e.target === e.currentTarget) mail.closeSource() }
+
+function download() {
+  const blob = new Blob([mail.sourceRaw], { type: 'message/rfc822' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  const subject = mail.sourceMail?.subject?.replace(/[^a-z0-9_\-\. ]/gi, '_').trim() || 'message'
+  a.href = url
+  a.download = `${subject}.eml`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <template>
@@ -34,6 +45,9 @@ function backdrop(e) { if (e.target === e.currentTarget) mail.closeSource() }
       <div class="py-2 px-2.5 bg-panel-2 border-t border-line flex items-center gap-1.5">
         <span class="text-[12px] text-ink-sub px-1.5">Raw RFC 822 source · read-only</span>
         <div class="ml-auto flex gap-1.5">
+          <button class="tbtn" type="button" @click="download" :disabled="!mail.sourceRaw">
+            <Icon name="download" :size="13" /> Download .eml
+          </button>
           <button class="tbtn" type="button" @click="copy">
             <Icon name="copy" :size="13" /> Copy
           </button>
