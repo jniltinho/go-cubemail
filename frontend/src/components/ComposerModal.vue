@@ -4,6 +4,7 @@ import axios from 'axios'
 import Icon from './Icon.vue'
 import { extIcon, extColor } from '../utils/helpers'
 import { useMailStore } from '../stores/mail'
+import { useToastStore } from '../stores/toast'
 import tinymce from 'tinymce'
 import 'tinymce/themes/silver'
 import 'tinymce/icons/default'
@@ -37,12 +38,12 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ close: [] }>()
 
 const mailStore   = useMailStore()
+const toastStore  = useToastStore()
 const to          = ref(props.prefill?.to   || '')
 const cc          = ref('')
 const subj        = ref(props.prefill?.subj || '')
 const body        = ref(props.prefill?.body || '')
 const showCc      = ref(false)
-const sent        = ref(false)
 const sending     = ref(false)
 const sendError   = ref('')
 const taRef       = ref(null)
@@ -221,8 +222,8 @@ async function send() {
   sending.value = true
   try {
     await axios.post('/api/v1/compose/send', fd)
-    sent.value = true
-    setTimeout(() => emit('close'), 1800)
+    toastStore.success('Message sent successfully.')
+    emit('close')
   } catch (e) {
     sendError.value = e.response?.data?.error || 'Failed to send. Please try again.'
   } finally {
@@ -241,22 +242,14 @@ function backdrop(e) {
       <!-- Header -->
       <div class="bg-accent-bar text-white py-2 px-3 flex items-center gap-2 text-[13px] font-semibold">
         <Icon name="pencil-line" :size="14" />
-        <span>{{ sent ? 'Message sent' : (prefill?.subj ? 'Re: ' + (subj || 'Message') : 'New Message') }}</span>
+        <span>{{ prefill?.subj ? 'Re: ' + (subj || 'Message') : 'New Message' }}</span>
         <button class="ml-auto cursor-pointer w-[22px] h-[22px] grid place-items-center bg-transparent border border-[#4A6FA0] text-white hover:bg-[#2A4978] text-[11px]"
                 type="button" @click="$emit('close')">
           <Icon name="x" :size="12" />
         </button>
       </div>
 
-      <!-- Sent confirmation -->
-      <div v-if="sent" class="py-10 px-7 text-center">
-        <Icon name="check-circle-2" :size="38" class="text-success" />
-        <div class="text-[14px] text-ink mt-2 font-semibold">Sent</div>
-        <div class="text-[12px] text-ink-sub mt-1">A copy has been saved to Sent Items.</div>
-      </div>
-
-      <template v-else>
-        <div class="composer-field" style="position:relative">
+      <div class="composer-field" style="position:relative">
           <label>To</label>
           <input
             ref="toRef"
@@ -320,7 +313,7 @@ function backdrop(e) {
             class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-line text-[11.5px] text-ink"
           >
             <Icon :name="extIcon(fileExt(f.name))" :size="12" :class="extColor(fileExt(f.name))" />
-            <span class="font-medium max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">{{ f.name }}</span>
+            <span class="font-medium max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{{ f.name }}</span>
             <span class="text-ink-mute text-[10.5px]">· {{ fmtSize(f.size) }}</span>
             <button
               type="button"
@@ -349,7 +342,6 @@ function backdrop(e) {
             </button>
           </div>
         </div>
-      </template>
     </div>
   </div>
 </template>
