@@ -6,11 +6,20 @@
  * attachment generations, and clean dark-themed scrollable formatting.
  */
 
+import { computed } from 'vue'
 import { useMailStore } from '../stores/mail'
 import Icon from './Icon.vue'
 
 /** Mail store instance containing source raw fields */
 const mail = useMailStore()
+
+const sizeLabel = computed(() => {
+  const n = mail.sourceMail?.size || mail.sourceRaw.length
+  if (!n) return ''
+  return n >= 1_048_576
+    ? (n / 1_048_576).toFixed(2) + ' MB'
+    : n.toLocaleString() + ' bytes'
+})
 
 /** Copies the raw MIME message source content directly into the clipboard */
 function copy() { mail.copySource(mail.sourceRaw) }
@@ -52,13 +61,18 @@ function download() {
 
       <!-- Raw body -->
       <div class="bg-[#0E1A2E] text-[#D5E0F2] font-mono text-[12px] leading-snug py-3.5 px-4 max-h-[calc(100vh-200px)] overflow-auto whitespace-pre-wrap break-words scroll-y">
-        <span v-if="!mail.sourceRaw" class="text-[#6A82A0] italic">Loading…</span>
+        <div v-if="!mail.sourceRaw" class="flex flex-col items-center justify-center py-12 gap-3">
+          <svg class="animate-spin text-[#4A6FA0]" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+          <span class="text-[#6A82A0] text-[12px]">Loading source…</span>
+        </div>
         <template v-else>{{ mail.sourceRaw }}</template>
       </div>
 
       <!-- Footer -->
       <div class="py-2 px-2.5 bg-panel-2 border-t border-line flex items-center gap-1.5">
-        <span class="text-[12px] text-ink-sub px-1.5">Raw RFC 822 source · read-only</span>
+        <span class="text-[12px] text-ink-sub px-1.5">{{ sizeLabel ? sizeLabel + ' · ' : '' }}Raw RFC 822 source · read-only</span>
         <div class="ml-auto flex gap-1.5">
           <button class="tbtn" type="button" @click="download" :disabled="!mail.sourceRaw">
             <Icon name="download" :size="13" /> Download .eml

@@ -23,12 +23,22 @@ const mail = useMailStore()
       </h2>
       <div class="inline-flex items-center gap-1.5 text-[12px] text-ink-sub">
         <span class="text-[11.5px]">Sort by</span>
-        <select class="bg-white border border-line h-[22px] px-1.5 text-[11.5px] text-ink hover:bg-accent-soft cursor-pointer outline-none">
-          <option>Date</option>
-          <option>From</option>
-          <option>Subject</option>
-          <option>Size</option>
+        <select
+          v-model="mail.sortBy"
+          class="bg-white border border-line h-[22px] px-1.5 text-[11.5px] text-ink hover:bg-accent-soft cursor-pointer outline-none"
+        >
+          <option value="date">Date</option>
+          <option value="from">From</option>
+          <option value="subject">Subject</option>
+          <option value="size">Size</option>
         </select>
+        <button
+          class="h-[22px] w-[22px] flex items-center justify-center border border-line bg-white hover:bg-accent-soft text-ink cursor-pointer outline-none"
+          :title="mail.sortDir === 'asc' ? 'Ascending' : 'Descending'"
+          @click="mail.sortDir = mail.sortDir === 'asc' ? 'desc' : 'asc'"
+        >
+          <Icon :name="mail.sortDir === 'asc' ? 'arrow-up' : 'arrow-down'" :size="11" />
+        </button>
       </div>
     </div>
 

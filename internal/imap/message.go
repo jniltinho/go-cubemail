@@ -17,6 +17,7 @@ type Envelope struct {
 	Date      string   `json:"date"`
 	Seen      bool     `json:"seen"`
 	Flagged   bool     `json:"flagged"`
+	Size      int64    `json:"size"`
 }
 
 // FetchEnvelopes retrieves the envelope (headers and flags) for a slice of UIDs.
@@ -28,9 +29,10 @@ func (c *Client) FetchEnvelopes(uids []imap.UID) ([]Envelope, error) {
 
 	seqSet := imap.UIDSetNum(uids...)
 	msgs, err := c.Client.Fetch(seqSet, &imap.FetchOptions{
-		UID:      true,
-		Flags:    true,
-		Envelope: true,
+		UID:         true,
+		Flags:       true,
+		Envelope:    true,
+		RFC822Size:  true,
 	}).Collect()
 	if err != nil {
 		return nil, err
@@ -61,6 +63,7 @@ func (c *Client) FetchEnvelopes(uids []imap.UID) ([]Envelope, error) {
 			env.To = strings.Join(toAddrs, ", ")
 			env.Date = m.Envelope.Date.Format("02/01/2006 15:04")
 		}
+		env.Size = m.RFC822Size
 		for _, f := range m.Flags {
 			switch f {
 			case imap.FlagSeen:

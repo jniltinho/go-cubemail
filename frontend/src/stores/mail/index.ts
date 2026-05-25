@@ -10,7 +10,7 @@ import { ref, computed, watch, watchEffect } from 'vue'
 import { useAuthStore } from '../auth'
 import { useDialogStore } from '../dialog'
 import { useToastStore } from '../toast'
-import { applyAccent, buildCalCells } from '../../utils/helpers'
+import { applyAccent, buildCalCells, parseMailDate } from '../../utils/helpers'
 import { CAL_EVENTS } from './mockData'
 import { useMailApi } from './api'
 import { useFolderActions } from './folderActions'
@@ -63,6 +63,10 @@ export const useMailStore = defineStore('mail', () => {
   const sourceMail     = ref<MailMessage | null>(null)
   /** Raw MIME RFC 822 source text loaded from backend */
   const sourceRaw      = ref('')
+  /** Active sort field for the mail list */
+  const sortBy         = ref<'date' | 'from' | 'subject' | 'size'>('date')
+  /** Active sort direction for the mail list */
+  const sortDir        = ref<'asc' | 'desc'>('desc')
 
   /**
    * Watches base layout theme accent hex modifications to automatically
@@ -88,7 +92,28 @@ export const useMailStore = defineStore('mail', () => {
       m.snippet?.toLowerCase().includes(q) ||
       (m.attachments || []).some(a => a.name?.toLowerCase().includes(q))
     )
-    return xs
+    const dir = sortDir.value === 'asc' ? 1 : -1
+    const byDate = (a: MailMessage, b: MailMessage) =>
+      parseMailDate(b.rawDate) - parseMailDate(a.rawDate)
+    return [...xs].sort((a, b) => {
+      switch (sortBy.value) {
+        case 'from': {
+          const fa = (a.from?.name || a.from?.addr || '').trim().toLowerCase()
+          const fb = (b.from?.name || b.from?.addr || '').trim().toLowerCase()
+          return dir * fa.localeCompare(fb) || byDate(a, b)
+        }
+        case 'subject': {
+          const cmp = dir * (a.subject || '').trim().toLowerCase()
+            .localeCompare((b.subject || '').trim().toLowerCase())
+          return cmp || byDate(a, b)
+        }
+        case 'size':
+          return dir * ((a.size ?? 0) - (b.size ?? 0)) || byDate(a, b)
+        case 'date':
+        default:
+          return dir * (parseMailDate(a.rawDate) - parseMailDate(b.rawDate))
+      }
+    })
   })
 
   /**
@@ -120,6 +145,11 @@ export const useMailStore = defineStore('mail', () => {
   watch([folder, visibleMails], () => {
     if (!visibleMails.value.find(m => m.id === selectedId.value))
       selectedId.value = visibleMails.value[0]?.id ?? null
+  })
+
+  /** Resets sort direction to a sensible default when the sort field changes. */
+  watch(sortBy, (field) => {
+    sortDir.value = field === 'from' || field === 'subject' ? 'asc' : 'desc'
   })
 
   /**
@@ -163,6 +193,7 @@ export const useMailStore = defineStore('mail', () => {
     // state
     accent, loading, mails, folders, contacts, contactModal, editingContact, calCells, calDow,
     view, folder, selectedId, selectedIds, query, composer, sourceMail, sourceRaw,
+    sortBy, sortDir,
     // computed
     visibleMails, counts, selected, currentFolderLabel,
     // api

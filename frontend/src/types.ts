@@ -45,6 +45,8 @@ export interface MailMessage {
   unread: boolean
   /** True if the message is flagged/starred as important */
   starred: boolean
+  /** Message size in bytes (optional, provided by backend when available) */
+  size?: number
   /** List of attachments contained within the message */
   attachments: Attachment[]
   /** Plain text body lines (optional) */

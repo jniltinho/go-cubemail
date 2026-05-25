@@ -67,6 +67,7 @@ export function useMailApi({ auth, folders, mails, folder, selectedId }: MailApi
         snippet:  m.subject || '',
         unread:   !m.seen,
         starred:  !!m.flagged,
+        size:     Number(m.size) || 0,
         attachments: [],
         htmlBody: '',
         body: [],

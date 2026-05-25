@@ -13,6 +13,19 @@ import type { CalCell, CalEvent, MailMessage } from '../types'
  * @param goFmt - The target Go-style format string (optional, defaults to '02/01/2006 15:04').
  * @returns The formatted date/time representation string, or the raw input if parsing fails.
  */
+/**
+ * Parses a date string in DD/MM/YYYY HH:MM format (as returned by the backend)
+ * into a Unix timestamp in milliseconds for comparison purposes.
+ */
+export function parseMailDate(s: string): number {
+  if (!s) return 0
+  const [datePart, timePart = '00:00'] = s.split(' ')
+  const [dd, mm, yyyy] = datePart.split('/')
+  const [hh, min] = timePart.split(':')
+  const d = new Date(+yyyy, +mm - 1, +dd, +hh, +min)
+  return isNaN(d.getTime()) ? 0 : d.getTime()
+}
+
 export function formatDate(raw: string, goFmt?: string): string {
   if (!raw) return ''
   let d = new Date(raw)
