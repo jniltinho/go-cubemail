@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/emersion/go-imap/v2"
-	"github.com/labstack/echo/v5"
-	"github.com/microcosm-cc/bluemonday"
 	"go-cubemail/internal/config"
 	imappkg "go-cubemail/internal/imap"
 	"go-cubemail/internal/session"
+
+	"github.com/emersion/go-imap/v2"
+	"github.com/labstack/echo/v5"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 // MessageHandler handles reading, flagging, moving, and deleting individual email messages.
@@ -169,12 +170,19 @@ func (h *MessageHandler) Read(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"mailbox":     mailbox,
-		"uid":         uid,
-		"envelope":    envelopes[0],
-		"html_body":   string(safeHTML),
-		"plain_body":  plainBody,
-		"attachments": attViews,
+		"mailbox":             mailbox,
+		"uid":                 uid,
+		"envelope":            envelopes[0],
+		"html_body":           string(safeHTML),
+		"plain_body":          plainBody,
+		"attachments":         attViews,
+		"is_calendar_request": parsed != nil && parsed.CalendarInfo != nil, // ← novo
+		"calendar_info":       func() *imappkg.CalendarInfo {                  // ← novo
+			if parsed != nil {
+				return parsed.CalendarInfo
+			}
+			return nil
+		}(),
 	})
 }
 

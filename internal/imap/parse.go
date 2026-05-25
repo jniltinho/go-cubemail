@@ -13,9 +13,21 @@ import (
 
 // ParsedMessage holds the decoded body parts and attachments of a MIME message.
 type ParsedMessage struct {
-	TextPlain   string
-	TextHTML    string
-	Attachments []Attachment
+	TextPlain    string
+	TextHTML     string
+	Attachments  []Attachment
+	CalendarInfo *CalendarInfo // ← adiciona aqui
+}
+
+// CalendarInfo holds iCalendar event data (RFC 5545).
+type CalendarInfo struct {
+	Method    string `json:"method"`     // REQUEST, CANCEL, REPLY
+	Summary   string `json:"summary"`
+	Organizer string `json:"organizer"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+	Location  string `json:"location"`
+	UID       string `json:"uid"`
 }
 
 // Attachment describes a single file attached to an email message.
@@ -25,6 +37,36 @@ type Attachment struct {
 	Size        int64
 	Part        int
 	Data        []byte
+}
+
+func parseICS(data []byte) *CalendarInfo {
+	info := &CalendarInfo{}
+	inVEvent := false
+	for _, raw := range strings.Split(string(data), "\n") {
+		line := strings.TrimRight(raw, "\r")
+		upper := strings.ToUpper(strings.TrimSpace(line))
+		if upper == "BEGIN:VEVENT" { inVEvent = true; continue }
+		if upper == "END:VEVENT"   { inVEvent = false; continue }
+
+		colonIdx := strings.Index(line, ":")
+		if colonIdx < 0 { continue }
+		key := strings.ToUpper(strings.SplitN(line[:colonIdx], ";", 2)[0])
+		val := strings.TrimSpace(line[colonIdx+1:])
+
+		if !inVEvent {
+			if key == "METHOD" { info.Method = strings.ToUpper(val) }
+			continue
+		}
+		switch key {
+		case "SUMMARY":   info.Summary = val
+		case "ORGANIZER": info.Organizer = strings.TrimPrefix(strings.ToLower(val), "mailto:")
+		case "DTSTART":   info.StartTime = val
+		case "DTEND":     info.EndTime = val
+		case "LOCATION":  info.Location = val
+		case "UID":       info.UID = val
+		}
+	}
+	return info
 }
 
 // ParseMessage decodes a raw RFC822 message into its text bodies and attachments.
@@ -85,6 +127,11 @@ func ParseMessage(raw []byte) (*ParsedMessage, error) {
 
 		case strings.HasPrefix(mediatype, "text/plain"):
 			pm.TextPlain = string(data)
+
+		case strings.HasPrefix(mediatype, "text/calendar"),
+			strings.HasSuffix(mediatype, "ics"),
+			strings.EqualFold(mediatype, "application/ics"):
+			pm.CalendarInfo = parseICS(data)
 		}
 	}
 
