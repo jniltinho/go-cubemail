@@ -7,11 +7,9 @@ import (
 	"fmt"
 
 	"go-cubemail/internal/config"
+	"go-cubemail/internal/database"
 	"go-cubemail/internal/model"
 	"github.com/spf13/cobra"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 var migrateCmd = &cobra.Command{
@@ -20,15 +18,7 @@ var migrateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := config.Load()
 
-		var db *gorm.DB
-		var err error
-
-		switch cfg.Database.Driver {
-		case "mariadb":
-			db, err = gorm.Open(mysql.Open(cfg.Database.DSN), &gorm.Config{})
-		default:
-			db, err = gorm.Open(sqlite.Open(cfg.Database.DSN), &gorm.Config{})
-		}
+		db, err := database.Open(cfg)
 		if err != nil {
 			return fmt.Errorf("failed to connect to database: %w", err)
 		}

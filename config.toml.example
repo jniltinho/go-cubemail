@@ -24,9 +24,17 @@ timeout_sec = 30
 [database]
 driver = "sqlite"
 dsn    = "./data/app.db"
-# MariaDB (produção):
+debug  = false   # Set to true to log all SQL queries (development only)
+
+# MariaDB / MySQL (produção):
 # driver = "mariadb"
 # dsn    = "user:password@tcp(localhost:3306)/go_cubemail?charset=utf8mb4&parseTime=True&loc=Local"
+# debug  = false
+
+# PostgreSQL (produção):
+# driver = "postgres"
+# dsn    = "host=localhost user=go_cubemail password=strongpassword dbname=go_cubemail port=5432 sslmode=disable TimeZone=America/Sao_Paulo"
+# debug  = false
 
 [session]
 name      = "gorc_session"

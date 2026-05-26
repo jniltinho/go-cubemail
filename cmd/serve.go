@@ -9,12 +9,10 @@ import (
 	"os"
 
 	"go-cubemail/internal/config"
+	"go-cubemail/internal/database"
 	"go-cubemail/internal/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 var serveCmd = &cobra.Command{
@@ -27,15 +25,7 @@ var serveCmd = &cobra.Command{
 
 		cfg := config.Load()
 
-		var db *gorm.DB
-		var err error
-
-		switch cfg.Database.Driver {
-		case "mariadb":
-			db, err = gorm.Open(mysql.Open(cfg.Database.DSN), &gorm.Config{})
-		default:
-			db, err = gorm.Open(sqlite.Open(cfg.Database.DSN), &gorm.Config{})
-		}
+		db, err := database.Open(cfg)
 		if err != nil {
 			slog.Error("failed to connect to database", "error", err)
 			os.Exit(1)

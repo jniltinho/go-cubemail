@@ -46,10 +46,15 @@ type SMTPConfig struct {
 }
 
 // DatabaseConfig selects the database driver and connection string.
-// Supported drivers: "sqlite" (default), "mariadb".
+// Supported drivers: "sqlite" (default), "mariadb", "mysql", "postgres", "postgresql".
+//
+// The Debug field controls GORM query logging:
+//   - true  → logs all SQL queries (useful for development)
+//   - false → only logs errors and slow queries (recommended for production)
 type DatabaseConfig struct {
 	Driver string
 	DSN    string
+	Debug  bool `mapstructure:"debug"`
 }
 
 // SessionConfig controls the HTTP session cookie behaviour.
@@ -101,6 +106,7 @@ func Load() *Config {
 
 	cfg.Database.Driver = viper.GetString("database.driver")
 	cfg.Database.DSN = viper.GetString("database.dsn")
+	cfg.Database.Debug = viper.GetBool("database.debug")
 
 	cfg.Session.Name = viper.GetString("session.name")
 	cfg.Session.MaxAge = viper.GetInt("session.max_age")

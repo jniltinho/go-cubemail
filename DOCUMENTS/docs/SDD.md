@@ -29,7 +29,7 @@ There is no email session database — all message reading/writing occurs in rea
 | CLI / bootstrap | Cobra | v1.9+ |
 | Configuration | Viper | v2.x |
 | ORM / App DB | GORM | v2.x |
-| App Database | SQLite (dev) / MariaDB (prod) | — |
+| App Database | SQLite (dev) / MariaDB / PostgreSQL (prod) | — |
 | Email reading protocol | IMAP (`emersion/go-imap/v2`) | v2.0-beta |
 | Email sending protocol | SMTP (`wneessen/go-mail`) | v0.7+ |
 | HTML sanitization | bluemonday | v1.0+ |
@@ -81,8 +81,15 @@ starttls    = true
 timeout_sec = 30
 
 [database]
-driver = "sqlite"          # "sqlite" | "mariadb"
-dsn    = "./data/app.db"   # mariadb example: "user:pass@tcp(localhost:3306)/go_cubemail?charset=utf8mb4&parseTime=True&loc=Local"
+driver = "sqlite"          # "sqlite" (default) | "mariadb" | "mysql" | "postgres"
+dsn    = "./data/app.db"
+debug  = false             # true = log all SQL queries (dev only)
+
+# mariadb example:
+# dsn   = "user:pass@tcp(localhost:3306)/go_cubemail?charset=utf8mb4&parseTime=True&loc=Local"
+
+# postgres example:
+# dsn   = "host=localhost user=go_cubemail password=xxx dbname=go_cubemail port=5432 sslmode=disable TimeZone=America/Sao_Paulo"
 
 [session]
 name      = "gorc_session"
@@ -161,6 +168,8 @@ go-cubemail-vue/
 │   │   ├── contact.go
 │   │   ├── identity.go
 │   │   └── settings.go
+│   ├── database/
+│   │   └── database.go       # Centralized DB connection + GORM query logger (sqlite, mariadb, mysql, postgres)
 │   └── session/
 │       └── imap_session.go   # Wrapper: credentials + in-memory IMAP conn + cleanup goroutine
 ├── frontend/                 # Vue 3 SPA source (not served directly)
@@ -703,6 +712,7 @@ github.com/spf13/viper               v1.21.0
 gorm.io/gorm                         v1.31.1
 gorm.io/driver/sqlite
 gorm.io/driver/mysql
+gorm.io/driver/postgres              (PostgreSQL support)
 github.com/emersion/go-imap/v2       v2.0.0-beta.8
 github.com/emersion/go-message       v0.18.2
 github.com/wneessen/go-mail          v0.7.3   (SMTP)
