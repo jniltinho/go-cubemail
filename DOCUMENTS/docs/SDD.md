@@ -8,6 +8,12 @@
 > **Note:** This document describes both the intended architecture and the actual implementation state.  
 > Some planned features (true SSE push notifications) are not yet implemented — see section 5.4.
 
+**Related Documentation:**
+
+- [Development Guide](DEVELOPMENT.md) — Local setup and contribution workflow
+- [Contributing Guide](CONTRIBUTING.md) — How to contribute to the project
+- [Code Audit Report](CODE_AUDIT_AND_IMPROVEMENTS.md) — Recent documentation and code quality review
+
 ---
 
 ## 1. Overview

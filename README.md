@@ -106,7 +106,19 @@ Full production installation guide (MariaDB / PostgreSQL + systemd) is available
 - `internal/` — All Go business logic (handlers, IMAP/SMTP, models, repositories)
 - `frontend/` — Vue 3 + TypeScript source (built to `web/dist/`)
 - `web/` — Embedded assets (`dist/` for the SPA and `files/` for other embedded resources)
-- `DOCUMENTS/` — Setup guides, SDD, and code audit report
+- `DOCUMENTS/` — Documentation index, setup guides, SDD, development & contributing guides, and code audit report
+
+## Documentation
+
+For a complete overview of all available documentation, see the **[Documentation Index](DOCUMENTS/README.md)**.
+
+Key documents include:
+
+- [Software Design Document (SDD)](DOCUMENTS/docs/SDD.md) — Architecture, design decisions, and technical overview.
+- [Development Guide](DOCUMENTS/docs/DEVELOPMENT.md) — Local setup, build process, and development workflow.
+- [Contributing Guide](DOCUMENTS/docs/CONTRIBUTING.md) — How to contribute code, report issues, and follow project standards.
+- [Code Audit Report](DOCUMENTS/docs/CODE_AUDIT_AND_IMPROVEMENTS.md) — Recent documentation and code quality review.
+- [Production Setup Guide](DOCUMENTS/setup/README.md) — Step-by-step installation for production environments (Ubuntu + MariaDB).
 
 ## License
 
@@ -114,4 +126,16 @@ MIT License
 
 ## Contributing
 
-Contributions are welcome. Please follow the English-only policy for all code and documentation (see `DOCUMENTS/specs/english_only.md`).
+We welcome contributions! Before getting started, please read the following guides:
+
+- [Contributing Guide](DOCUMENTS/docs/CONTRIBUTING.md) — How to report issues, submit pull requests, and coding standards.
+- [Development Guide](DOCUMENTS/docs/DEVELOPMENT.md) — How to set up your local environment, build the project, and run it in development mode.
+- [English Only Policy](DOCUMENTS/specs/english_only.md) — All code, comments, documentation, and commit messages **must** be written in English.
+
+### Quick Links
+
+- Found a bug? → Open an issue
+- Want to propose a feature? → Open an issue or start a discussion
+- Ready to contribute code? → Read the [Contributing Guide](DOCUMENTS/docs/CONTRIBUTING.md) and [Development Guide](DOCUMENTS/docs/DEVELOPMENT.md)
+
+All pull requests must follow the English-only policy and pass the project's contribution guidelines.

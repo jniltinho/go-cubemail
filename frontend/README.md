@@ -130,3 +130,16 @@ For the absolute best developer experience, we strongly recommend:
 * **Extensions**:
   * [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (Volar) for rich component syntax support.
   * [TypeScript Vue Plugin](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) for enhanced auto-imports.
+
+---
+
+## 📚 Main Project Documentation
+
+This README focuses on the frontend. For the full project (including backend, architecture, and contribution guidelines), see the main documentation:
+
+- [Main README](../../README.md)
+- [Development Guide](../../DOCUMENTS/docs/DEVELOPMENT.md) — Local development setup
+- [Contributing Guide](../../DOCUMENTS/docs/CONTRIBUTING.md) — How to contribute to the project
+- [Software Design Document (SDD)](../../DOCUMENTS/docs/SDD.md) — Technical architecture and design
+
+All project documentation is located in the `DOCUMENTS/` directory.
