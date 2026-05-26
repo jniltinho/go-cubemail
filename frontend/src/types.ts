@@ -55,6 +55,24 @@ export interface MailMessage {
   htmlBody?: string
   /** Optional automated user signature details (name and role) */
   signature?: { name: string; role: string }
+  /** True when the message contains an iCalendar invitation (METHOD:REQUEST etc.) */
+  isCalendarRequest?: boolean
+  /** Parsed iCalendar event data, present when isCalendarRequest is true */
+  calendarInfo?: CalendarInfo
+}
+
+/**
+ * Parsed iCalendar (RFC 5545) event data attached to a meeting invitation email.
+ */
+export interface CalendarInfo {
+  method:     string
+  summary:    string
+  organizer:  string
+  start_time: string
+  end_time:   string
+  location:   string
+  uid:        string
+  attendees:  string[]
 }
 
 /**

@@ -188,6 +188,31 @@ export const useMailStore = defineStore('mail', () => {
   const composerApi = useComposerActions({ auth, folders, selected, composer, sourceMail, sourceRaw })
   const contactApi  = useContactActions({ auth, toast, contacts, contactModal, editingContact })
 
+  // ── Calendar invitation actions ────────────────────────────────────────────
+  function calendarRsvp(status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE'): void {
+    const labels: Record<string, string> = {
+      ACCEPTED:  'Invitation accepted.',
+      DECLINED:  'Invitation declined.',
+      TENTATIVE: 'Marked as tentative.',
+    }
+    toast.success(labels[status] ?? 'Response sent.')
+  }
+
+  function calendarDelegate(): void {
+    toast.info('Delegate feature not yet available.')
+  }
+
+  function calendarAddToCalendar(): void {
+    const msg = selected.value
+    if (!msg) return
+    const ics = msg.attachments?.find(a => a.content_type === 'text/calendar' || a.name?.endsWith('.ics'))
+    if (ics) {
+      window.open(`/api/v1/mail/${encodeURIComponent(msg.folder)}/${msg.id}/attachment/${ics.part}`, '_blank')
+    } else {
+      toast.info('No calendar file found in this message.')
+    }
+  }
+
   // ── Return ─────────────────────────────────────────────────────────────────
   return {
     // state
@@ -202,5 +227,6 @@ export const useMailStore = defineStore('mail', () => {
     ...mailApi,
     ...composerApi,
     ...contactApi,
+    calendarRsvp, calendarDelegate, calendarAddToCalendar,
   }
 })

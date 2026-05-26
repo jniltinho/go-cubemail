@@ -46,7 +46,7 @@ func (c *Client) FetchEnvelopes(uids []imap.UID) ([]Envelope, error) {
 			if len(m.Envelope.From) > 0 {
 				addr := m.Envelope.From[0]
 				env.FromEmail = addr.Mailbox + "@" + addr.Host
-				if addr.Name != "" {
+				if addr.Name != "" && addr.Name != env.FromEmail {
 					env.From = addr.Name
 				} else {
 					env.From = env.FromEmail
@@ -54,10 +54,11 @@ func (c *Client) FetchEnvelopes(uids []imap.UID) ([]Envelope, error) {
 			}
 			toAddrs := make([]string, 0, len(m.Envelope.To))
 			for _, addr := range m.Envelope.To {
-				if addr.Name != "" {
-					toAddrs = append(toAddrs, addr.Name+" <"+addr.Mailbox+"@"+addr.Host+">")
+				email := addr.Mailbox + "@" + addr.Host
+				if addr.Name != "" && addr.Name != email {
+					toAddrs = append(toAddrs, addr.Name+" <"+email+">")
 				} else {
-					toAddrs = append(toAddrs, addr.Mailbox+"@"+addr.Host)
+					toAddrs = append(toAddrs, email)
 				}
 			}
 			env.To = strings.Join(toAddrs, ", ")

@@ -12,6 +12,30 @@ import { useMailStore } from '../stores/mail'
 import { extIcon, extColor } from '../utils/helpers'
 import Icon from './Icon.vue'
 
+function parseCalDate(s: string): Date | null {
+  if (!s) return null
+  let m = s.match(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})$/)
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5])
+  m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1])
+  return null
+}
+
+function formatCalDateTime(start: string, end: string): string {
+  const d = parseCalDate(start)
+  if (!d) return start
+  const dayName = d.toLocaleDateString('en-US', { weekday: 'long' })
+  const date    = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const startTime = start.match(/(\d{2}:\d{2})$/)?.[1] ?? ''
+  const endTime   = end?.match(/(\d{2}:\d{2})$/)?.[1] ?? ''
+  let result = `${dayName}, ${date}`
+  if (startTime) {
+    result += ` ${startTime}`
+    if (endTime) result += ` to ${endTime}`
+  }
+  return result
+}
+
 /** Mail store instance containing selection and action API calls */
 const mail = useMailStore()
 /** Computed alias of the currently selected email message */
@@ -115,6 +139,41 @@ const srcdoc = computed(() => {
         </div>
       </div>
 
+      <!-- Calendar invitation bar -->
+      <div
+        v-if="m.isCalendarRequest && m.calendarInfo"
+        class="flex-shrink-0 border-b border-line bg-[#f4f7fc]"
+      >
+        <!-- Event summary row -->
+        <div class="px-4 pt-3 pb-2 flex flex-wrap gap-x-5 gap-y-0.5 text-[12.5px] text-ink">
+          <span v-if="m.calendarInfo.summary" class="font-semibold text-accent">
+            {{ m.calendarInfo.summary }}
+          </span>
+          <span v-if="m.calendarInfo.start_time" class="text-ink-sub">
+            {{ m.calendarInfo.start_time }}<template v-if="m.calendarInfo.end_time"> — {{ m.calendarInfo.end_time }}</template>
+          </span>
+          <span v-if="m.calendarInfo.location" class="text-ink-sub">
+            <Icon name="map-pin" :size="11" class="inline mr-0.5" />{{ m.calendarInfo.location }}
+          </span>
+          <span v-if="m.calendarInfo.organizer" class="text-ink-mute">
+            Organizer: {{ m.calendarInfo.organizer }}
+          </span>
+        </div>
+        <!-- Action buttons: RSVP for REQUEST, remove-only for CANCEL -->
+        <div class="px-4 pb-3 flex flex-wrap gap-2">
+          <template v-if="m.calendarInfo.method !== 'CANCEL'">
+            <button class="px-3 py-1 text-[12px] font-semibold bg-[#1B3A6B] text-white hover:bg-[#14305a] transition-colors" type="button" @click="mail.calendarRsvp('ACCEPTED')">ACCEPT</button>
+            <button class="px-3 py-1 text-[12px] font-semibold bg-[#e05a2b] text-white hover:bg-[#c44d22] transition-colors" type="button" @click="mail.calendarRsvp('DECLINED')">DECLINE</button>
+            <button class="px-3 py-1 text-[12px] font-semibold border border-[#bbb] bg-white text-ink hover:bg-panel-2 transition-colors" type="button" @click="mail.calendarRsvp('TENTATIVE')">TENTATIVE</button>
+            <button class="px-3 py-1 text-[12px] font-semibold border border-[#bbb] bg-white text-ink hover:bg-panel-2 transition-colors" type="button" @click="mail.calendarDelegate()">DELEGATE ...</button>
+            <button class="px-3 py-1 text-[12px] font-semibold border border-[#bbb] bg-white text-ink hover:bg-panel-2 transition-colors" type="button" @click="mail.calendarAddToCalendar()">ADD TO CALENDAR</button>
+          </template>
+          <template v-else>
+            <button class="px-3 py-1 text-[12px] font-semibold border border-[#bbb] bg-white text-ink hover:bg-panel-2 transition-colors" type="button" @click="mail.calendarAddToCalendar()">REMOVE FROM CALENDAR</button>
+          </template>
+        </div>
+      </div>
+
       <!-- Attachments bar -->
       <div
         v-if="m.attachments?.length"
@@ -146,6 +205,37 @@ const srcdoc = computed(() => {
         class="flex-1 w-full border-none"
         title="Email content"
       ></iframe>
+
+      <!-- Body: cancellation detail card -->
+      <div
+        v-else-if="m.isCalendarRequest && m.calendarInfo?.method === 'CANCEL' && !m.body?.length"
+        class="flex-1 overflow-auto scroll-y py-5 px-5 text-[13px] text-ink"
+      >
+        <p class="mb-5 text-[13.5px]">Your invitation or the whole event was canceled.</p>
+
+        <div v-if="m.calendarInfo.start_time" class="mb-4">
+          <div class="text-[10.5px] uppercase tracking-wider text-ink-mute font-semibold mb-0.5">Time</div>
+          <div>{{ formatCalDateTime(m.calendarInfo.start_time, m.calendarInfo.end_time) }}</div>
+        </div>
+
+        <div v-if="m.calendarInfo.location" class="mb-4">
+          <div class="text-[10.5px] uppercase tracking-wider text-ink-mute font-semibold mb-0.5">Location</div>
+          <div>{{ m.calendarInfo.location }}</div>
+        </div>
+
+        <div v-if="m.calendarInfo.attendees?.length">
+          <div class="text-[10.5px] uppercase tracking-wider text-ink-mute font-semibold mb-1.5">Attendees</div>
+          <div class="flex flex-wrap gap-1.5">
+            <span
+              v-for="a in m.calendarInfo.attendees"
+              :key="a"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f3f4f6] border border-[#e5e7eb] text-[11.5px] text-ink"
+            >
+              <Icon name="user" :size="12" class="text-ink-mute" />{{ a }}
+            </span>
+          </div>
+        </div>
+      </div>
 
       <!-- Body: plain text fallback -->
       <div v-else class="flex-1 overflow-auto scroll-y py-4 px-5 text-[13.5px] leading-relaxed text-ink">

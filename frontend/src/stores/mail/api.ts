@@ -140,8 +140,10 @@ export function useMailApi({ auth, folders, mails, folder, selectedId }: MailApi
       const fd    = folders.value.find(f => f.id === msg.folder)
       const label = fd?.name || fd?.label || 'INBOX'
       const res   = await axios.get(`${API_BASE}/mail/${encodeURIComponent(label)}/${msgId}`)
-      msg.htmlBody    = res.data.html_body  || ''
-      msg.body        = res.data.plain_body ? res.data.plain_body.split('\n') : []
+      msg.htmlBody           = res.data.html_body  || ''
+      msg.body               = res.data.plain_body ? res.data.plain_body.split('\n') : []
+      msg.isCalendarRequest  = res.data.is_calendar_request || false
+      msg.calendarInfo       = res.data.calendar_info || null
       msg.attachments = (res.data.attachments || []).map((a: Record<string, unknown>) => ({
         name:         a.filename,
         size:         a.size_label || '',
