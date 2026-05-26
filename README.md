@@ -14,9 +14,10 @@ Go CubeMail connects directly to your existing mail servers using standard IMAP 
 - **Contacts** — Complete CRUD with CSV import/export and autocomplete in the composer
 - **Search** — Server-side IMAP SEARCH
 - **Keyboard shortcuts** — Vim-style navigation (`j`/`k`, `r`, `c`, `#`, etc.)
-- **New mail notifications** — Lightweight 10-minute background polling with audio alert
+- **New mail notifications** — Lightweight client-side polling (10-minute interval) with audio alert (real-time push via SSE is planned)
 - **Customization** — Runtime accent color picker, configurable date formats, rows per page
 - **Single binary deployment** — Frontend is compiled and embedded via `//go:embed`
+- **Easy configuration** — Built-in `init` command to generate ready-to-use config files
 - **Production ready** — CSRF protection, security headers, rate limiting, TLS support, systemd example
 
 ## Architecture Highlights
@@ -25,7 +26,7 @@ Go CubeMail connects directly to your existing mail servers using standard IMAP 
 - **Frontend**: Vue 3 (Composition API) + TypeScript + Vite + Pinia + Tailwind CSS v4 + TinyMCE
 - **No Node.js at runtime** — Vite is used only for building
 - **Authentication**: IMAP login with AES-GCM encrypted credentials in secure cookies
-- **Real-time**: Currently client-side polling (true SSE push planned)
+- **Real-time / Notifications**: Client-side polling (10 min). True server-side push (SSE) is planned for the future.
 
 ## Tech Stack
 
@@ -53,10 +54,13 @@ make frontend
 # 2. Build the Go binary (embeds web/dist)
 make build
 
-# 3. Run migrations (creates tables)
+# 3. (Recommended) Generate a configuration file
+./bin/go-cubemail init
+
+# 4. Run migrations (creates tables)
 ./bin/go-cubemail migrate
 
-# 4. Start the server
+# 5. Start the server
 ./bin/go-cubemail serve
 ```
 
@@ -72,38 +76,37 @@ make frontend-dev # Vite only (proxies /api to :8080)
 
 ## Configuration
 
-Copy `config.toml.example` to `config.toml` and adjust:
+The recommended way to create a configuration file is using the built-in `init` command:
 
-```toml
-[server]
-secret_key = "your-32-char-secret-here"
-
-[imap]
-host = "mail.yourdomain.com"
-port = 993
-tls  = true
-
-[smtp]
-host     = "mail.yourdomain.com"
-port     = 587
-starttls = true
-
-[database]
-driver = "sqlite"
-dsn    = "./data/app.db"
+```bash
+./bin/go-cubemail init
 ```
 
-All settings can also be overridden with `GORC_` environment variables.
+This will generate a file named `config_<timestamp>.toml` (example: `config_1750945822.toml`) in the current directory. You can then rename or copy it to `config.toml`.
+
+Alternatively, you can copy the example manually:
+
+```bash
+cp config.toml.example config.toml
+```
+
+Then edit `config.toml` with your IMAP/SMTP credentials and other settings.
+
+All settings can also be overridden using environment variables with the `GORC_` prefix (example: `GORC_SERVER_PORT=9000`).
 
 Full production installation guide (MariaDB / PostgreSQL + systemd) is available in `DOCUMENTS/setup/README.md`.
 
 ## Project Structure
 
-- `cmd/` — Cobra CLI (`init`, `serve`, `migrate`, `version`)
+- `cmd/` — Cobra CLI commands:
+  - `init` — Generate a default configuration file
+  - `serve` — Start the web server
+  - `migrate` — Run database migrations
+  - `version` — Show version information
 - `internal/` — All Go business logic (handlers, IMAP/SMTP, models, repositories)
 - `frontend/` — Vue 3 + TypeScript source (built to `web/dist/`)
-- `web/` — Embedded assets + legacy templates
-- `DOCUMENTS/` — Setup guides and this SDD
+- `web/` — Embedded assets (`dist/` for the SPA and `files/` for other embedded resources)
+- `DOCUMENTS/` — Setup guides, SDD, and code audit report
 
 ## License
 
