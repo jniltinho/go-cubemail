@@ -1,75 +1,114 @@
 # Go CubeMail
 
-Go CubeMail is a lightweight and fast webmail client built with Go. It connects directly to your existing mail servers via standard IMAP and SMTP protocols, providing a clean web interface to manage your emails.
+A modern, lightweight, self-hosted webmail client written in Go with a Vue 3 + TypeScript frontend.
 
-## Features
+Go CubeMail connects directly to your existing mail servers using standard IMAP (reading) and SMTP (sending) protocols. It provides a clean, responsive web interface inspired by the classic Roundcube "Larry" theme, delivered as a single compiled binary with the frontend embedded at build time.
 
-*   **Fast and Lightweight:** Built with Go for high performance and low resource usage.
-*   **Standard Protocols:** Uses standard IMAP for reading emails and SMTP for sending.
-*   **Web-based UI:** Modern, responsive web interface.
-*   **Easy Configuration:** Configurable via `config.toml` and environment variables.
+**No email data is stored** — everything happens in real time against your IMAP server. The database is used only for contacts, identities, user settings, and sessions.
 
-## Getting Started
+## Key Features
+
+- **Direct IMAP + SMTP** — Works with any standards-compliant mail server
+- **Modern Vue 3 SPA** — Fast, reactive 3-column layout (sidebar, message list, reading pane)
+- **Full email workflow** — Compose (TinyMCE), reply, forward, move, flag, delete, drafts, attachments
+- **Contacts** — Complete CRUD with CSV import/export and autocomplete in the composer
+- **Search** — Server-side IMAP SEARCH
+- **Keyboard shortcuts** — Vim-style navigation (`j`/`k`, `r`, `c`, `#`, etc.)
+- **New mail notifications** — Lightweight 10-minute background polling with audio alert
+- **Customization** — Runtime accent color picker, configurable date formats, rows per page
+- **Single binary deployment** — Frontend is compiled and embedded via `//go:embed`
+- **Production ready** — CSRF protection, security headers, rate limiting, TLS support, systemd example
+
+## Architecture Highlights
+
+- **Backend**: Go 1.26 + Echo v5 + GORM (SQLite/MariaDB) + emersion/go-imap
+- **Frontend**: Vue 3 (Composition API) + TypeScript + Vite + Pinia + Tailwind CSS v4 + TinyMCE
+- **No Node.js at runtime** — Vite is used only for building
+- **Authentication**: IMAP login with AES-GCM encrypted credentials in secure cookies
+- **Real-time**: Currently client-side polling (true SSE push planned)
+
+## Tech Stack
+
+| Layer       | Technology                          |
+|-------------|-------------------------------------|
+| Language    | Go 1.26+                            |
+| Web         | Echo v5, GORM, Cobra, Viper         |
+| Email       | IMAP (emersion/go-imap), SMTP (wneessen/go-mail) |
+| Frontend    | Vue 3 + TS, Pinia, Vite, Tailwind v4 |
+| Editor      | TinyMCE 6                           |
+| Database    | SQLite (dev) / MariaDB (prod)       |
+
+## Quick Start
 
 ### Prerequisites
+- Go 1.26+
+- Node.js + npm (for frontend build only)
 
-*   Go 1.21 or higher
+### Build & Run
 
-### Building from source
+```bash
+# 1. Build the Vue frontend
+make frontend
 
-1.  Clone the repository:
-    ```bash
-    git clone <repository-url>
-    cd go-cubemail
-    ```
-2.  Build the binary:
-    ```bash
-    make build
-    # or
-    go build -o go-cubemail
-    ```
+# 2. Build the Go binary (embeds web/dist)
+make build
+
+# 3. Run migrations (creates tables)
+./bin/go-cubemail migrate
+
+# 4. Start the server
+./bin/go-cubemail serve
+```
+
+Access at http://localhost:8080
+
+### Development
+
+```bash
+make dev          # runs Go (watch) + Vite dev server with HMR
+# or
+make frontend-dev # Vite only (proxies /api to :8080)
+```
 
 ## Configuration
 
-Configuration is managed via a TOML file. By default, the application looks for `config.toml` in the current directory or `/etc/go-cubemail/`. 
-
-Example `config.toml`:
+Copy `config.toml.example` to `config.toml` and adjust:
 
 ```toml
 [server]
-port = 8080
+secret_key = "your-32-char-secret-here"
 
 [imap]
-host = "imap.example.com"
+host = "mail.yourdomain.com"
 port = 993
-tls = true
+tls  = true
 
 [smtp]
-host = "smtp.example.com"
-port = 587
-tls = true
+host     = "mail.yourdomain.com"
+port     = 587
+starttls = true
+
+[database]
+driver = "sqlite"
+dsn    = "./data/app.db"
 ```
 
-You can also use environment variables prefixed with `GORC_` (e.g., `GORC_SERVER_PORT=8080`).
+All settings can also be overridden with `GORC_` environment variables.
 
-## Usage
+Full production installation guide (including MariaDB + systemd) is available in `DOCUMENTS/setup/README.md`.
 
-Start the server:
+## Project Structure
 
-```bash
-./go-cubemail
-```
-
-Or specify a custom configuration file:
-
-```bash
-./go-cubemail --config /path/to/your/config.toml
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+- `cmd/` — Cobra CLI (`serve`, `migrate`, `version`)
+- `internal/` — All Go business logic (handlers, IMAP/SMTP, models, repositories)
+- `frontend/` — Vue 3 + TypeScript source (built to `web/dist/`)
+- `web/` — Embedded assets + legacy templates
+- `DOCUMENTS/` — Setup guides and this SDD
 
 ## License
 
-This project is licensed under the MIT License.
+MIT License
+
+## Contributing
+
+Contributions are welcome. Please follow the English-only policy for all code and documentation (see `DOCUMENTS/specs/english_only.md`).

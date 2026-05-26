@@ -1,9 +1,12 @@
 # Software Design Document — go-cubemail-vue
 
-**Version:** 0.2.0  
-**Date:** 2026-05-24  
+**Version:** 0.2.1 (implementation review)  
+**Date:** 2026-06 (current codebase state)  
 **Based on:** [Roundcube Webmail](https://github.com/roundcube/roundcubemail)  
 **Theme:** Larry (square layout — adapted for Vue 3 SPA)
+
+> **Note:** This document describes both the intended architecture and the actual implementation state.  
+> Some planned features (true SSE push notifications) are not yet implemented — see section 5.4.
 
 ---
 
@@ -11,7 +14,7 @@
 
 **go-cubemail-vue** is a webmail client written in Go that reimplements the visual and functional experience of Roundcube (Larry theme) using a modern stack. The frontend is a fully migrated **Vue 3 + TypeScript SPA** (Single Page Application) embedded into the Go binary, communicating with the backend exclusively via a REST API at `/api/v1`.
 
-There is no email session database — all message reading/writing occurs in real-time via IMAP. GORM is used exclusively for application data persistence (identities, contacts, user settings, filters). New mail notifications are delivered to the browser via **Server-Sent Events (SSE)**.
+There is no email session database — all message reading/writing occurs in real-time via IMAP. GORM is used exclusively for application data persistence (identities, contacts, user settings). New mail notifications are currently delivered via lightweight **client-side polling** (10 min interval) with audio alerts; true SSE push is planned but not yet implemented.
 
 ---
 
@@ -27,12 +30,13 @@ There is no email session database — all message reading/writing occurs in rea
 | Configuration | Viper | v2.x |
 | ORM / App DB | GORM | v2.x |
 | App Database | SQLite (dev) / MariaDB (prod) | — |
-| Email reading protocol | IMAP (`emersion/go-imap`) | v2.x |
-| Email sending protocol | SMTP (Local `pkg/email` wrapper) | — |
+| Email reading protocol | IMAP (`emersion/go-imap/v2`) | v2.0-beta |
+| Email sending protocol | SMTP (`wneessen/go-mail`) | v0.7+ |
 | HTML sanitization | bluemonday | v1.0+ |
-| Web authentication | Cookie session (`gorilla/sessions`) | v1.4+ |
+| Web authentication | Cookie session + AES-GCM password encryption | — |
+| Middleware | CSRF, Rate limiting, Security headers | custom |
 | Config file | TOML | — |
-| Real-time push | Server-Sent Events (SSE) | stdlib |
+| Real-time / notifications | Client-side polling (10 min) + planned SSE | — |
 
 ### Frontend
 
@@ -57,30 +61,34 @@ There is no email session database — all message reading/writing occurs in rea
 host        = "0.0.0.0"
 port        = 8080
 debug       = false
-secret_key  = "change-this-key-in-production"
+secret_key  = "change-this-secret-key-32-chars!!"
 base_url    = "http://localhost:8080"
+# Optional HTTPS
+tls_cert    = ""
+tls_key     = ""
 
 [imap]
-host        = "imap.example.com"
-port        = 993
-tls         = true
-timeout_sec = 30
+host            = "mail.example.com"
+port            = 993
+tls             = true
+timeout_sec     = 30
+show_host_input = false     # allow user to type custom IMAP host at login
 
 [smtp]
-host        = "smtp.example.com"
+host        = "mail.example.com"
 port        = 587
 starttls    = true
 timeout_sec = 30
 
 [database]
 driver = "sqlite"          # "sqlite" | "mariadb"
-dsn    = "./data/app.db"   # mariadb: "user:pass@tcp(host:3306)/dbname?charset=utf8mb4&parseTime=True"
+dsn    = "./data/app.db"   # mariadb example: "user:pass@tcp(localhost:3306)/go_cubemail?charset=utf8mb4&parseTime=True&loc=Local"
 
 [session]
-name       = "gorc_session"
-max_age    = 86400         # seconds (24h)
-secure     = false         # true in production with HTTPS
-http_only  = true
+name      = "gorc_session"
+max_age   = 86400
+secure    = false
+http_only = true
 
 [ui]
 theme           = "larry"
@@ -112,28 +120,35 @@ go-cubemail-vue/
 │   └── version.go
 ├── internal/
 │   ├── config/
-│   │   └── config.go         # Config structs from TOML
+│   │   └── config.go         # Config structs from TOML + Viper
 │   ├── server/
-│   │   ├── server.go         # Echo bootstrap, middleware, routes
+│   │   ├── server.go         # Echo bootstrap, middleware, routes, graceful shutdown, session cleanup
+│   │   ├── routes.go         # All /api/v1 routes + SPA fallback handler
+│   │   ├── render.go
 │   │   └── middleware/
-│   │       ├── auth.go       # Checks active IMAP session
-│   │       └── logger.go
+│   │       ├── auth.go           # RequireAuth (IMAP session cookie)
+│   │       ├── csrf.go           # CSRF token validation
+│   │       ├── ratelimit.go      # Simple rate limiter for auth
+│   │       └── security_headers.go
 │   ├── handler/
+│   │   ├── handler.go        # Central Handlers aggregator
 │   │   ├── auth.go           # login, logout, /me, /quota
 │   │   ├── mailbox.go        # list folders, list messages, unread count
-│   │   ├── message.go        # read, flag, move, delete, raw, download
+│   │   ├── message.go        # common message types
+│   │   ├── message_read.go   # Read, Raw, Download, Attachment
+│   │   ├── message_write.go  # Flag, Move, Delete, EmptyTrash
 │   │   ├── compose.go        # compose, send, draft, upload
 │   │   ├── contacts.go       # contacts CRUD + import/export
-│   │   ├── settings.go       # user preferences
+│   │   ├── settings.go       # user preferences (handler exists, not fully routed)
 │   │   └── search.go         # IMAP search
 │   ├── imap/
-│   │   ├── client.go         # IMAP connection pool per session
+│   │   ├── client.go         # IMAP connection management per session
 │   │   ├── mailbox.go        # folder ops (LIST, SELECT, SUBSCRIBE)
 │   │   ├── message.go        # FETCH, STORE flags, COPY, MOVE, EXPUNGE
 │   │   ├── search.go         # IMAP SEARCH
-│   │   └── parse.go          # MIME parse, attachment extraction
+│   │   └── parse.go          # MIME parse, attachment extraction, HTML sanitization
 │   ├── smtp/
-│   │   └── sender.go         # Send via SMTP, MIME composition
+│   │   └── sender.go         # Send via SMTP (wneessen/go-mail), MIME composition
 │   ├── model/                # GORM entities (app data only)
 │   │   ├── user.go
 │   │   ├── identity.go
@@ -142,14 +157,12 @@ go-cubemail-vue/
 │   │   ├── draft.go
 │   │   ├── session.go
 │   │   └── user_settings.go
-│   ├── poll/
-│   │   └── hub.go            # SSE hub: polls IMAP, pushes new-mail events
 │   ├── repository/
 │   │   ├── contact.go
 │   │   ├── identity.go
 │   │   └── settings.go
 │   └── session/
-│       └── imap_session.go   # Wrapper: credentials + in-memory IMAP conn
+│       └── imap_session.go   # Wrapper: credentials + in-memory IMAP conn + cleanup goroutine
 ├── frontend/                 # Vue 3 SPA source (not served directly)
 │   ├── index.html
 │   ├── vite.config.ts
@@ -212,15 +225,25 @@ Browser → POST /api/v1/auth/login (user + pass + imap_host)
 ### 5.3 IMAP Connection Management
 
 - `session.ImapSession` is stored in an in-memory map indexed by session ID.
-- A housekeeping goroutine closes idle sessions after 30 minutes (every 10 minutes tick).
+- A housekeeping goroutine (in `server.Start`) closes idle sessions after 30 minutes (ticker every 10 minutes).
 - SMTP connections are opened per request (no pool).
+- Global middleware stack: Recover, RequestID, SecurityHeaders, CSRF, structured RequestLogger, and rate limiter on auth routes.
 
-### 5.4 Real-time Notifications (SSE)
+### 5.4 Real-time / New Mail Notifications (Current Implementation)
 
-- `GET /api/v1/events` — long-lived SSE stream authenticated via session cookie.
-- The `poll` package runs a background goroutine per connected user that polls IMAP INBOX for unseen messages at a configurable interval.
-- When new mail arrives, the hub pushes an `event: new-mail` message to all active SSE connections for that user.
-- The Vue frontend listens with the browser-native `EventSource` API and dispatches the event into the Pinia mail store.
+**Current state (as of latest code):**  
+There is **no true Server-Sent Events (SSE) push** implementation yet.
+
+- The frontend module `frontend/src/utils/sse.ts` (despite the name) implements **client-side polling** every 10 minutes.
+- On each tick it calls `fetchFolderMessages('inbox', true)` and plays a short Web Audio beep if new messages are detected.
+- No `/api/v1/events` endpoint exists in `routes.go`.
+- No `internal/poll` package or SSE hub is present.
+- The server comment in `server.go` still references "SSE poller" but it is not wired.
+
+**Planned (documented intent):**  
+A future implementation should provide real Server-Sent Events at `GET /api/v1/events` for instant new-mail notifications without polling.
+
+The misleading function names `startSSE()` / `stopSSE()` are legacy and should ideally be renamed to `startNewMailPolling()` / `stopNewMailPolling()` in a future cleanup.
 
 ### 5.5 SPA Hosting
 
@@ -240,22 +263,23 @@ Browser → POST /api/v1/auth/login (user + pass + imap_host)
 | GET | `/version` | — | App version JSON |
 | GET | `/*` | SPA handler | Serves embedded Vue SPA (fallback to index.html) |
 
-### Protected (`middleware/auth.go`)
+### Protected (middleware: auth + CSRF + security headers)
 
-**Auth**
+**Auth** (some public, some protected)
 | Method | Route | Handler | Description |
 |---|---|---|---|
+| POST | `/api/v1/auth/login` | auth.DoLogin | (public) IMAP login + session cookie |
+| POST | `/api/v1/auth/logout` | auth.DoLogout | (protected) Ends session |
 | GET | `/api/v1/auth/me` | auth.Me | Current user info |
 | GET | `/api/v1/auth/quota` | auth.Quota | Mailbox storage quota |
-| POST | `/api/v1/auth/logout` | auth.DoLogout | Ends session |
 
 **Folders**
 | Method | Route | Handler | Description |
 |---|---|---|---|
 | GET | `/api/v1/folders` | mailbox.FoldersJSON | Lists all folders |
-| POST | `/api/v1/folders` | mailbox.Create | Creates subfolder |
-| POST | `/api/v1/folders/rename` | mailbox.Rename | Renames folder |
-| POST | `/api/v1/folders/delete` | mailbox.Delete | Deletes folder |
+| POST | `/api/v1/folders` | mailbox.CreateSubfolder | Creates subfolder |
+| POST | `/api/v1/folders/rename` | mailbox.RenameFolder | Renames folder |
+| POST | `/api/v1/folders/delete` | mailbox.DeleteFolder | Deletes folder |
 | GET | `/api/v1/folders/:name/count` | mailbox.UnreadCountJSON | Unread count |
 
 **Mail**
@@ -293,10 +317,10 @@ Browser → POST /api/v1/auth/login (user + pass + imap_host)
 |---|---|---|---|
 | GET | `/api/v1/search` | search.Results | IMAP SEARCH (subject, from, to) |
 
-**Real-time**
+**Real-time / Notifications**
 | Method | Route | Handler | Description |
 |---|---|---|---|
-| GET | `/api/v1/events` | poll.SSE | Server-Sent Events stream |
+| (none) | — | — | No `/events` SSE endpoint yet. Frontend uses 10-minute client-side polling (see 5.4) |
 
 ---
 
@@ -403,51 +427,53 @@ type Session struct {
 App.vue (root)
 ├── LoginView.vue        — shown when !isAuthenticated
 └── Authenticated layout
-    ├── AppBar.vue       — top bar: logo, search, user menu, logout
-    ├── AppToolbar.vue   — action buttons (reply, delete, move, archive…)
-    ├── AppSidebar.vue   — folder tree with unread counts + context menu
+    ├── AppBar.vue       — top bar: logo, global search, user menu, logout, accent picker
+    ├── AppToolbar.vue   — action buttons (reply, delete, move, archive, compose…)
+    ├── AppSidebar.vue   — folder tree with unread counts + context menu + quota
     ├── [view === 'mail']
-    │   ├── MailList.vue       — scrollable message list with checkboxes
-    │   └── ReadingPane.vue    — email headers, body, attachments
+    │   ├── MailList.vue       — scrollable message list with checkboxes + sorting
+    │   └── ReadingPane.vue    — email headers, sanitized body (sandboxed), attachments
     ├── [view === 'contacts']
     │   └── ContactsPane.vue   — contact list + import/export
     └── [view === 'calendar']
       └── CalendarPane.vue   — monthly calendar grid with event indicators
 
 Overlays (always mounted):
-├── ComposerModal.vue    — rich email composer (TinyMCE)
+├── ComposerModal.vue    — rich email composer (TinyMCE via TinyEditor.vue wrapper)
 ├── ContactModal.vue     — add/edit contact form
 ├── DialogModal.vue      — alert / confirm / prompt dialogs
 ├── ToastContainer.vue   — toast notification queue
-└── SourceViewer.vue     — raw email source viewer
+├── SourceViewer.vue     — raw email source viewer
+├── FolderRow.vue        — reusable folder tree row with context menu
+├── Icon.vue / SpinnerIcon.vue
+└── TinyEditor.vue       — TinyMCE integration component
 ```
 
-### 9.2 Pinia Stores
+**Current component count:** 17 Vue SFCs.
+
+### 9.2 Pinia Stores (modular architecture)
 
 **`stores/auth.ts`**
 - State: `isAuthenticated`, `isApiOnline`, `currentUser` (email, quota), login form fields
 - Actions: `checkSession()`, `handleLogin()`, `handleLogout()`, `fetchQuota()`
-- Injects CSRF token into all Axios requests via interceptor
+- Axios interceptor injects CSRF token on mutating requests
 
-**`stores/mail/index.ts`** (main store)
-- State: `mails`, `folders`, `contacts`, `view`, `folder`, `selectedId`, `selectedIds`, `composer`, `query`, `calCells`
-- Computed: `visibleMails`, `counts`, `selected`, `currentFolderLabel`
-- Actions: mail CRUD, folder management, contacts CRUD, API loading
-
-**`stores/mail/api.ts`**
-- `fetchFolderMessages(mailbox)` → `GET /api/v1/mail/:mailbox`
-- `loadFromApi()` → initial bootstrap (folders → messages → contacts)
-- `fetchMessageBody(mailbox, uid)` → `GET /api/v1/mail/:mailbox/:uid`
-
-**`stores/mail/folderActions.ts`**
-- Folder create / rename / delete via API
-- Context menu handlers for `AppSidebar`
+**`stores/mail.ts` + `stores/mail/` sub-module** (highly modular)
+- `index.ts` — Main store assembly, state, computed getters, watchEffect for accent
+- `api.ts` — All REST calls (`fetchFolderMessages`, `loadFromApi`, `fetchMessageBody`, etc.)
+- `mailActions.ts` — Reply, forward, delete, flag, move, archive, compose
+- `folderActions.ts` — Create/rename/delete folders + context menu
+- `composerActions.ts` — Draft/save/send logic
+- `contactActions.ts` — Contact CRUD + import/export
+- `constants.ts` / `mockData.ts` — Calendar events and constants
 
 **`stores/toast.ts`**
 - Queue of toasts with auto-dismiss; methods: `success()`, `error()`, `warning()`, `info()`
 
 **`stores/dialog.ts`**
 - Single-slot dialog state machine; methods: `alert()`, `confirm()`, `prompt()`
+
+The mail store is deliberately split to keep the main `index.ts` readable while actions live in focused files.
 
 ### 9.3 TypeScript Interfaces (`types.ts`)
 
@@ -590,10 +616,10 @@ clean       # remove binary
 
 ### 11.1 Implemented (MVP complete)
 
-- [x] Login/logout via IMAP with TLS
+- [x] Login/logout via IMAP with TLS (with optional custom host input)
 - [x] List IMAP folders (inbox, sent, drafts, trash, spam + custom)
-- [x] Message listing with pagination
-- [x] Read messages (sanitized HTML + plain text fallback)
+- [x] Message listing with pagination + client-side sort
+- [x] Read messages (sanitized HTML + plain text fallback, sandboxed iframe)
 - [x] Download attachments
 - [x] Compose and send via SMTP (to, cc, bcc, subject, HTML body via TinyMCE, attachments)
 - [x] Reply / Reply all / Forward
@@ -605,17 +631,18 @@ clean       # remove binary
 - [x] Save draft (IMAP APPEND in Drafts folder)
 - [x] Inline reading pane (no page reload — Vue reactivity)
 - [x] Contacts CRUD (create, read, update, delete)
-- [x] Contact import from CSV / vCard
+- [x] Contact import from CSV
 - [x] Contact export to CSV
 - [x] Contact autocomplete in composer (To / Cc / Bcc fields)
-- [x] Real-time new mail notifications via SSE
-- [x] Calendar view (monthly grid)
-- [x] View raw email source
-- [x] Download message as .eml
-- [x] Keyboard shortcuts (j/k/r/e/#/c)
+- [x] Calendar view (monthly grid with mock events)
+- [x] View raw email source + download as .eml
+- [x] Keyboard shortcuts (j/k/r/e/#/c + Delete)
 - [x] Accent color picker (runtime CSS variable update)
-- [x] Toast notifications
+- [x] Toast notifications + modal dialogs
 - [x] Folder create / rename / delete
+- [x] 10-minute background polling for new mail with audio notification (see 5.4)
+
+**Note on real-time:** The "SSE" feature is currently client-side polling. True push notifications are planned but not yet implemented.
 
 ### 11.2 Secondary (Planned)
 
@@ -675,11 +702,10 @@ github.com/spf13/cobra               v1.9.1
 github.com/spf13/viper               v1.21.0
 gorm.io/gorm                         v1.31.1
 gorm.io/driver/sqlite
-gorm.io/driver/mysql                 (MariaDB support)
+gorm.io/driver/mysql
 github.com/emersion/go-imap/v2       v2.0.0-beta.8
 github.com/emersion/go-message       v0.18.2
-Local `pkg/email`                     (SMTP sending / MIME composition)
-github.com/gorilla/sessions          v1.4+
+github.com/wneessen/go-mail          v0.7.3   (SMTP)
 github.com/microcosm-cc/bluemonday  v1.0.27
 golang.org/x/time                    (rate limiting)
 ```
@@ -691,19 +717,21 @@ golang.org/x/time                    (rate limiting)
 ```json
 {
   "dependencies": {
-    "axios":           "^1.16.1",
-    "lucide-vue-next": "^1.16.0",
-    "pinia":           "^3.0.4",
-    "tinymce":         "^6.8.6",
-    "vue":             "^3.5.34"
+    "@lucide/vue": "^1.16.0",
+    "axios": "^1.16.1",
+    "pinia": "^3.0.4",
+    "tinymce": "^6.8.6",
+    "vue": "^3.5.34"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",
-    "@vitejs/plugin-vue": "latest",
-    "tailwindcss":       "^4.3.0",
-    "typescript":        "^6.0.3",
-    "vite":              "^8.0.12",
-    "vue-tsc":           "latest"
+    "@vitejs/plugin-vue": "^6.0.6",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.12",
+    "vue-tsc": "^3.3.1"
   }
 }
 ```
@@ -737,6 +765,6 @@ Viper loads in order: defaults → `config.toml` → env variables prefixed `GOR
 7. No password travels in plaintext in the session cookie.
 8. CSRF header blocks unauthenticated mutations from foreign origins.
 9. `go-cubemail-vue serve` starts without errors after `go-cubemail-vue migrate`.
-10. New mail triggers an SSE event that updates the unread count badge in the sidebar in real time.
+10. New mail is detected via 10-minute client-side polling (with audio notification). True SSE push is planned but not yet implemented.
 11. Contacts can be created, edited, deleted, imported (CSV), and exported (CSV).
 12. The Vue SPA loads without console errors; Vite HMR works during development.
