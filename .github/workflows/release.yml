@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build release for (e.g. v0.0.21)'
+        required: true
+        default: 'v0.0.21'
 
 jobs:
   release:
@@ -18,8 +24,21 @@ jobs:
       - name: Verify timezone change
         run: timedatectl && date
 
+      - name: Determine Version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "ARCHIVE_NAME=go-cubemail_${VERSION}_linux_amd64.tar.gz" >> $GITHUB_ENV
+          echo "Building release for: $VERSION"
+
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -47,10 +66,7 @@ jobs:
 
       - name: Package Binary
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          ARCHIVE_NAME="go-cubemail_${VERSION}_linux_amd64.tar.gz"
           cd bin && tar -czvf "../$ARCHIVE_NAME" go-cubemail && cd ..
-          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
 
       # - name: Build Deb Package
       #   run: make deb
@@ -58,9 +74,10 @@ jobs:
       # - name: Build RPM Package
       #   run: make rpm
 
-      - name: Create Release
+      - name: Create or Update Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.VERSION }}
           files: |
             ${{ env.ARCHIVE_NAME }}
             # go-cubemail_*.deb
