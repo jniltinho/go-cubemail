@@ -9,6 +9,7 @@ import (
 )
 
 //go:embed all:web/dist
+//go:embed all:web/files
 var embeddedFiles embed.FS
 
 // main is the binary entry point; it delegates all CLI parsing to the cmd package.

@@ -99,7 +99,7 @@ Full production installation guide (MariaDB / PostgreSQL + systemd) is available
 
 ## Project Structure
 
-- `cmd/` — Cobra CLI (`serve`, `migrate`, `version`)
+- `cmd/` — Cobra CLI (`init`, `serve`, `migrate`, `version`)
 - `internal/` — All Go business logic (handlers, IMAP/SMTP, models, repositories)
 - `frontend/` — Vue 3 + TypeScript source (built to `web/dist/`)
 - `web/` — Embedded assets + legacy templates

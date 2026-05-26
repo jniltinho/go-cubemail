@@ -3,13 +3,13 @@
  * @component App
  * @description The root layout and orchestrator of the frontend application.
  * Manages global keyboard shortcuts, monitors the authentication state,
- * triggers SSE polling, and conditionally renders sub-views or modals.
+ * triggers background new-mail polling (10 min), and conditionally renders sub-views or modals.
  */
 
 import { onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useMailStore } from './stores/mail'
-import { startSSE, stopSSE } from './utils/sse'
+import { startNewMailPolling, stopNewMailPolling } from './utils/sse'
 import LoginView     from './components/LoginView.vue'
 import AppBar        from './components/AppBar.vue'
 import AppToolbar    from './components/AppToolbar.vue'
@@ -51,14 +51,14 @@ function onKey(e) {
 
 /**
  * Watches the user authentication state to establish or tear down
- * the SSE polling connection and load inbox data from the API.
+ * the background new-mail polling connection and load inbox data from the API.
  */
 watch(() => auth.isAuthenticated, async (authed) => {
   if (authed) {
-    startSSE(mail, auth)
+    startNewMailPolling(mail, auth)
     await mail.loadFromApi()
   } else {
-    stopSSE()
+    stopNewMailPolling()
   }
 })
 
@@ -72,12 +72,12 @@ onMounted(async () => {
 })
 
 /**
- * Removes the global keyboard event listener and cleans up SSE
+ * Removes the global keyboard event listener and cleans up polling
  * timers before the component gets unmounted.
  */
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey)
-  stopSSE()
+  stopNewMailPolling()
 })
 </script>
 

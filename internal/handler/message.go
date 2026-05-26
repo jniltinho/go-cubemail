@@ -43,6 +43,9 @@ func messageDownloadName(subject string, uid uint64) string {
 }
 
 // imapConn opens an authenticated IMAP connection using the current session credentials.
+// NOTE: This helper is duplicated (with minor type variations) in mailbox.go and compose.go.
+// Kept local to each handler for package-level isolation and to avoid introducing
+// cross-handler dependencies for this thin wrapper around session + imap.Connect.
 func (h *MessageHandler) imapConn(s *session.IMAPSession) (*imappkg.Client, error) {
 	pass, err := s.Password(h.cfg.Server.SecretKey)
 	if err != nil {

@@ -1,6 +1,6 @@
 # 📬 Cubemail Frontend — Vue 3 + TypeScript + Vite
 
-A premium, modern, and highly responsive webmail interface built as the frontend client for **Cubemail**. Designed with focus on raw performance, rich aesthetics (harmonious dark themes, glassmorphism, responsive grids), and smooth user interaction.
+A modern, responsive webmail interface built as the frontend for **go-cubemail-vue**. It delivers a clean three-column experience inspired by the classic Roundcube "Larry" theme, written as a fully typed Vue 3 + TypeScript SPA that is compiled and embedded into the Go binary at build time.
 
 ---
 
@@ -8,18 +8,35 @@ A premium, modern, and highly responsive webmail interface built as the frontend
 
 - **⚡ Blazing Fast Build**: Powered by Vite and Rolldown/ESbuild for instant Hot Module Replacement (HMR).
 - **🔒 Strict Type Safety**: Fully written in TypeScript with comprehensive interface modeling for all mail entities, contacts, and state.
-- **📦 Clean State Management**: Modular state architecture handled by Pinia with atomic sub-stores (Auth, Mail, Toast, Dialog).
-- **💡 Rich Keyboard Hotkeys**: Vim-like navigation (`J`/`K` to browse), quick actions (`C` to compose, `R` to reply, `#` to delete, `E` to archive) for a professional workflow.
+- **📦 Clean State Management**: Pinia stores with a deliberately split mail module (`stores/mail/`) to keep the main store readable while isolating API, folder, composer, mail, and contact actions.
+- **💡 Keyboard Shortcuts**: Vim-style navigation (`j`/`k`), compose (`c`), reply (`r`), archive (`e`), delete (`#` or `Delete`). Implemented globally in `App.vue`.
 - **📧 Isolated Mail Rendering**: Secure read-pane framing utilizing sandboxed iframes to completely isolate external HTML contents and block unauthorized scripts.
-- **💬 Live Synchronization**: Real-time polling via Server-Sent Events (SSE) featuring browser notifications and auditory alerts.
+- **🎨 Runtime Theming**: In-app accent color picker that updates CSS custom properties live (no reload).
+- **🔔 New Mail Notifications**: Client-side polling (10-minute interval) that detects new messages in the inbox and plays an audio alert. True server-push (SSE) is planned but not yet implemented — see `DOCUMENTS/docs/SDD.md` §5.4 for details.
+
+---
+
+## ⚠️ Important Implementation Notes
+
+- **Polling, not Push**: The module `utils/sse.ts` (and functions `startNewMailPolling` / `stopNewMailPolling`) implements **client-side polling**. The original names were kept for historical reasons but have been clarified in code and docs.
+- **No backend session storage for mail**: All messages are fetched live via IMAP. The only persistent data is contacts, identities, user settings, and encrypted session credentials (GORM + SQLite/Postgres/MariaDB).
+- **Embedded SPA**: The entire built frontend (`web/dist/`) is compiled into the Go binary via `//go:embed`. There is no separate Node.js server at runtime.
+- **Larry Theme Fidelity**: The UI deliberately follows the classic Roundcube "Larry" square aesthetic (navy accent, 3-column layout, minimal chrome).
+
+See the full audit for documentation and code quality findings: `DOCUMENTS/docs/CODE_AUDIT_AND_IMPROVEMENTS.md`.
+
+For the complete system architecture, backend details, and configuration, start with the project root [README.md](../README.md) and the [Software Design Document](../DOCUMENTS/docs/SDD.md).
 
 ---
 
 ## 📖 Code Quality & Documentation
 
-To maintain the highest level of code quality and team cooperation, **100% of the frontend codebase has been fully documented in English** using rich JSDoc/TSDoc standards. 
+The core of the frontend is written in English and extensively documented:
 
-This enables rich, instant IDE tooltips, precise autocomplete recommendations, and auto-typing capabilities across your workspace:
+- All TypeScript modules (Pinia stores, composables, utils, and types) use comprehensive JSDoc/TSDoc.
+- Major Vue components include `@component` and `@description` documentation plus JSDoc on key functions and reactive state.
+
+This enables rich IDE tooltips, precise autocomplete, and reliable auto-typing. A full documentation audit was performed in June 2026 (see `DOCUMENTS/docs/CODE_AUDIT_AND_IMPROVEMENTS.md`).
 
 ```typescript
 /**
@@ -43,23 +60,29 @@ frontend/
 │   │   ├── AppBar.vue     # Top global header & global search bar
 │   │   ├── AppSidebar.vue # Expandable mailbox navigation tree & quota gauge
 │   │   ├── AppToolbar.vue # Mail actions toolbar (Compose, Delete, Move, Reply)
-│   │   ├── MailList.vue   # Dynamic email table with bulk operations
-│   │   ├── ReadingPane.vue# Sandboxed rich email content frame
-│   │   ├── ComposerModal.vue # Premium mail composer (TinyMCE integration)
-│   │   └── ...            # Utility icons and specialized modal overlays
+│   │   ├── MailList.vue        # Scrollable message list with checkboxes, sorting, bulk actions
+│   │   ├── ReadingPane.vue     # Headers + sandboxed HTML body (iframe) + attachments + calendar invites
+│   │   ├── ComposerModal.vue   # Full composer with TinyMCE, autocomplete, attachments
+│   │   ├── ContactsPane.vue    # Address book with import/export
+│   │   ├── CalendarPane.vue    # Monthly grid view (demo data)
+│   │   └── ...                 # AppBar, AppSidebar, AppToolbar, modals (Dialog, Toast, SourceViewer, ContactModal, etc.)
 │   │
 │   ├── stores/            # 🍍 Pinia State Modules
 │   │   ├── auth.ts        # Session, CSRF tokens, and credentials authorization
 │   │   ├── dialog.ts      # Global interactive pop-ups stack (Alert, Confirm)
 │   │   ├── toast.ts       # Visual temporary notifications queues
-│   │   └── mail/          # Unified Mail Store Architecture
-│   │       ├── api.ts     # Server REST API calls & pagination
-│   │       ├── mailActions.ts # Bulk mail deletions, moves, and state toggles
-│   │       └── ...        # Composer, folders, and local address book actions
+│   │   └── mail/          # Unified Mail Store Architecture (deliberately split for maintainability)
+│   │       ├── index.ts   # Main store assembly + getters + cross-cutting concerns
+│   │       ├── api.ts     # All REST calls (fetchFolderMessages, loadFromApi, fetchMessageBody…)
+│   │       ├── mailActions.ts    # Reply/forward, flag, move, delete, archive, select
+│   │       ├── folderActions.ts  # Create/rename/delete folders + context menu handling
+│   │       ├── composerActions.ts # Compose, reply, forward, draft, source viewer
+│   │       ├── contactActions.ts  # Contacts CRUD + CSV/VCard import/export + autocomplete
+│   │       ├── constants.ts & mockData.ts # Folder name mapping + demo calendar events
 │   │
 │   ├── utils/             # 🛠️ Utility Services
-│   │   ├── helpers.ts     # Data adapters, extensions colors, calendar cells
-│   │   └── sse.ts         # Server-Sent Events live polling loop
+│   │   ├── helpers.ts     # Date formatting, accent color derivation, calendar grid, raw source builder
+│   │   └── sse.ts         # Client-side new-mail polling (10 min) + Web Audio notifications (legacy "SSE" module name)
 │   │
 │   ├── main.ts            # 🚀 Application entry bootstrap
 │   └── types.ts           # 🏷️ Unified static TypeScript models

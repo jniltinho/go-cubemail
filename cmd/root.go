@@ -1,4 +1,4 @@
-// Package cmd defines the Cobra CLI commands for go-cubemail (serve, migrate, version).
+// Package cmd defines the Cobra CLI commands for go-cubemail (init, serve, migrate, version).
 // Configuration is loaded from config.toml via Viper and can be overridden with GORC_* env vars.
 package cmd
 
@@ -25,6 +25,13 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "go-cubemail",
 	Short: "Go CubeMail — webmail client via IMAP/SMTP",
+	Long: `Go CubeMail is a modern, self-hosted webmail client written in Go with a Vue 3 frontend.
+
+Available commands:
+  init      Create a default configuration file
+  serve     Start the web server
+  migrate   Run database migrations
+  version   Show version information`,
 }
 
 var globalFS embed.FS

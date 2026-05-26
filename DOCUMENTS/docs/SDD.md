@@ -122,6 +122,7 @@ go-cubemail-vue/
 ├── config.toml
 ├── cmd/
 │   ├── root.go               # Cobra root, loads config via Viper
+│   ├── init.go               # cobra: generates default config.toml
 │   ├── serve.go              # cobra: starts Echo server
 │   ├── migrate.go            # cobra: runs GORM migrations
 │   └── version.go
@@ -692,6 +693,7 @@ clean       # remove binary
 
 ```
 go-cubemail-vue
+├── init            # create a default config.toml in the current directory
 ├── serve           # starts web server (default)
 │   --config        # path to config.toml (default: ./config.toml)
 │   --port          # overrides server.port

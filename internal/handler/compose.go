@@ -22,6 +22,9 @@ type ComposeHandler struct {
 }
 
 // imapConn opens an authenticated IMAP connection using the current session credentials.
+// NOTE: This helper is duplicated (with minor type variations) in mailbox.go and message.go.
+// Kept local to each handler for package-level isolation and to avoid introducing
+// cross-handler dependencies for this thin wrapper around session + imap.Connect.
 func (h *ComposeHandler) imapConn(s *session.IMAPSession) (*imap.Client, error) {
 	pass, err := s.Password(h.cfg.Server.SecretKey)
 	if err != nil {

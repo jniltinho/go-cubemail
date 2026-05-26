@@ -57,6 +57,10 @@ func formatICalDate(s string) string {
 	return s
 }
 
+// parseICS parses a raw iCalendar (ICS) payload into a CalendarInfo struct.
+// It extracts VEVENT details such as SUMMARY, ORGANIZER, DTSTART/DTEND (via
+// formatICalDate), LOCATION, UID, and ATTENDEE list. Non-VEVENT data like
+// METHOD is also captured at the top level. Used for meeting invitation emails.
 func parseICS(data []byte) *CalendarInfo {
 	info := &CalendarInfo{}
 	inVEvent := false

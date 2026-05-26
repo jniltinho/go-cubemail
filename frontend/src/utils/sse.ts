@@ -39,13 +39,17 @@ function playNotificationSound(): void {
 }
 
 /**
- * Starts the periodic polling loop to fetch new emails from the backend.
+ * Starts the periodic new-mail polling loop (10 min interval).
+ * On each tick it checks the inbox for new messages and plays an audio alert
+ * if any were detected. This implementation replaced the originally planned
+ * Server-Sent Events (SSE) push; the function names were kept short for the
+ * legacy "SSE" concept but now clearly indicate polling behavior.
  * 
  * @param mail - Mail store instance (`useMailStore`).
  * @param auth - Authentication store instance (`useAuthStore`).
  */
-export function startSSE(mail: MailStore, auth: AuthStore): void {
-  stopSSE()
+export function startNewMailPolling(mail: MailStore, auth: AuthStore): void {
+  stopNewMailPolling()
   pollTimer = setInterval(async () => {
     if (!auth.isAuthenticated) return
     const hasNew = await mail.fetchFolderMessages('inbox', true)
@@ -54,9 +58,9 @@ export function startSSE(mail: MailStore, auth: AuthStore): void {
 }
 
 /**
- * Stops the active polling loop and clears the associated interval timer.
+ * Stops the active new-mail polling loop and clears the associated interval timer.
  */
-export function stopSSE(): void {
+export function stopNewMailPolling(): void {
   if (pollTimer !== null) {
     clearInterval(pollTimer)
     pollTimer = null

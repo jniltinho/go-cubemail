@@ -12,6 +12,14 @@ import { useMailStore } from '../stores/mail'
 import { extIcon, extColor } from '../utils/helpers'
 import Icon from './Icon.vue'
 
+/**
+ * Parses a calendar date string in DD/MM/YYYY or DD/MM/YYYY HH:MM format
+ * (as produced by the Go backend iCalendar parser) into a JS Date.
+ * Returns null for empty or unparseable input.
+ *
+ * @param s - The raw date/time string from calendarInfo.
+ * @returns Date instance or null.
+ */
 function parseCalDate(s: string): Date | null {
   if (!s) return null
   let m = s.match(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})$/)
@@ -21,6 +29,15 @@ function parseCalDate(s: string): Date | null {
   return null
 }
 
+/**
+ * Formats a calendar event start/end pair into a human friendly string
+ * e.g. "Monday, May 25, 2026 15:00 to 16:00".
+ * Falls back to the raw start string if parsing fails.
+ *
+ * @param start - Formatted start date/time.
+ * @param end - Optional formatted end date/time.
+ * @returns Localized display string for the invitation bar.
+ */
 function formatCalDateTime(start: string, end: string): string {
   const d = parseCalDate(start)
   if (!d) return start
