@@ -18,7 +18,7 @@ LDFLAGS    := -ldflags "-s -w \
 	-X $(PREFIX).BuildDate=$(BUILD_TIME) \
 	-X $(PREFIX).GitCommit=$(GIT_COMMIT)"
 
-.PHONY: all build build-prod run clean frontend frontend-dev build-all \
+.PHONY: all build build-prod run clean frontend frontend-dev dev \
         migrate tidy deps install-upx certs help
 
 ## Default: build frontend + go binary
@@ -32,6 +32,13 @@ frontend:
 ## Run Vite dev server (proxy to :8080)
 frontend-dev:
 	@echo "Starting Vite dev server on :5173 (proxy → :8080)..."
+	cd frontend && npm run dev
+
+## Development mode helper: starts Vite on :5173 (proxies /api to backend :8080).
+## Start the Go backend separately in another terminal: go run . serve [--debug]
+dev:
+	@echo "Starting frontend dev server (:5173, API proxy → :8080)..."
+	@echo "In another terminal, start backend: go run . serve --debug"
 	cd frontend && npm run dev
 
 ## Build Go binary (requires web/dist/ to exist)
@@ -97,6 +104,7 @@ help:
 	@echo "  all              - Clean, build frontend + Go binary"
 	@echo "  frontend         - Build Vue 3 SPA to web/dist/"
 	@echo "  frontend-dev     - Start Vite dev server (:5173)"
+	@echo "  dev              - Start Vite dev server (:5173) + backend hint"
 	@echo "  build            - Build Go binary (requires web/dist/)"
 	@echo "  build-prod       - Full prod build with UPX compression"
 	@echo "  run              - Run the application"

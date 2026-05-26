@@ -77,11 +77,14 @@ The fastest way to develop is:
 make dev
 ```
 
-This starts:
-- Go application with file watching (using a watcher or `air` if installed)
-- Vite development server on port 5173 (proxies API calls to `:8080`)
+This starts the Vite development server on port 5173 (proxies API calls to `:8080`).
+The Go backend must be started separately (recommended in another terminal):
 
-Alternatively, you can run them separately:
+```bash
+go run . serve --debug
+```
+
+Alternatively, run the frontend directly:
 
 ```bash
 # Terminal 1 - Backend
@@ -89,6 +92,7 @@ go run . serve
 
 # Terminal 2 - Frontend (with HMR)
 make frontend-dev
+# or: make dev
 ```
 
 ### Building
@@ -122,6 +126,7 @@ make migrate
 | `make all`         | Clean + build frontend + Go binary               |
 | `make frontend`    | Build Vue frontend into `web/dist/`              |
 | `make frontend-dev`| Start Vite dev server (port 5173)                |
+| `make dev`         | Start Vite dev server (port 5173) + backend hint |
 | `make build`       | Build Go binary                                  |
 | `make build-prod`  | Production build with UPX                        |
 | `make run`         | Run the compiled binary                          |

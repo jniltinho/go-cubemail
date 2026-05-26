@@ -10,7 +10,7 @@
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import Icon from './Icon.vue'
-import TinyEditor from './TinyEditor.vue'
+import RichTextEditor from './rich-text/RichTextEditor.vue'
 import { extIcon, extColor } from '../utils/helpers'
 import { useMailStore } from '../stores/mail'
 import { useToastStore } from '../stores/toast'
@@ -286,7 +286,7 @@ function backdrop(e) {
           <input v-model="subj" placeholder="Subject" />
         </div>
 
-        <TinyEditor v-model="body" />
+        <RichTextEditor v-model="body" placeholder="Write your message…" :min-height="433" />
 
         <!-- Attachments bar -->
         <div v-if="attachments.length" class="flex flex-wrap gap-1.5 px-3 py-2 bg-panel-2 border-t border-line-soft">
