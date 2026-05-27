@@ -204,7 +204,10 @@ export const useMailStore = defineStore('mail', () => {
   }
 
   const folderApi   = useFolderActions({ auth, dialog, folders, mails, folder, view, selectedId, selectedIds, fetchFolderMessages })
-  const mailApi     = useMailActions({ auth, mails, folders, folder, selectedId, selectedIds, visibleMails, fetchMessageBody })
+  const mailApi     = useMailActions({
+    auth, toast, mails, folders, folder, selectedId, selectedIds, visibleMails, fetchMessageBody,
+    reloadFolders: folderApi.reloadFolders,
+  })
   const composerApi = useComposerActions({ auth, folders, selected, composer, sourceMail, sourceRaw })
   const contactApi  = useContactActions({ auth, toast, contacts, contactModal, editingContact })
 

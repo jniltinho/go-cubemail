@@ -9,8 +9,11 @@ import { nextTick } from 'vue'
 import type { Ref, ComputedRef } from 'vue'
 import type { MailMessage, Folder } from '../../types'
 import type { useAuthStore } from '../auth'
+import type { useToastStore } from '../toast'
+import { FOLDER_ID_MAP } from './constants'
 
 type AuthStore = ReturnType<typeof useAuthStore>
+type ToastStore = ReturnType<typeof useToastStore>
 
 /**
  * Context containing reactive states and dependencies needed
@@ -19,6 +22,8 @@ type AuthStore = ReturnType<typeof useAuthStore>
 interface MailActionsContext {
   /** Authentication store instance */
   auth:             AuthStore
+  /** Toast notifications store instance */
+  toast:            ToastStore
   /** Reactive list reference of all email messages in memory */
   mails:            Ref<MailMessage[]>
   /** Reactive list reference of folders */
@@ -33,6 +38,8 @@ interface MailActionsContext {
   visibleMails:     ComputedRef<MailMessage[]>
   /** Callback utility to request details of specific message body */
   fetchMessageBody: (id: string) => Promise<void>
+  /** Callback utility to reload folders from API */
+  reloadFolders?:   () => Promise<void>
 }
 
 /**
@@ -42,7 +49,7 @@ interface MailActionsContext {
  * @returns Actions controller methods.
  */
 export function useMailActions({
-  auth, mails, folders, folder, selectedId, selectedIds, visibleMails, fetchMessageBody,
+  auth, toast, mails, folders, folder, selectedId, selectedIds, visibleMails, fetchMessageBody, reloadFolders,
 }: MailActionsContext) {
 
   /**
@@ -158,16 +165,54 @@ export function useMailActions({
    * Quick action to move selected/active message into the "Archive" folder,
    * adjusting counts and auto-focusing adjacent list entries.
    */
-  function archiveMail(): void {
+  async function archiveMail(): Promise<void> {
     const s = mails.value.find(m => m.id === selectedId.value)
     if (!s) return
-    const idx       = visibleMails.value.findIndex(m => m.id === s.id)
-    const wasUnread = s.unread
-    s.folder        = 'archive'
-    const next      = visibleMails.value[idx + 1] || visibleMails.value[idx - 1]
+
+    // 1. Check if Archive folder exists, if not create it
+    let archiveFolderObj = folders.value.find(f => f.id === 'archive')
+    if (!archiveFolderObj) {
+      if (auth.isApiOnline) {
+        try {
+          const fd = new FormData()
+          fd.append('name', 'Archive')
+          await axios.post(`${API_BASE}/folders`, fd)
+          if (reloadFolders) {
+            await reloadFolders()
+          } else {
+            const res = await axios.get(`${API_BASE}/folders`)
+            folders.value = res.data.map((f: Record<string, unknown>) => {
+              const id     = FOLDER_ID_MAP[String(f.Name)] || String(f.Name).toLowerCase().replace(/\s+/g, '-')
+              const unread = Number(f.Unseen)   || 0
+              const total  = Number(f.Messages) || 0
+              return { id, label: f.DisplayName || f.Name, name: f.Name, count: unread > 0 ? `${unread}/${total}` : String(total), custom: !f.IsSystem }
+            })
+          }
+        } catch (e: any) {
+          toast.error('Failed to create Archive folder on server: ' + (e.response?.data?.error || e.message))
+          return
+        }
+      } else {
+        const newFolderObj = { id: 'archive', label: 'Archive', name: 'Archive', count: '0', custom: false }
+        folders.value.push(newFolderObj)
+      }
+    }
+
+    // 2. Select next email before moving
+    const idx = visibleMails.value.findIndex(m => m.id === s.id)
+    const next = visibleMails.value[idx + 1] || visibleMails.value[idx - 1]
+
+    // 3. Move the mail using the robust moveMail function
+    await moveMail('archive', [s.id])
+
+    // 4. Focus and render next email
     selectedId.value = next?.id ?? null
-    _adjustFolderCount(folder.value, -1, wasUnread ? -1 : 0)
-    _adjustFolderCount('archive', 1, wasUnread ? 1 : 0)
+    if (next && auth.isApiOnline) {
+      await fetchMessageBody(next.id)
+    }
+
+    // 5. Show success toast in English
+    toast.success('This message was successfully archived!')
   }
 
   /**
