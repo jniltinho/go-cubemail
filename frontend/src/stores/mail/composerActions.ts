@@ -58,6 +58,37 @@ export function useComposerActions({
   }
 
   /**
+   * Prepares the editor layout to draft a reply-all message.
+   * Resolves recipient addresses including original sender and all other receivers,
+   * excluding the current logged-in user email, prefixes "Re: " to subject, and quotes original.
+   */
+  function replyAll(): void {
+    const s = selected.value; if (!s) return
+    
+    const myEmail = auth.currentUser.email?.toLowerCase().trim()
+    const toEmails = (s.to || '').split(',')
+      .map(x => x.trim())
+      .filter(x => x && (!myEmail || x.toLowerCase().indexOf(myEmail) === -1))
+    
+    const recipients = [s.from?.addr]
+    toEmails.forEach(email => {
+      if (email && email.toLowerCase() !== s.from?.addr?.toLowerCase()) {
+        recipients.push(email)
+      }
+    })
+
+    composer.value = {
+      to:   recipients.filter(Boolean).join(', '),
+      subj: 'Re: ' + s.subject,
+      quoted: {
+        header: `On ${s.fullDate}, ${s.from?.name} &lt;${s.from?.addr}&gt; wrote:`,
+        html:   s.htmlBody || null,
+        text:   s.body     || [],
+      },
+    }
+  }
+
+  /**
    * Prepares the editor layout to forward the selected email message.
    * Prefixes "Fwd: " to subject and quotes original headers and body.
    */
@@ -117,5 +148,5 @@ export function useComposerActions({
     try { navigator.clipboard.writeText(rawText) } catch {}
   }
 
-  return { reply, forward, compose, closeComposer, showSource, closeSource, copySource }
+  return { reply, replyAll, forward, compose, closeComposer, showSource, closeSource, copySource }
 }

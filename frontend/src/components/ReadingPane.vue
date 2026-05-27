@@ -148,20 +148,23 @@ const srcdoc = computed(() => {
               {{ formatFullDate(m.rawDate || m.fullDate) }}
             </div>
             <div class="flex gap-1 justify-end flex-wrap">
-              <button class="tbtn" type="button" @click="mail.reply()">
-                <Icon name="reply" :size="13" /> Reply
+              <button class="tbtn tbtn-sm" type="button" @click="mail.reply()">
+                <Icon name="reply" :size="12" /> Reply
               </button>
-              <button class="tbtn" type="button" @click="mail.forward()">
-                <Icon name="forward" :size="13" /> Forward
+              <button class="tbtn tbtn-sm" type="button" @click="mail.replyAll()">
+                <Icon name="reply-all" :size="12" /> Reply All
               </button>
-              <button class="tbtn" type="button" title="View source" @click="mail.showSource()">
-                <Icon name="code-2" :size="13" />
+              <button class="tbtn tbtn-sm" type="button" @click="mail.forward()">
+                <Icon name="forward" :size="12" /> Forward
               </button>
-              <button class="tbtn" type="button" title="Archive" @click="mail.archiveMail()">
-                <Icon name="archive" :size="13" />
+              <button class="tbtn tbtn-sm" type="button" title="View source" @click="mail.showSource()">
+                <Icon name="code-2" :size="12" />
               </button>
-              <button class="tbtn tbtn-danger" type="button" title="Delete" @click="mail.deleteMail()">
-                <Icon name="trash-2" :size="13" />
+              <button class="tbtn tbtn-sm" type="button" title="Archive" @click="mail.archiveMail()">
+                <Icon name="archive" :size="12" />
+              </button>
+              <button class="tbtn tbtn-sm tbtn-danger" type="button" title="Delete" @click="mail.deleteMail()">
+                <Icon name="trash-2" :size="12" />
               </button>
             </div>
           </div>

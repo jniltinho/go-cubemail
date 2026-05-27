@@ -64,6 +64,13 @@ button, input, select, textarea { font-family: inherit; border-radius: 0; }
   .tbtn-primary { background: var(--accent); color: white; border-color: var(--accent-bar); }
   .tbtn-primary:hover { background: var(--accent-2); border-color: var(--accent-bar); color: white; }
   .tbtn-danger { color: var(--color-danger); }
+  .tbtn-sm {
+    height: 22px;
+    padding-left: 4px;
+    padding-right: 4px;
+    font-size: 11px;
+    gap: 2px;
+  }
 
   /* Sidebar items */
   .side-item {
