@@ -78,7 +78,11 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				session.Cleanup(30 * time.Minute)
+				maxIdle := 30 * time.Minute
+				if cfg.Session.MaxAge > 0 {
+					maxIdle = time.Duration(cfg.Session.MaxAge) * time.Second
+				}
+				session.Cleanup(maxIdle)
 			}
 		}
 	}()

@@ -140,10 +140,38 @@ export function useFolderActions({ auth, dialog, folders, mails, folder, view, s
         ? `Permanently delete all messages in "${f.label}"? This cannot be undone.`
         : `Move all messages in "${f.label}" to Trash?`
       if (!await dialog.confirm(confirmMsg)) return
-      mails.value = mails.value.filter(m => m.folder !== f.id)
+
+      // Retrieve all email messages currently assigned to this folder
+      const targets = mails.value.filter(m => m.folder === f.id)
+      // Extract count of unread email messages to correctly adjust folder badges
+      const unreadCount = targets.filter(m => m.unread).length
+
+      if (isTrash) {
+        // If emptying Trash itself, permanently purge the messages from memory
+        mails.value = mails.value.filter(m => m.folder !== f.id)
+      } else {
+        // Otherwise, move messages locally to the 'trash' folder key
+        targets.forEach(m => { m.folder = 'trash' })
+        
+        // Find the 'trash' folder object in the sidebar store to update its count badge
+        const trashObj = folders.value.find(x => x.id === 'trash')
+        if (trashObj) {
+          const parts  = String(trashObj.count).split('/')
+          const total  = Math.max(0, (parts.length > 1 ? parseInt(parts[1]) : parseInt(parts[0])) + targets.length)
+          const unread = Math.max(0, (parts.length > 1 ? parseInt(parts[0]) : 0) + unreadCount)
+          // Format count label: e.g. "unread/total" if there are unread emails, otherwise just "total"
+          trashObj.count = unread > 0 ? `${unread}/${total}` : String(total)
+        }
+      }
+
+      // Reset active selection if the focused email is being emptied
       selectedId.value = null
+      
+      // Reset the emptied folder's count badge to '0'
       const folderObj = folders.value.find(x => x.id === f.id)
       if (folderObj) folderObj.count = '0'
+      
+      // Perform the asynchronous background network request to empty the folder on the IMAP server
       if (auth.isApiOnline) {
         axios.delete(`${API_BASE}/mail/${encodeURIComponent(f.name || f.label)}`).catch(() => {})
       }
