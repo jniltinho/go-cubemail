@@ -171,35 +171,76 @@ export function useMailActions({
   }
 
   /**
+   * Resolves the original backend IMAP folder name string (e.g. "INBOX")
+   * for a given frontend folder ID.
+   * 
+   * @param folderId - Frontend folder ID.
+   * @returns The resolved backend mailbox folder name.
+   */
+  function _resolveMailboxForFolder(folderId: string): string {
+    const def = folders.value.find(f => f.id === folderId)
+    return def?.name || def?.label || 'INBOX'
+  }
+
+  /**
    * Relocates target email messages (batch or single) into a destination IMAP folder.
    * Updates folder properties locally and posts move triggers to the backend APIs.
    * 
    * @param destFolderId - Frontend destination folder ID key (e.g. "archive").
+   * @param customIds - Optional specific array of message UIDs to move.
    */
-  async function moveMail(destFolderId: string): Promise<void> {
-    const ids = _resolveIds()
+  async function moveMail(destFolderId: string, customIds?: string[]): Promise<void> {
+    const ids = customIds || _resolveIds()
     if (!ids.length) return
 
-    const srcName = _resolveMailbox()
     const dstDef  = folders.value.find(f => f.id === destFolderId)
     const dstName = dstDef?.name || dstDef?.label || destFolderId
 
-    const targets     = ids.map(id => mails.value.find(m => m.id === id)).filter((m): m is MailMessage => !!m)
-    const unreadCount = targets.filter(m => m.unread).length
-    targets.forEach(m => { m.folder = destFolderId })
-    selectedId.value  = null
-    selectedIds.value = new Set()
-    _adjustFolderCount(folder.value, -ids.length, -unreadCount)
-    _adjustFolderCount(destFolderId, ids.length, unreadCount)
+    // Filter out messages that are already in the destination folder to prevent redundant operations
+    const targets = ids.map(id => mails.value.find(m => m.id === id))
+      .filter((m): m is MailMessage => !!m && m.folder !== destFolderId)
+    if (!targets.length) return
 
-    if (auth.isApiOnline) {
-      await Promise.all(ids.map(id => {
-        const fd = new URLSearchParams()
-        fd.append('dest', dstName)
-        return axios.post(`${API_BASE}/mail/${encodeURIComponent(srcName)}/${id}/move`, fd, {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        }).catch(() => {})
-      }))
+    // Group targets by their source folder to handle counts and API moves properly
+    const sourceFolderGroups: Record<string, MailMessage[]> = {}
+    targets.forEach(m => {
+      if (!sourceFolderGroups[m.folder]) {
+        sourceFolderGroups[m.folder] = []
+      }
+      sourceFolderGroups[m.folder].push(m)
+    })
+
+    // If the currently selected message is in the targets list, deselect it
+    if (selectedId.value && targets.some(m => m.id === selectedId.value)) {
+      selectedId.value = null
+    }
+
+    // Remove moved IDs from selection set
+    const updatedSelectedIds = new Set(selectedIds.value)
+    targets.forEach(m => updatedSelectedIds.delete(m.id))
+    selectedIds.value = updatedSelectedIds
+
+    // Process counts and backend API triggers per source folder group
+    for (const [srcFolderId, group] of Object.entries(sourceFolderGroups)) {
+      const unreadCount = group.filter(m => m.unread).length
+      
+      // Move in local store state
+      group.forEach(m => { m.folder = destFolderId })
+      
+      // Adjust counter labels
+      _adjustFolderCount(srcFolderId, -group.length, -unreadCount)
+      _adjustFolderCount(destFolderId, group.length, unreadCount)
+
+      if (auth.isApiOnline) {
+        const srcName = _resolveMailboxForFolder(srcFolderId)
+        await Promise.all(group.map(m => {
+          const fd = new URLSearchParams()
+          fd.append('dest', dstName)
+          return axios.post(`${API_BASE}/mail/${encodeURIComponent(srcName)}/${m.id}/move`, fd, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          }).catch(() => {})
+        }))
+      }
     }
   }
 

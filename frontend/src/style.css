@@ -84,6 +84,11 @@ button, input, select, textarea { font-family: inherit; border-radius: 0; }
     font-weight: 600;
     color: var(--accent-bar);
   }
+  .side-item.drag-over {
+    background: var(--color-accent-soft) !important;
+    border-left-color: var(--color-accent-2) !important;
+    box-shadow: 0 0 0 1px var(--color-accent-2) inset !important;
+  }
   .side-item .lbl {
     flex: 1;
     min-width: 0;

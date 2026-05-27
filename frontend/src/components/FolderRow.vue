@@ -25,6 +25,8 @@ const emit = defineEmits<{
   click: []
   /** Emitted upon context option choice */
   menu: [action: string, folder: Folder]
+  /** Emitted when mails are dropped on this folder */
+  'drop-mail': [ids: string[], folderId: string]
 }>()
 
 /** Maps folder IDs to specific Lucide icons */
@@ -37,6 +39,52 @@ const FOLDER_ICON_MAP = {
 const menu   = ref(false)
 /** Reference element for outer component container */
 const rootEl = ref<HTMLElement | null>(null)
+
+/** Reactive state tracking whether a mail item is actively dragged over this row */
+const isDragOver = ref(false)
+
+/**
+ * Handles HTML5 dragover event to allow dropping.
+ * 
+ * @param e - The drag event.
+ */
+function onDragOver(e: DragEvent) {
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move'
+  }
+}
+
+/** Sets hover highlight active state when dragging entry pointer overlaps */
+function onDragEnter() {
+  isDragOver.value = true
+}
+
+/** Resets hover status when drag leaves the component bounds */
+function onDragLeave() {
+  isDragOver.value = false
+}
+
+/**
+ * Handles the drop event, parsing serialized message IDs and triggering emissions.
+ * 
+ * @param e - The drop event.
+ */
+function onDrop(e: DragEvent) {
+  isDragOver.value = false
+  const data = e.dataTransfer?.getData('text/plain')
+  if (!data) return
+  try {
+    const ids = JSON.parse(data)
+    if (Array.isArray(ids)) {
+      emit('drop-mail', ids, props.folder.id)
+    }
+  } catch (err) {
+    if (data) {
+      emit('drop-mail', [data], props.folder.id)
+    }
+  }
+}
 
 /**
  * Closes the kebab options dropdown if clicking outside the component.
@@ -84,8 +132,13 @@ const iconName = computed(() => FOLDER_ICON_MAP[props.folder.id] || 'folder')
 
 <template>
   <div ref="rootEl"
-       :class="['side-item', { active, 'menu-open': menu }]"
-       @click="$emit('click')">
+       :class="['side-item', { active, 'menu-open': menu, 'drag-over': isDragOver }]"
+       @click="$emit('click')"
+       @dragover="onDragOver"
+       @dragenter.prevent="onDragEnter"
+       @dragleave="onDragLeave"
+       @dragend="onDragLeave"
+       @drop="onDrop">
     <Icon :name="iconName" :size="14" class="text-accent-2" />
     <span class="lbl">{{ folder.label }}</span>
     <span class="count">{{ folder.count }}</span>

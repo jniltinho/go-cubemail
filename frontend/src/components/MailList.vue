@@ -8,10 +8,30 @@
 
 import { useMailStore } from '../stores/mail'
 import { formatDate } from '../utils/helpers'
+import type { MailMessage } from '../types'
 import Icon from './Icon.vue'
 
 /** Mail store instance containing visible mails and selection state */
 const mail = useMailStore()
+
+/**
+ * Handles the drag start event for message rows.
+ * Serializes the dragged message ID, or the complete set of selected message UIDs
+ * if the dragged message is part of the batch selection.
+ * 
+ * @param event - The HTML5 drag event.
+ * @param message - The mail message row being dragged.
+ */
+function onDragStart(event: DragEvent, message: MailMessage) {
+  let idsToMove = [message.id]
+  if (mail.selectedIds.has(message.id)) {
+    idsToMove = Array.from(mail.selectedIds)
+  }
+  event.dataTransfer?.setData('text/plain', JSON.stringify(idsToMove))
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+  }
+}
 </script>
 
 <template>
@@ -56,6 +76,8 @@ const mail = useMailStore()
         v-for="m in mail.visibleMails"
         :key="m.id"
         :class="['mail-row', { unread: m.unread, selected: m.id === mail.selectedId }]"
+        draggable="true"
+        @dragstart="onDragStart($event, m)"
         @click="mail.selectMsg(m.id)"
       >
         <!-- Checkbox -->

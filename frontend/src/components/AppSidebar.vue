@@ -62,6 +62,7 @@ const quotaPercent    = computed(() => {
         :active="mail.folder === f.id"
         @click="mail.setFolder(f.id)"
         @menu="(action, fl) => mail.onFolderMenu(action, fl)"
+        @drop-mail="(ids, folderId) => mail.moveMail(folderId, ids)"
       />
     </div>
 
