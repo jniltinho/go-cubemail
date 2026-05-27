@@ -637,7 +637,7 @@ clean       # remove binary
 - [x] Message listing with pagination + client-side sort
 - [x] Read messages (sanitized HTML + plain text fallback, sandboxed iframe)
 - [x] Download attachments
-- [x] Compose and send via SMTP (to, cc, bcc, subject, HTML body via TinyMCE, attachments)
+- [x] Compose and send via SMTP (to, cc, bcc, subject, HTML body via TipTap, attachments)
 - [x] Reply / Reply all / Forward
 - [x] Mark as read/unread, starred
 - [x] Move message between folders
