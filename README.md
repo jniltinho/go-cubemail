@@ -10,7 +10,7 @@ Go CubeMail connects directly to your existing mail servers using standard IMAP 
 
 - **Direct IMAP + SMTP** — Works with any standards-compliant mail server
 - **Modern Vue 3 SPA** — Fast, reactive 3-column layout (sidebar, message list, reading pane)
-- **Full email workflow** — Compose (TinyMCE), reply, forward, move, flag, delete, drafts, attachments
+- **Full email workflow** — Compose (TipTap), reply, forward, move, flag, delete, drafts, attachments
 - **Contacts** — Complete CRUD with CSV import/export and autocomplete in the composer
 - **Search** — Server-side IMAP SEARCH
 - **Keyboard shortcuts** — Vim-style navigation (`j`/`k`, `r`, `c`, `#`, etc.)
