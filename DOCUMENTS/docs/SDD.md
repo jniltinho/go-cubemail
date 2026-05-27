@@ -54,7 +54,7 @@ There is no email session database — all message reading/writing occurs in rea
 | State management | Pinia | ^3.0 |
 | CSS framework | Tailwind CSS v4 (Vite plugin) | ^4.3 |
 | HTTP client | Axios | ^1.16 |
-| Rich text editor | TinyMCE | ^6.8 |
+| Rich text editor | TipTap (via RichTextEditor) | 2.x |
 | Icons | Lucide Vue | ^1.16 |
 | **No jQuery / No Node server** | — | — |
 
@@ -197,7 +197,7 @@ go-cubemail-vue/
 ├── web/
 │   ├── dist/                 # Vite build output — embedded in binary
 │   ├── templates/            # Legacy Go templates (inactive)
-│   └── static/               # Static assets (TinyMCE dist, fonts, icons)
+│   └── static/               # Static assets (editor fonts, icons, etc.)
 ├── data/                     # Runtime (SQLite DB, sessions) — gitignored
 ├── tmp/
 └── DOCUMENTS/                # Setup docs, systemd service file
@@ -455,14 +455,14 @@ App.vue (root)
       └── CalendarPane.vue   — monthly calendar grid with event indicators
 
 Overlays (always mounted):
-├── ComposerModal.vue    — rich email composer (TinyMCE via TinyEditor.vue wrapper)
+├── ComposerModal.vue    — rich email composer (TipTap via RichTextEditor)
 ├── ContactModal.vue     — add/edit contact form
 ├── DialogModal.vue      — alert / confirm / prompt dialogs
 ├── ToastContainer.vue   — toast notification queue
 ├── SourceViewer.vue     — raw email source viewer
 ├── FolderRow.vue        — reusable folder tree row with context menu
 ├── Icon.vue / SpinnerIcon.vue
-└── TinyEditor.vue       — TinyMCE integration component
+└── RichTextEditor.vue   — TipTap rich text editor (editor/ directory)
 ```
 
 **Current component count:** 17 Vue SFCs.
@@ -738,7 +738,7 @@ golang.org/x/time                    (rate limiting)
     "@lucide/vue": "^1.16.0",
     "axios": "^1.16.1",
     "pinia": "^3.0.4",
-    "tinymce": "^6.8.6",
+    "@tiptap/starter-kit": "^2.11.5",
     "vue": "^3.5.34"
   },
   "devDependencies": {

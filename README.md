@@ -23,7 +23,7 @@ Go CubeMail connects directly to your existing mail servers using standard IMAP 
 ## Architecture Highlights
 
 - **Backend**: Go 1.26 + Echo v5 + GORM (SQLite / MariaDB / PostgreSQL) + emersion/go-imap
-- **Frontend**: Vue 3 (Composition API) + TypeScript + Vite + Pinia + Tailwind CSS v4 + TinyMCE
+- **Frontend**: Vue 3 (Composition API) + TypeScript + Vite + Pinia + Tailwind CSS v4 + TipTap
 - **No Node.js at runtime** — Vite is used only for building
 - **Authentication**: IMAP login with AES-GCM encrypted credentials in secure cookies
 - **Real-time / Notifications**: Client-side polling (10 min). True server-side push (SSE) is planned for the future.
@@ -36,7 +36,7 @@ Go CubeMail connects directly to your existing mail servers using standard IMAP 
 | Web         | Echo v5, GORM, Cobra, Viper         |
 | Email       | IMAP (emersion/go-imap), SMTP (wneessen/go-mail) |
 | Frontend    | Vue 3 + TS, Pinia, Vite, Tailwind v4 |
-| Editor      | TinyMCE 6                           |
+| Editor      | TipTap                              |
 | Database    | SQLite (dev) / MariaDB / PostgreSQL (prod) |
 
 ## Quick Start
