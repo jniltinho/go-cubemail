@@ -12,14 +12,15 @@ func SecurityHeaders() echo.MiddlewareFunc {
 			h.Set("X-Content-Type-Options", "nosniff")
 			h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 			h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-			// style-src 'unsafe-inline' required because PrimeVue injects critical CSS at runtime
-			// img-src data: needed for inline email images converted to data URIs
+			// style-src 'unsafe-inline' required for runtime CSS injection (Tailwind vars, accent picker)
+			// img-src https: allows external images in emails and the composer (newsletters, avatars, CDN assets)
+			// img-src data:/blob:/cid: covers inline attachments and base64-encoded email images
 			h.Set("Content-Security-Policy",
 				"default-src 'self'; "+
 					"script-src 'self'; "+
 					"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "+
 					"font-src 'self' https://fonts.gstatic.com data:; "+
-					"img-src 'self' data: cid: blob:; "+
+					"img-src 'self' https: data: cid: blob:; "+
 					"connect-src 'self'; "+
 					"frame-src 'self' blob:; "+
 					"frame-ancestors 'none'; "+

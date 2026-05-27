@@ -5,7 +5,7 @@
  */
 
 import type { Editor } from '@tiptap/core'
-import type { Ref } from 'vue'
+import type { Ref, ShallowRef } from 'vue'
 
 /**
  * Props accepted by the public RichTextEditor component.
@@ -61,8 +61,8 @@ export interface RichTextEditorExpose {
  * directly to <EditorContent :editor="..." /> from @tiptap/vue-3.
  */
 export interface UseTipTapEditorReturn {
-  /** Reactive reference to the TipTap Editor instance (null until ready) */
-  editor: Ref<Editor | null>
+  /** Reactive reference to the TipTap Editor instance (undefined until mounted) */
+  editor: ShallowRef<Editor | undefined>
   /** True while the editor is initializing */
   isLoading: Ref<boolean>
   /** Programmatically set content (bypasses some history) */

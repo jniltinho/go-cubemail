@@ -8,8 +8,9 @@
  * All strings, comments, and identifiers are in English.
  */
 
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import type { Editor } from '@tiptap/core'
+import { NodeSelection } from '@tiptap/pm/state'
 import Icon from '../Icon.vue'
 
 /** Props */
@@ -21,6 +22,38 @@ const props = defineProps<{
 /** Reactive editor for template use */
 const ed = computed(() => props.editor)
 
+/** Current font family at the cursor position (empty string = default) */
+const currentFontFamily = computed<string>(() =>
+  ed.value?.getAttributes('textStyle').fontFamily ?? ''
+)
+
+/** Current font size at the cursor position (empty string = default) */
+const currentFontSize = computed<string>(() =>
+  ed.value?.getAttributes('textStyle').fontSize ?? ''
+)
+
+/** Apply or clear font family on the selected text */
+function onFontFamilyChange(e: Event) {
+  const value = (e.target as HTMLSelectElement).value
+  if (!ed.value) return
+  if (!value) {
+    ed.value.chain().focus().unsetFontFamily().run()
+  } else {
+    ed.value.chain().focus().setFontFamily(value).run()
+  }
+}
+
+/** Apply or clear font size on the selected text */
+function onFontSizeChange(e: Event) {
+  const value = (e.target as HTMLSelectElement).value
+  if (!ed.value) return
+  if (!value) {
+    ed.value.chain().focus().unsetFontSize().run()
+  } else {
+    ed.value.chain().focus().setFontSize(value).run()
+  }
+}
+
 /** Simple local state for popovers (emoji, color, table, link, etc.) */
 const showEmoji = ref(false)
 const showColor = ref(false)
@@ -28,6 +61,10 @@ const showBgColor = ref(false)
 const showTable = ref(false)
 const showLink = ref(false)
 const linkUrl = ref('')
+const showImage = ref(false)
+const imageUrl = ref('')
+const linkInputRef = ref<HTMLInputElement | null>(null)
+const imageInputRef = ref<HTMLInputElement | null>(null)
 
 /** Helper: is the given mark or node active? */
 function isActive(name: string, attrs?: Record<string, any>) {
@@ -47,23 +84,63 @@ function toggleItalic() { ed.value?.chain().focus().toggleItalic().run() }
 function toggleUnderline() { ed.value?.chain().focus().toggleUnderline().run() }
 function toggleStrike() { ed.value?.chain().focus().toggleStrike().run() }
 
-/** Alignment */
-function alignLeft() { ed.value?.chain().focus().setTextAlign('left').run() }
-function alignCenter() { ed.value?.chain().focus().setTextAlign('center').run() }
-function alignRight() { ed.value?.chain().focus().setTextAlign('right').run() }
+/** Alignment — handles both regular text selection and NodeSelection (e.g. clicking an image).
+ *  When a NodeSelection is active (inline image clicked), ProseMirror selects the node
+ *  itself rather than the surrounding paragraph. selectParentNode() moves up to the <p>
+ *  so setTextAlign has a matching type to update.
+ */
+function applyAlign(alignment: string) {
+  if (!ed.value) return
+  const isNodeSel = ed.value.state.selection instanceof NodeSelection
+  const chain = ed.value.chain().focus()
+  if (isNodeSel) {
+    chain.selectParentNode().setTextAlign(alignment).run()
+  } else {
+    chain.setTextAlign(alignment).run()
+  }
+}
+function alignLeft()   { applyAlign('left') }
+function alignCenter() { applyAlign('center') }
+function alignRight()  { applyAlign('right') }
 
 /** Lists & structure */
 function toggleBullet() { ed.value?.chain().focus().toggleBulletList().run() }
 function toggleOrdered() { ed.value?.chain().focus().toggleOrderedList().run() }
-function indent() { ed.value?.chain().focus().sinkListItem('listItem').run() }
-function outdent() { ed.value?.chain().focus().liftListItem('listItem').run() }
+
+function isInList(): boolean {
+  if (!ed.value) return false
+  const { from, to } = ed.value.state.selection
+  let found = false
+  ed.value.state.doc.nodesBetween(from, to, (node) => {
+    if (node.type.name === 'listItem') { found = true; return false }
+  })
+  return found
+}
+
+function indent() {
+  if (!ed.value) return
+  if (isInList()) {
+    ed.value.chain().focus().sinkListItem('listItem').run()
+  } else {
+    ed.value.chain().focus().indent().run()
+  }
+}
+
+function outdent() {
+  if (!ed.value) return
+  if (isInList()) {
+    ed.value.chain().focus().liftListItem('listItem').run()
+  } else {
+    ed.value.chain().focus().outdent().run()
+  }
+}
 
 /** Link */
 function openLinkDialog() {
   if (!ed.value) return
-  const previous = ed.value.getAttributes('link').href || ''
-  linkUrl.value = previous
+  linkUrl.value = ed.value.getAttributes('link').href || ''
   showLink.value = true
+  nextTick(() => linkInputRef.value?.focus())
 }
 function applyLink() {
   if (!ed.value) return
@@ -79,6 +156,21 @@ function applyLink() {
 function removeLink() {
   ed.value?.chain().focus().unsetLink().run()
   showLink.value = false
+}
+
+/** Image */
+function openImageDialog() {
+  imageUrl.value = ''
+  showImage.value = true
+  nextTick(() => imageInputRef.value?.focus())
+}
+function applyImage() {
+  const url = imageUrl.value.trim()
+  if (url && ed.value) {
+    ed.value.chain().focus().setImage({ src: url }).run()
+  }
+  showImage.value = false
+  imageUrl.value = ''
 }
 
 /** Colors (simple native inputs for v1) */
@@ -144,21 +236,38 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
 
     <span class="rte-separator" />
 
-    <!-- Font / size (basic presets for v1; can be expanded) -->
-    <select class="tbtn" :disabled="disabled" title="Font family (future)">
+    <!-- Font / size -->
+    <select
+      class="tbtn"
+      :disabled="disabled"
+      :value="currentFontFamily"
+      title="Font family"
+      @change="onFontFamilyChange"
+    >
       <option value="">Font</option>
       <option value="Segoe UI, Helvetica, Arial, sans-serif">Segoe UI</option>
       <option value="Arial, Helvetica, sans-serif">Arial</option>
       <option value="'Times New Roman', Times, serif">Times New Roman</option>
       <option value="Courier New, Courier, monospace">Courier New</option>
       <option value="Georgia, serif">Georgia</option>
+      <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+      <option value="Verdana, Geneva, sans-serif">Verdana</option>
     </select>
-    <select class="tbtn" :disabled="disabled" title="Font size (future)">
+    <select
+      class="tbtn"
+      :disabled="disabled"
+      :value="currentFontSize"
+      title="Font size"
+      @change="onFontSizeChange"
+    >
       <option value="">Size</option>
+      <option value="10px">10</option>
       <option value="12px">12</option>
       <option value="13.5px">13.5</option>
       <option value="16px">16</option>
       <option value="18px">18</option>
+      <option value="24px">24</option>
+      <option value="36px">36</option>
     </select>
 
     <span class="rte-separator" />
@@ -168,12 +277,20 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       <button type="button" class="tbtn" :disabled="disabled" @click="showColor = !showColor" title="Text color">
         <Icon name="palette" :size="13" />
       </button>
-      <div v-if="showColor" class="absolute z-50 mt-1 bg-white border border-line p-2 shadow" style="min-width:180px">
-        <div class="grid grid-cols-6 gap-1">
-          <button v-for="c in ['#1A1F2A','#B22B2B','#1F7A45','#1B3A6B','#E0A40C','#6b7280']" :key="c"
-                  class="w-6 h-6 border border-line" :style="{background:c}" @click="setTextColor(c)" />
+      <div v-if="showColor" class="absolute z-50 mt-1 bg-white border border-line p-2 shadow" style="min-width:216px">
+        <div class="grid grid-cols-8 gap-1">
+          <button v-for="c in [
+            '#000000','#434343','#666666','#999999','#CCCCCC','#D9D9D9','#F3F3F3','#FFFFFF',
+            '#FF0000','#E53935','#B22B2B','#880E4F','#9C27B0','#673AB7','#3F51B5','#1A237E',
+            '#1565C0','#1B3A6B','#0277BD','#006064','#1F7A45','#2E7D32','#33691E','#827717',
+            '#F57F17','#E65100','#E0A40C','#BF360C','#795548','#6b7280','#546E7A','#37474F',
+          ]" :key="c"
+              class="w-6 h-6 border border-line hover:scale-110 transition-transform"
+              :style="{background:c}"
+              :title="c"
+              @click="setTextColor(c)" />
         </div>
-        <input type="color" class="mt-2 w-full" @input="(e) => setTextColor((e.target as HTMLInputElement).value)" />
+        <input type="color" class="mt-2 w-full h-6 cursor-pointer" @input="(e) => setTextColor((e.target as HTMLInputElement).value)" />
       </div>
     </div>
 
@@ -181,12 +298,19 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       <button type="button" class="tbtn" :disabled="disabled" @click="showBgColor = !showBgColor" title="Highlight color">
         <Icon name="highlighter" :size="13" />
       </button>
-      <div v-if="showBgColor" class="absolute z-50 mt-1 bg-white border border-line p-2 shadow" style="min-width:180px">
-        <div class="grid grid-cols-6 gap-1">
-          <button v-for="c in ['#fff59d','#a5f3fc','#bbf7d0','#fecaca','#e0e7ff','#f3e8ff']" :key="c"
-                  class="w-6 h-6 border border-line" :style="{background:c}" @click="setHighlight(c)" />
+      <div v-if="showBgColor" class="absolute z-50 mt-1 bg-white border border-line p-2 shadow" style="min-width:216px">
+        <div class="grid grid-cols-8 gap-1">
+          <button v-for="c in [
+            '#FFFF00','#fff59d','#FFE082','#FFCC80','#FFAB91','#EF9A9A','#F48FB1','#CE93D8',
+            '#B39DDB','#90CAF9','#a5f3fc','#80DEEA','#A5D6A7','#bbf7d0','#E6EE9C','#FFFFFF',
+            '#fecaca','#e0e7ff','#f3e8ff','#DCEDC8','#B2EBF2','#B2DFDB','#F0F4C3','#FCE4EC',
+          ]" :key="c"
+              class="w-6 h-6 border border-line hover:scale-110 transition-transform"
+              :style="{background:c}"
+              :title="c"
+              @click="setHighlight(c)" />
         </div>
-        <input type="color" class="mt-2 w-full" @input="(e) => setHighlight((e.target as HTMLInputElement).value)" />
+        <input type="color" class="mt-2 w-full h-6 cursor-pointer" @input="(e) => setHighlight((e.target as HTMLInputElement).value)" />
       </div>
     </div>
 
@@ -222,14 +346,43 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
     <span class="rte-separator" />
 
     <!-- Link -->
-    <button type="button" class="tbtn" :class="{ 'rte-active': isActive('link') }" :disabled="disabled" @click="openLinkDialog" title="Insert or edit link">
-      <Icon name="link" :size="13" />
-    </button>
+    <div class="relative">
+      <button type="button" class="tbtn" :class="{ 'rte-active': isActive('link') }" :disabled="disabled" @click="openLinkDialog" title="Insert or edit link">
+        <Icon name="link" :size="13" />
+      </button>
+      <div v-if="showLink" class="absolute z-50 bg-white border border-line p-2 shadow flex gap-2" style="top:100%; left:0; min-width:360px">
+        <input
+          ref="linkInputRef"
+          v-model="linkUrl"
+          class="border border-line px-2 text-sm flex-1"
+          placeholder="https://..."
+          @keydown.enter.prevent="applyLink"
+          @keydown.escape.prevent="showLink = false"
+        />
+        <button class="tbtn" @click="applyLink">OK</button>
+        <button class="tbtn" @click="removeLink">Remove</button>
+        <button class="tbtn" @click="showLink = false">Cancel</button>
+      </div>
+    </div>
 
-    <!-- Image (basic URL for v1; wired via parent expose or future toolbar emit) -->
-    <button type="button" class="tbtn" :disabled="disabled" title="Insert image (future)">
-      <Icon name="image" :size="13" />
-    </button>
+    <!-- Image -->
+    <div class="relative">
+      <button type="button" class="tbtn" :disabled="disabled" @click="openImageDialog" title="Insert image">
+        <Icon name="image" :size="13" />
+      </button>
+      <div v-if="showImage" class="absolute z-50 bg-white border border-line p-2 shadow flex gap-2" style="top:100%; left:0; min-width:380px">
+        <input
+          ref="imageInputRef"
+          v-model="imageUrl"
+          class="border border-line px-2 text-sm flex-1"
+          placeholder="https://example.com/image.png"
+          @keydown.enter.prevent="applyImage"
+          @keydown.escape.prevent="showImage = false"
+        />
+        <button class="tbtn" @click="applyImage">Insert</button>
+        <button class="tbtn" @click="showImage = false">Cancel</button>
+      </div>
+    </div>
 
     <!-- Table -->
     <div class="relative">
@@ -269,12 +422,5 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       {{ wordCount }} words
     </span>
 
-    <!-- Link dialog (simple) -->
-    <div v-if="showLink" class="absolute z-50 mt-1 left-0 bg-white border border-line p-2 shadow flex gap-2" style="top:100%">
-      <input v-model="linkUrl" class="border border-line px-2 text-sm" placeholder="https://..." style="width:260px" />
-      <button class="tbtn" @click="applyLink">OK</button>
-      <button class="tbtn" @click="removeLink">Remove</button>
-      <button class="tbtn" @click="showLink = false">Cancel</button>
-    </div>
   </div>
 </template>

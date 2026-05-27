@@ -33,6 +33,8 @@ export const useMailStore = defineStore('mail', () => {
   const accent         = ref('#1B3A6B')
   /** True if background loading API queries are active */
   const loading        = ref(false)
+  /** True while the selected message body is being fetched from the server */
+  const bodyLoading    = ref(false)
   /** Roster list of all email messages downloaded in local memory */
   const mails          = ref<MailMessage[]>([])
   /** Roster list of system or custom folders synced from backend */
@@ -165,9 +167,18 @@ export const useMailStore = defineStore('mail', () => {
   })
 
   // ── Composables ────────────────────────────────────────────────────────────
-  const { fetchFolderMessages, loadFromApi: _loadFromApi, fetchMessageBody } = useMailApi({
+  const { fetchFolderMessages, loadFromApi: _loadFromApi, fetchMessageBody: _fetchMessageBody } = useMailApi({
     auth, folders, mails, folder, selectedId,
   })
+
+  async function fetchMessageBody(id: string): Promise<void> {
+    bodyLoading.value = true
+    try {
+      await _fetchMessageBody(id)
+    } finally {
+      bodyLoading.value = false
+    }
+  }
 
   /**
    * Dispatches initial load routines to reload folder trees, sync directories,
@@ -216,7 +227,7 @@ export const useMailStore = defineStore('mail', () => {
   // ── Return ─────────────────────────────────────────────────────────────────
   return {
     // state
-    accent, loading, mails, folders, contacts, contactModal, editingContact, calCells, calDow,
+    accent, loading, bodyLoading, mails, folders, contacts, contactModal, editingContact, calCells, calDow,
     view, folder, selectedId, selectedIds, query, composer, sourceMail, sourceRaw,
     sortBy, sortDir,
     // computed

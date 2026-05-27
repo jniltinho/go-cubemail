@@ -56,18 +56,15 @@ const editorOptions = computed<TipTapEditorOptions>(() => ({
 /** The reactive editor + helpers from the composable */
 const {
   editor: editorRef,
-  isLoading,
   setContent: setEditorContent,
   getHTML,
   getWordCount,
-  destroy: destroyEditor,
 } = useTipTapEditor(editorOptions.value)
 
 /** Raw instance for components that expect Editor (not Ref).
- *  Cast as any to bridge @tiptap/core Editor vs @tiptap/vue-3 EditorContent prop type
- *  (the instances are runtime compatible; extra reactive props are vue-3 specific).
+ *  Cast as any to bridge ShallowRef<Editor|undefined> vs typed prop expectations.
  */
-const editor = computed<any>(() => editorRef.value)
+const editor = computed<any>(() => editorRef.value ?? null)
 
 /** Suppress flag to prevent update loops when parent pushes content */
 const suppressUpdate = ref(false)
@@ -113,13 +110,6 @@ function toggleSource() {
   }
 }
 
-/** Simple image insertion for v1 (URL prompt) */
-function insertImageFromUrl() {
-  const url = prompt('Image URL (https://...)')
-  if (!url || !editor.value) return
-  editor.value.chain().focus().setImage({ src: url }).run()
-}
-
 /** Expose the same surface as the legacy TinyEditor for compatibility */
 defineExpose({
   getContent: () => getHTML(),
@@ -127,7 +117,6 @@ defineExpose({
   focus: () => editor.value?.commands.focus(),
   getWordCount,
   toggleSource,
-  insertImage: insertImageFromUrl,
 })
 </script>
 
@@ -162,7 +151,5 @@ defineExpose({
       </div>
     </div>
 
-    <!-- Hidden hooks for parent (image prompt is called via expose) -->
-    <!-- The toolbar image button currently shows a TODO comment; can be wired to insertImageFromUrl via emit if needed -->
   </div>
 </template>

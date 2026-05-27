@@ -11,6 +11,7 @@ import { computed } from 'vue'
 import { useMailStore } from '../stores/mail'
 import { extIcon, extColor } from '../utils/helpers'
 import Icon from './Icon.vue'
+import SpinnerIcon from './SpinnerIcon.vue'
 
 /**
  * Parses a calendar date string in DD/MM/YYYY or DD/MM/YYYY HH:MM format
@@ -57,6 +58,8 @@ function formatCalDateTime(start: string, end: string): string {
 const mail = useMailStore()
 /** Computed alias of the currently selected email message */
 const m    = computed(() => mail.selected)
+/** True while the message body is being fetched from the backend */
+const bodyLoading = computed(() => mail.bodyLoading)
 
 /**
  * Formats an ISO raw date string to a full localized display layout.
@@ -99,7 +102,7 @@ const srcdoc = computed(() => {
 </script>
 
 <template>
-  <div class="bg-white flex flex-col min-h-0">
+  <div class="relative bg-white flex flex-col min-h-0">
     <!-- Empty state -->
     <div v-if="!m" class="flex-1 grid place-items-center text-ink-mute bg-panel-2">
       <div class="text-center py-6 px-8 border border-dashed border-line bg-white max-w-[320px]">
@@ -110,6 +113,15 @@ const srcdoc = computed(() => {
     </div>
 
     <template v-else>
+      <!-- Body loading overlay -->
+      <div
+        v-if="bodyLoading"
+        class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 gap-3"
+      >
+        <SpinnerIcon />
+        <span class="text-[12px] text-ink-mute tracking-wide">Loading message…</span>
+      </div>
+
       <!-- Message header -->
       <div class="py-3.5 px-4 border-b border-line bg-white flex-shrink-0">
         <h1 class="m-0 mb-2.5 text-[17px] text-accent-bar font-bold tracking-tight leading-snug">

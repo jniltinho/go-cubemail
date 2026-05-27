@@ -2,7 +2,7 @@
 /**
  * @component ComposerModal
  * @description The modal viewport for writing and sending email messages.
- * Integrates with TinyMCE (via TinyEditor component) to support styled emails,
+ * Integrates with the rich text editor (TipTap) to support styled HTML emails,
  * implements dynamic contact autocomplete suggestions as the user types in the "To" input,
  * handles multi-file attachments uploads with size formatting, and displays API errors.
  */
@@ -10,7 +10,7 @@
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import Icon from './Icon.vue'
-import RichTextEditor from './rich-text/RichTextEditor.vue'
+import RichTextEditor from './editor/RichTextEditor.vue'
 import { extIcon, extColor } from '../utils/helpers'
 import { useMailStore } from '../stores/mail'
 import { useToastStore } from '../stores/toast'
