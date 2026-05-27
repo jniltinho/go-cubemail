@@ -162,7 +162,16 @@ export const useMailStore = defineStore('mail', () => {
     const s = selected.value
     if (s?.unread) setTimeout(() => {
       const m = mails.value.find(x => x.id === s.id)
-      if (m) m.unread = false
+      if (m) {
+        m.unread = false
+        const f = folders.value.find(x => x.id === m.folder)
+        if (f) {
+          const parts  = String(f.count).split('/')
+          const total  = parts.length > 1 ? parseInt(parts[1]) : parseInt(parts[0])
+          const unread = Math.max(0, (parts.length > 1 ? parseInt(parts[0]) : 0) - 1)
+          f.count = unread > 0 ? `${unread}/${total}` : String(total)
+        }
+      }
     }, 400)
   })
 
