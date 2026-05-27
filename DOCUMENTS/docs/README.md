@@ -10,6 +10,7 @@ This directory contains the main technical and contributor documentation for **g
 | [Development Guide](DEVELOPMENT.md) | How to set up a local development environment, build the project, run in dev mode, and useful commands. |
 | [Contributing Guide](CONTRIBUTING.md) | Guidelines for contributing code, reporting issues, pull request process, and coding standards. |
 | [Code Audit & Improvements Report](CODE_AUDIT_AND_IMPROVEMENTS.md) | Results of a comprehensive code and documentation quality audit (June 2026). |
+| [Releasing Guide](RELEASING.md) | How to create version tags and GitHub Releases, including the process for writing polished, structured release notes that follow the project pattern. |
 
 ## Other Important Documentation
 

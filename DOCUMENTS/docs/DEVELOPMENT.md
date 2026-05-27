@@ -178,12 +178,15 @@ Example:
 
 ## Releasing
 
-See the release workflow in `.github/workflows/release.yml`.
+For the complete process of creating tags and GitHub Releases — including how to write the polished, structured release notes that follow the project's established pattern — see the **[Releasing Guide](RELEASING.md)**.
 
-Typical release process:
+Quick reference:
 
-1. Create and push a new tag (`git tag vX.Y.Z && git push origin vX.Y.Z`).
-2. The GitHub Action will build, package, and publish the release automatically.
+1. Create an annotated tag: `git tag -a v0.0.24 -m "Release v0.0.24"`
+2. Push it: `git push origin v0.0.24` (this triggers the automated build)
+3. After CI finishes, add the formatted release notes using `gh release edit`
+
+See [`.github/workflows/release.yml`](https://github.com/jniltinho/go-cubemail-vue/blob/main/.github/workflows/release.yml) for the current automation details.
 
 ## Additional Resources
 

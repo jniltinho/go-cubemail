@@ -26,6 +26,7 @@ This directory contains all official documentation for the **go-cubemail-vue** p
 - [Development Guide](docs/DEVELOPMENT.md) — How to set up your local environment and develop the project
 - [Contributing Guide](docs/CONTRIBUTING.md) — Guidelines for contributing code and opening pull requests
 - [Code Audit & Improvements Report](docs/CODE_AUDIT_AND_IMPROVEMENTS.md) — Results of a recent documentation and code quality review
+- [Releasing Guide](docs/RELEASING.md) — How to create version tags and GitHub Releases with polished, structured release notes
 
 ### In `setup/`
 
