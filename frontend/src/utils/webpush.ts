@@ -30,6 +30,12 @@ export async function initWebPush(): Promise<void> {
     swReg = await navigator.serviceWorker.register(SW_PATH)
     await navigator.serviceWorker.ready
 
+    if (Notification.permission === 'default') {
+      // Don't request permission automatically on page load or session check,
+      // as modern browsers block it unless triggered by a direct user interaction.
+      return
+    }
+
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') return
 

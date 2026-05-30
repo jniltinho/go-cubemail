@@ -19,12 +19,12 @@ func NewPushSubscriptionRepo(db *gorm.DB) *PushSubscriptionRepo {
 // Each browser generates a unique endpoint, so we use it as a natural key.
 func (r *PushSubscriptionRepo) Upsert(sub *model.PushSubscription) error {
 	var existing model.PushSubscription
-	err := r.db.Where("user_id = ? AND endpoint = ?", sub.UserID, sub.Endpoint).First(&existing).Error
-	if err == gorm.ErrRecordNotFound {
-		return r.db.Create(sub).Error
-	}
+	err := r.db.Where("user_id = ? AND endpoint = ?", sub.UserID, sub.Endpoint).Limit(1).Find(&existing).Error
 	if err != nil {
 		return err
+	}
+	if existing.ID == 0 {
+		return r.db.Create(sub).Error
 	}
 	existing.P256DH = sub.P256DH
 	existing.Auth = sub.Auth

@@ -1,10 +1,37 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import Icon from './Icon.vue'
 import { useMailStore } from '../stores/mail'
+import { initWebPush } from '../utils/webpush'
 import type { Identity, UserSettings } from '../types'
 
 const mail = useMailStore()
+
+// ── Notification state & actions ───────────────────────────────────────────
+const notificationPermission = ref(typeof Notification !== 'undefined' ? Notification.permission : 'default')
+
+const notificationStatusText = computed(() => {
+  if (typeof Notification === 'undefined') {
+    return 'Notifications are not supported by this browser.'
+  }
+  const perm = notificationPermission.value
+  if (perm === 'granted') return 'Notifications are enabled.'
+  if (perm === 'denied') return 'Notifications are blocked by your browser settings.'
+  return 'Enable notifications to receive real-time new mail alerts.'
+})
+
+const showNotificationButton = computed(() => {
+  return typeof Notification !== 'undefined' && notificationPermission.value === 'default'
+})
+
+async function requestNotificationPermission() {
+  if (typeof Notification === 'undefined') return
+  const permission = await Notification.requestPermission()
+  notificationPermission.value = permission
+  if (permission === 'granted') {
+    await initWebPush()
+  }
+}
 
 type Tab = 'identities' | 'preferences'
 const activeTab = ref<Tab>('identities')
@@ -241,6 +268,24 @@ async function savePrefs() {
               class="w-full border border-line rounded px-2.5 py-1.5 text-[13px] resize-none focus:outline-none focus:ring-1 focus:ring-accent"
               placeholder="I'm currently out of office…"
             />
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="border border-line rounded p-4 space-y-3">
+          <label class="block text-[12px] font-semibold text-ink">Desktop & Push Notifications</label>
+          <div class="flex items-center justify-between">
+            <span class="text-[13px] text-ink-sub">
+              {{ notificationStatusText }}
+            </span>
+            <button
+              v-if="showNotificationButton"
+              class="tbtn tbtn-primary text-[12px] py-1 px-3"
+              type="button"
+              @click="requestNotificationPermission"
+            >
+              Enable Notifications
+            </button>
           </div>
         </div>
 
