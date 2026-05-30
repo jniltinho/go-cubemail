@@ -15,7 +15,7 @@ let sseSource: EventSource | null = null
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const POLL_INTERVAL_MS = 10 * 60 * 1000  // 10 min fallback
-const SSE_URL = `${typeof API_BASE !== 'undefined' ? API_BASE : '/api/v1'}/events`
+const SSE_URL = `${typeof API_BASE !== 'undefined' ? API_BASE : '/api/v1'}/events/stream`
 
 function playNotificationSound(): void {
   try {

@@ -56,7 +56,7 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 	api.POST("/compose/upload", h.Compose.UploadAttachment)
 
 	// Server-Sent Events (new mail push)
-	api.GET("/events", h.SSE.Events)
+	api.GET("/events/stream", h.SSE.Events)
 
 	// Web Push (browser notifications)
 	api.GET("/push/vapid-public-key", h.Push.VAPIDPublicKey)
