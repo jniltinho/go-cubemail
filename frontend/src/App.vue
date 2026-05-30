@@ -23,6 +23,7 @@ import SourceViewer  from './components/SourceViewer.vue'
 import ContactModal      from './components/ContactModal.vue'
 import EventEditorModal  from './components/EventEditorModal.vue'
 import CalendarSidebar   from './components/CalendarSidebar.vue'
+import SettingsPane      from './components/SettingsPane.vue'
 import DialogModal       from './components/DialogModal.vue'
 import ToastContainer    from './components/ToastContainer.vue'
 import SpinnerIcon       from './components/SpinnerIcon.vue'
@@ -103,7 +104,7 @@ onBeforeUnmount(() => {
       class="grid flex-1 bg-app-bg min-h-0"
       style="grid-template-columns: 220px 380px 1fr"
     >
-      <AppSidebar v-if="mail.view === 'mail' || mail.view === 'contacts' || mail.view === 'calendar'" />
+      <AppSidebar v-if="mail.view === 'mail' || mail.view === 'contacts' || mail.view === 'calendar' || mail.view === 'settings'" />
 
       <template v-if="mail.view === 'mail'">
         <MailList />
@@ -116,6 +117,7 @@ onBeforeUnmount(() => {
         </div>
         <CalendarPane />
       </template>
+      <SettingsPane v-else-if="mail.view === 'settings'" />
     </div>
   </div>
 

@@ -39,7 +39,11 @@ func New(cfg *config.Config, db *gorm.DB) *Handlers {
 			cfg: cfg, db: db, calRepo: calRepo, shareRepo: shareRepo, userRepo: uLookup,
 		},
 		Event:    &EventHandler{cfg: cfg, db: db, calRepo: calRepo, eventRepo: eventRepo},
-		Settings: &SettingsHandler{cfg: cfg},
+		Settings: &SettingsHandler{
+			cfg: cfg, db: db,
+			settingsRepo: repository.NewSettingsRepo(db),
+			identityRepo: repository.NewIdentityRepo(db),
+		},
 		Search:   &SearchHandler{cfg: cfg},
 		CalDAV:   &CalDAVHandler{cfg: cfg, db: db, calRepo: calRepo, eventRepo: eventRepo},
 	}

@@ -19,6 +19,7 @@ import (
 type Message struct {
 	From        string
 	DisplayName string
+	ReplyTo     string
 	To          []string
 	Cc          []string
 	Bcc         []string
@@ -150,6 +151,13 @@ func buildMessage(msg *Message) (*mail.Msg, error) {
 			if err := m.AddBccFormat(addr.Name, addr.Address); err != nil {
 				return nil, fmt.Errorf("invalid Bcc address %s: %w", bccStr, err)
 			}
+		}
+	}
+
+	// Set Reply-To
+	if msg.ReplyTo != "" {
+		if err := m.ReplyTo(msg.ReplyTo); err == nil {
+			// ReplyTo set
 		}
 	}
 

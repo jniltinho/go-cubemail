@@ -189,6 +189,31 @@ export interface CalendarEvent {
 export type CalendarView = 'month' | 'week' | 'day'
 
 /**
+ * A sender identity the user can select when composing messages.
+ */
+export interface Identity {
+  id?: number
+  display_name: string
+  email: string
+  reply_to?: string
+  signature?: string
+  is_default?: boolean
+}
+
+/**
+ * User preferences stored server-side.
+ */
+export interface UserSettings {
+  rows_per_page: number
+  timezone: string
+  compose_html: boolean
+  date_format: string
+  signature_pos: string
+  oof_enabled: boolean
+  oof_message: string
+}
+
+/**
  * Represents a floating visual toast notification.
  */
 export interface Toast {

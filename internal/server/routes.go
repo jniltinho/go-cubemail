@@ -58,6 +58,17 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 	// Search
 	api.GET("/search", h.Search.Results)
 
+	// Settings
+	api.GET("/settings", h.Settings.GetSettings)
+	api.PUT("/settings", h.Settings.SaveSettings)
+
+	// Identities
+	api.GET("/identities", h.Settings.ListIdentities)
+	api.POST("/identities", h.Settings.CreateIdentity)
+	api.PUT("/identities/:id", h.Settings.UpdateIdentity)
+	api.DELETE("/identities/:id", h.Settings.DeleteIdentity)
+	api.POST("/identities/:id/default", h.Settings.SetDefaultIdentity)
+
 	// Contacts
 	api.GET("/contacts", h.Contacts.Index)
 	api.GET("/contacts/export", h.Contacts.Export)

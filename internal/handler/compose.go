@@ -44,14 +44,22 @@ func (h *ComposeHandler) Send(c *echo.Context) error {
 		return err
 	}
 
+	fromEmail := c.FormValue("from_email")
+	if fromEmail == "" {
+		fromEmail = s.Username
+	}
 	msg := &smtppkg.Message{
-		From:      s.Username,
-		To:        splitAddrs(c.FormValue("to")),
-		Cc:        splitAddrs(c.FormValue("cc")),
-		Bcc:       splitAddrs(c.FormValue("bcc")),
-		Subject:   c.FormValue("subject"),
-		TextHTML:  c.FormValue("body_html"),
-		TextPlain: c.FormValue("body_plain"),
+		From:        fromEmail,
+		DisplayName: c.FormValue("from_name"),
+		To:          splitAddrs(c.FormValue("to")),
+		Cc:          splitAddrs(c.FormValue("cc")),
+		Bcc:         splitAddrs(c.FormValue("bcc")),
+		Subject:     c.FormValue("subject"),
+		TextHTML:    c.FormValue("body_html"),
+		TextPlain:   c.FormValue("body_plain"),
+	}
+	if replyTo := strings.TrimSpace(c.FormValue("reply_to")); replyTo != "" {
+		msg.ReplyTo = replyTo
 	}
 
 	form, err := c.MultipartForm()

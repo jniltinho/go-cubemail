@@ -40,6 +40,9 @@ const mailStore   = useMailStore()
 /** Toast notifications store instance */
 const toastStore  = useToastStore()
 
+/** Active sender identity (default or first available) */
+const activeIdentity = computed(() => mailStore.defaultIdentity())
+
 /** Primary recipient input model string */
 const to          = ref(props.prefill?.to   || '')
 /** Carbon Copy (Cc) recipient input model string */
@@ -164,6 +167,14 @@ function removeAttachment(i) { attachments.value.splice(i, 1) }
  * 
  * @returns Initial HTML content string.
  */
+function buildSignatureHtml(): string {
+  const sig = activeIdentity.value?.signature
+  if (!sig) return ''
+  const sigPos = mailStore.settings?.signature_pos ?? 'below'
+  const html = `<p>--&nbsp;</p><p>${sig.replace(/\n/g, '<br>')}</p>`
+  return sigPos === 'above' ? html + '<p><br></p>' : '<p><br></p>' + html
+}
+
 function buildInitHtml() {
   const q = props.prefill?.quoted
   if (q) {
@@ -179,10 +190,11 @@ function buildInitHtml() {
   }
   const rawBody = props.prefill?.body || ''
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  return rawBody
+  const bodyHtml = rawBody
     .split('\n')
     .map(l => l.trim() === '' ? '<p>&nbsp;</p>' : `<p>${esc(l)}</p>`)
     .join('')
+  return bodyHtml + buildSignatureHtml()
 }
 
 /** The bound HTML body editor model content */
@@ -199,12 +211,18 @@ async function send() {
 
   const plainText = body.value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
 
+  const identity = activeIdentity.value
   const fd = new FormData()
   fd.append('to',         to.value.trim())
   fd.append('cc',         cc.value.trim())
   fd.append('subject',    subj.value)
   fd.append('body_html',  body.value)
   fd.append('body_plain', plainText)
+  if (identity) {
+    fd.append('from_email', identity.email)
+    fd.append('from_name',  identity.display_name || '')
+    fd.append('reply_to',   identity.reply_to || '')
+  }
   for (const f of attachments.value) fd.append('attachments', f, f.name)
 
   sending.value = true
@@ -236,6 +254,26 @@ function backdrop(e) {
                 type="button" @click="$emit('close')">
           <Icon name="x" :size="12" />
         </button>
+      </div>
+
+      <!-- From identity row -->
+      <div v-if="mailStore.identities.length > 1" class="composer-field">
+        <label>From</label>
+        <select
+          class="border-0 bg-transparent text-[13px] text-ink focus:outline-none w-full"
+          @change="(e) => { const sel = mailStore.identities.find(i => String(i.id) === (e.target as HTMLSelectElement).value); if (sel) mailStore.setDefaultIdentity(sel.id!) }"
+          :value="String(activeIdentity?.id ?? '')"
+        >
+          <option v-for="id in mailStore.identities" :key="id.id" :value="String(id.id)">
+            {{ id.display_name ? id.display_name + ' <' + id.email + '>' : id.email }}
+          </option>
+        </select>
+      </div>
+      <div v-else-if="activeIdentity" class="composer-field">
+        <label>From</label>
+        <span class="text-[13px] text-ink-sub">
+          {{ activeIdentity.display_name ? activeIdentity.display_name + ' <' + activeIdentity.email + '>' : activeIdentity.email }}
+        </span>
       </div>
 
       <div class="composer-field" style="position:relative">

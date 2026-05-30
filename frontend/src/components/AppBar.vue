@@ -17,9 +17,10 @@ const mail = useMailStore()
 
 /** Navigation tabs metadata */
 const TABS = [
-  { id: 'mail',     label: 'Mail',     icon: 'mail' },
-  { id: 'contacts', label: 'Contacts', icon: 'users' },
-  { id: 'calendar', label: 'Calendar', icon: 'calendar' },
+  { id: 'mail',      label: 'Mail',     icon: 'mail' },
+  { id: 'contacts',  label: 'Contacts', icon: 'users' },
+  { id: 'calendar',  label: 'Calendar', icon: 'calendar' },
+  { id: 'settings',  label: 'Settings', icon: 'settings' },
 ]
 </script>
 

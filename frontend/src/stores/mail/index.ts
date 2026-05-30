@@ -19,7 +19,8 @@ import { useMailActions } from './mailActions'
 import { useComposerActions } from './composerActions'
 import { useContactActions } from './contactActions'
 import { useCalendarActions } from './calendarActions'
-import type { MailMessage, Folder, Contact, CalCell, Calendar, CalendarEvent, CalendarView } from '../../types'
+import { useSettingsActions } from './settingsActions'
+import type { MailMessage, Folder, Contact, CalCell, Calendar, CalendarEvent, CalendarView, Identity, UserSettings } from '../../types'
 
 /**
  * Global unified mail, folders, and contacts controller store (`useMailStore`).
@@ -51,6 +52,12 @@ export const useMailStore = defineStore('mail', () => {
   const calCells       = ref<CalCell[]>(buildCalCells(CAL_EVENTS))
   /** Abbreviated weekdays array used to draw column headers */
   const calDow         = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  // ── Settings state ─────────────────────────────────────────────────────────
+  /** User preferences loaded from server */
+  const settings    = ref<UserSettings | null>(null)
+  /** List of sender identities */
+  const identities  = ref<Identity[]>([])
 
   // ── Calendar state ─────────────────────────────────────────────────────────
   /** User's calendars list */
@@ -213,7 +220,11 @@ export const useMailStore = defineStore('mail', () => {
     loading.value = true
     try {
       await _loadFromApi()
-      await contactApi.fetchContacts()
+      await Promise.all([
+        contactApi.fetchContacts(),
+        settingsApi.fetchSettings(),
+        settingsApi.fetchIdentities(),
+      ])
     } finally {
       loading.value = false
     }
@@ -226,9 +237,10 @@ export const useMailStore = defineStore('mail', () => {
   })
   const composerApi = useComposerActions({ auth, folders, selected, composer, sourceMail, sourceRaw })
   const contactApi  = useContactActions({ auth, toast, contacts, contactModal, editingContact })
-  const calendarApi = useCalendarActions({
+  const calendarApi  = useCalendarActions({
     auth, toast, calendars, events: calEvents, calView, calCurrentDate, selectedEvent, editorOpen,
   })
+  const settingsApi  = useSettingsActions({ auth, toast, identities, settings })
 
   // ── Calendar invitation actions ────────────────────────────────────────────
   async function calendarRsvp(status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE'): Promise<void> {
@@ -288,6 +300,8 @@ export const useMailStore = defineStore('mail', () => {
     accent, loading, bodyLoading, mails, folders, contacts, contactModal, editingContact, calCells, calDow,
     view, folder, selectedId, selectedIds, query, composer, sourceMail, sourceRaw,
     sortBy, sortDir,
+    // settings state
+    settings, identities,
     // calendar state
     calendars, calEvents, calView, calCurrentDate, selectedEvent, editorOpen,
     // computed
@@ -299,6 +313,7 @@ export const useMailStore = defineStore('mail', () => {
     ...composerApi,
     ...contactApi,
     ...calendarApi,
+    ...settingsApi,
     calendarRsvp, calendarDelegate, calendarAddToCalendar,
   }
 })
