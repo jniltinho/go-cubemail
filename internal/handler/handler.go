@@ -21,6 +21,8 @@ type Handlers struct {
 	Settings            *SettingsHandler
 	Search              *SearchHandler
 	CalDAV              *CalDAVHandler
+	CardDAV             *CardDAVHandler
+	Push                *PushHandler
 	SSE                 *SSEHandler
 }
 
@@ -49,7 +51,9 @@ func New(cfg *config.Config, db *gorm.DB) *Handlers {
 		},
 		Search:   &SearchHandler{cfg: cfg},
 		CalDAV:   &CalDAVHandler{cfg: cfg, db: db, calRepo: calRepo, eventRepo: eventRepo},
-		SSE:      &SSEHandler{cfg: cfg},
+		CardDAV:  &CardDAVHandler{cfg: cfg, db: db, contactRepo: repository.NewContactRepo(db)},
+		Push:     &PushHandler{cfg: cfg, db: db, pushRepo: repository.NewPushSubscriptionRepo(db)},
+		SSE:      &SSEHandler{cfg: cfg, db: db, pushRepo: repository.NewPushSubscriptionRepo(db)},
 		CalendarSubscription: &CalendarSubscriptionHandler{
 			cfg: cfg, db: db, calRepo: calRepo, subRepo: subRepo, evtRepo: eventRepo,
 		},

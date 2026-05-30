@@ -439,6 +439,7 @@ button, input, select, textarea { font-family: inherit; border-radius: 0; }
   .cal-evt.alt   { background: #6A8DBE; }
   .cal-evt.ghost { background: #B9C6DA; color: #2F3B4D; }
   .cal-evt.warn  { background: #B07A20; }
+  .cal-cell.drag-over { background: var(--accent-soft) !important; outline: 2px dashed var(--accent); outline-offset: -2px; }
 
   /* Login */
   .login-shadow {

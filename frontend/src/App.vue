@@ -10,6 +10,7 @@ import { onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useMailStore } from './stores/mail'
 import { startNewMailPolling, stopNewMailPolling } from './utils/sse'
+import { initWebPush, stopWebPush } from './utils/webpush'
 import LoginView     from './components/LoginView.vue'
 import AppBar        from './components/AppBar.vue'
 import AppToolbar    from './components/AppToolbar.vue'
@@ -60,8 +61,10 @@ watch(() => auth.isAuthenticated, async (authed) => {
   if (authed) {
     startNewMailPolling(mail, auth)
     await mail.loadFromApi()
+    initWebPush() // non-blocking; silently skipped if push not configured
   } else {
     stopNewMailPolling()
+    stopWebPush()
   }
 })
 

@@ -28,7 +28,7 @@ var migrateCmd = &cobra.Command{
 		err = db.AutoMigrate(
 			&model.User{},
 			&model.Identity{},
-			&model.Contact{},
+			&model.Contact{},            // UID field added for CardDAV
 			&model.ContactGroup{},
 			&model.Draft{},
 			&model.UserSettings{},    // OOFEnabled, OOFMessage, OOFMessageHTML
@@ -38,6 +38,7 @@ var migrateCmd = &cobra.Command{
 			&model.CalendarSubscription{},   // remote .ics subscriptions
 			&model.Event{},           // IsTask
 			&model.EventAttendee{},
+			&model.PushSubscription{},   // web push subscriptions
 			&state.EasDevice{},
 			&state.EasFolderState{},
 			&state.ImapFolderMapping{},

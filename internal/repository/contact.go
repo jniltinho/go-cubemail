@@ -54,3 +54,10 @@ func (r *ContactRepo) Update(c *model.Contact) error {
 func (r *ContactRepo) Delete(userID, id uint) error {
 	return r.db.Where("id = ? AND user_id = ?", id, userID).Delete(&model.Contact{}).Error
 }
+
+// GetByUID retrieves a contact by vCard UID, scoped to the given user.
+func (r *ContactRepo) GetByUID(userID uint, uid string) (*model.Contact, error) {
+	var c model.Contact
+	err := r.db.Where("user_id = ? AND uid = ?", userID, uid).First(&c).Error
+	return &c, err
+}

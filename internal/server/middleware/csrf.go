@@ -24,7 +24,8 @@ func CSRF() echo.MiddlewareFunc {
 			if strings.HasPrefix(path, "/Microsoft-Server-ActiveSync") ||
 				strings.HasPrefix(path, "/autodiscover") ||
 				strings.HasPrefix(path, "/dav") ||
-				strings.HasPrefix(path, "/.well-known/caldav") {
+				strings.HasPrefix(path, "/.well-known/caldav") ||
+				strings.HasPrefix(path, "/.well-known/carddav") {
 				return next(c)
 			}
 

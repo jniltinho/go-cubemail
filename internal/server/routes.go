@@ -58,6 +58,11 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 	// Server-Sent Events (new mail push)
 	api.GET("/events", h.SSE.Events)
 
+	// Web Push (browser notifications)
+	api.GET("/push/vapid-public-key", h.Push.VAPIDPublicKey)
+	api.POST("/push/subscribe", h.Push.Subscribe)
+	api.DELETE("/push/unsubscribe", h.Push.Unsubscribe)
+
 	// Search
 	api.GET("/search", h.Search.Results)
 
@@ -116,9 +121,11 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 func registerCalDAVRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, db *gorm.DB) {
 	caldavAuth := appMiddleware.CalDAVAuth(cfg, db)
 
-	// /.well-known/caldav → principal discovery redirect.
+	// /.well-known/caldav and /.well-known/carddav → principal discovery redirect.
 	e.GET("/.well-known/caldav", h.CalDAV.WellKnown, caldavAuth)
 	e.Add("PROPFIND", "/.well-known/caldav", h.CalDAV.WellKnown, caldavAuth)
+	e.GET("/.well-known/carddav", h.CardDAV.WellKnown, caldavAuth)
+	e.Add("PROPFIND", "/.well-known/carddav", h.CardDAV.WellKnown, caldavAuth)
 
 	dav := e.Group("/dav", caldavAuth)
 	dav.OPTIONS("/*", h.CalDAV.Options)
@@ -134,6 +141,16 @@ func registerCalDAVRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers,
 
 	// REPORT (calendar-query, calendar-multiget)
 	dav.Add("REPORT", "/:user/calendars/:cal/", h.CalDAV.Report)
+
+	// CardDAV — contacts
+	dav.OPTIONS("/contacts/*", h.CardDAV.Options)
+	dav.Add("PROPFIND", "/:user/contacts/", h.CardDAV.PropFind)
+	dav.Add("PROPFIND", "/:user/contacts/:ab/", h.CardDAV.PropFind)
+	dav.Add("PROPFIND", "/:user/contacts/:ab/:uid", h.CardDAV.PropFind)
+	dav.Add("REPORT", "/:user/contacts/:ab/", h.CardDAV.Report)
+	dav.GET("/:user/contacts/:ab/:uid", h.CardDAV.GetContact)
+	dav.PUT("/:user/contacts/:ab/:uid", h.CardDAV.PutContact)
+	dav.DELETE("/:user/contacts/:ab/:uid", h.CardDAV.DeleteContact)
 
 	// Event resources
 	dav.GET("/:user/calendars/:cal/", h.CalDAV.GetCalendar)

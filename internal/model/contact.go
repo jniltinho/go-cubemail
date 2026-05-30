@@ -7,6 +7,7 @@ import "time"
 type Contact struct {
 	ID        uint   `gorm:"primaryKey"`
 	UserID    uint   `gorm:"index;not null"`
+	UID       string `gorm:"size:255;index"` // vCard UID for CardDAV round-trip
 	FirstName string
 	LastName  string
 	Email     string `gorm:"not null"`

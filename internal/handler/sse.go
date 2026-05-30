@@ -7,13 +7,17 @@ import (
 
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/imap"
+	"go-cubemail/internal/repository"
 	"go-cubemail/internal/session"
 	"github.com/labstack/echo/v5"
+	"gorm.io/gorm"
 )
 
 // SSEHandler serves Server-Sent Events for real-time new-mail notifications.
 type SSEHandler struct {
-	cfg *config.Config
+	cfg      *config.Config
+	db       *gorm.DB
+	pushRepo *repository.PushSubscriptionRepo
 }
 
 // sseEvent formats a single SSE message with an optional event type.
@@ -30,6 +34,7 @@ func sseEvent(eventType, data string) string {
 // The connection is held open until the client disconnects or the server shuts down.
 func (h *SSEHandler) Events(c *echo.Context) error {
 	s := c.Get("imap_session").(*session.IMAPSession)
+	userID, _ := getUserID(c, h.db)
 
 	w := c.Response()
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -87,6 +92,10 @@ func (h *SSEHandler) Events(c *echo.Context) error {
 			if cur > lastCount {
 				fmt.Fprint(w, sseEvent("new-mail", fmt.Sprintf(`{"unread":%d}`, cur)))
 				flush()
+				// Also send Web Push to all subscriptions (background).
+				if h.pushRepo != nil {
+					go SendNewMailNotification(h.cfg, h.pushRepo, userID, cur)
+				}
 			}
 			lastCount = cur
 		}

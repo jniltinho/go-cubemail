@@ -139,6 +139,8 @@ func (h *CalDAVHandler) propfindPrincipal(c *echo.Context, userID uint, username
 						xmlProp("D:principal-URL", `<D:href>`+principalURL+`</D:href>`),
 						xmlProp("D:current-user-principal", `<D:href>`+principalURL+`</D:href>`),
 						xmlProp("C:calendar-home-set", `<D:href>`+homeURL+`</D:href>`),
+						xmlPropRaw("CR:addressbook-home-set",
+							`<D:href>`+fmt.Sprintf("%s/dav/%s/contacts/", base, username)+`</D:href>`),
 					},
 				},
 			},
@@ -693,7 +695,7 @@ func (r rawXML) Token() (xml.Token, error) { return xml.CharData(r), nil }
 func multistatus(responses []propResponse) string {
 	var sb strings.Builder
 	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-	sb.WriteString(`<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/" xmlns:ICAL="http://apple.com/ns/ical/">`)
+	sb.WriteString(`<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CR="urn:ietf:params:xml:ns:carddav" xmlns:CS="http://calendarserver.org/ns/" xmlns:ICAL="http://apple.com/ns/ical/">`)
 	for _, r := range responses {
 		sb.WriteString(`<D:response>`)
 		sb.WriteString(`<D:href>` + xmlEsc(r.Href) + `</D:href>`)

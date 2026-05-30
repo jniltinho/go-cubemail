@@ -14,6 +14,14 @@ type Config struct {
 	UI         UIConfig
 	Upload     UploadConfig
 	ActiveSync ActiveSyncConfig
+	Push       PushConfig
+}
+
+// PushConfig holds Web Push (VAPID) settings for browser push notifications.
+type PushConfig struct {
+	VAPIDPublicKey  string `mapstructure:"vapid_public_key"`
+	VAPIDPrivateKey string `mapstructure:"vapid_private_key"`
+	VAPIDContact    string `mapstructure:"vapid_contact"` // e.g. "mailto:admin@example.com"
 }
 
 // ActiveSyncConfig controls the Exchange ActiveSync (EAS) HTTP endpoint.
@@ -140,6 +148,13 @@ func Load() *Config {
 	cfg.ActiveSync.ProtocolVersion = viper.GetString("activesync.protocol_version")
 	if cfg.ActiveSync.ProtocolVersion == "" {
 		cfg.ActiveSync.ProtocolVersion = "16.1"
+	}
+
+	cfg.Push.VAPIDPublicKey  = viper.GetString("push.vapid_public_key")
+	cfg.Push.VAPIDPrivateKey = viper.GetString("push.vapid_private_key")
+	cfg.Push.VAPIDContact    = viper.GetString("push.vapid_contact")
+	if cfg.Push.VAPIDContact == "" {
+		cfg.Push.VAPIDContact = "mailto:admin@example.com"
 	}
 
 	return cfg

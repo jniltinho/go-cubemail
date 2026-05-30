@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, onMounted } from 'vue'
+import { computed, watch, onMounted, ref } from 'vue'
 import Icon from './Icon.vue'
 import { useMailStore } from '../stores/mail'
 import type { CalendarEvent } from '../types'
@@ -110,6 +110,47 @@ function isToday(date: Date): boolean {
   return t.getTime() === today.getTime()
 }
 
+// ── Drag-and-drop ──────────────────────────────────────────────────────────
+const dragEventId  = ref<number | null>(null)
+const dragOverCell = ref<string | null>(null) // "YYYY-MM-DD" or "YYYY-MM-DD-HH"
+
+function onDragStart(ev: DragEvent, event: CalendarEvent) {
+  dragEventId.value = event.id
+  ev.dataTransfer?.setData('text/plain', String(event.id))
+  if (ev.dataTransfer) ev.dataTransfer.effectAllowed = 'move'
+}
+
+function onDragEnd() {
+  dragEventId.value = null
+  dragOverCell.value = null
+}
+
+function cellKey(date: Date, hour?: number): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return hour !== undefined ? `${y}-${m}-${d}-${String(hour).padStart(2,'0')}` : `${y}-${m}-${d}`
+}
+
+async function onDropCell(date: Date, hour?: number) {
+  dragOverCell.value = null
+  const id = dragEventId.value
+  dragEventId.value = null
+  if (!id) return
+  const ev = mail.calEvents.find(e => e.id === id)
+  if (!ev) return
+  const orig = new Date(ev.start_at)
+  const dur  = new Date(ev.end_at).getTime() - orig.getTime()
+  const newStart = new Date(date)
+  if (hour !== undefined) {
+    newStart.setHours(hour, orig.getMinutes(), 0, 0)
+  } else {
+    newStart.setHours(orig.getHours(), orig.getMinutes(), 0, 0)
+  }
+  const newEnd = new Date(newStart.getTime() + dur)
+  await mail.moveEvent(id, newStart.toISOString(), newEnd.toISOString())
+}
+
 // ── Load data on mount and when switching to calendar view ─────────────────
 onMounted(async () => {
   await mail.fetchCalendars()
@@ -171,16 +212,23 @@ watch(() => mail.view, async (v) => {
         <div
           v-for="(cell, i) in monthCells"
           :key="i"
-          :class="['cal-cell', { dim: cell.dim, today: cell.today }]"
+          :class="['cal-cell', { dim: cell.dim, today: cell.today, 'drag-over': dragOverCell === cellKey(cell.date) }]"
           @click="mail.openNewEvent(cell.date)"
+          @dragover.prevent="dragOverCell = cellKey(cell.date)"
+          @dragleave="dragOverCell = null"
+          @drop.prevent="onDropCell(cell.date)"
         >
           <div class="num">{{ cell.date.getDate() }}</div>
           <div
             v-for="(ev, j) in cell.events.slice(0, 3)"
             :key="j"
-            class="cal-evt"
+            class="cal-evt cursor-grab active:cursor-grabbing"
+            :class="{ 'opacity-40': dragEventId === ev.id }"
             :style="{ backgroundColor: ev.color || '#3788d8' }"
             :title="ev.summary"
+            draggable="true"
+            @dragstart="onDragStart($event, ev)"
+            @dragend="onDragEnd"
             @click.stop="mail.openEditEvent(ev)"
           >{{ ev.summary }}</div>
           <div v-if="cell.events.length > 3" class="cal-evt text-ink-sub" style="background:transparent">
@@ -214,15 +262,21 @@ watch(() => mail.view, async (v) => {
             <div
               v-for="day in weekDays"
               :key="day.toISOString() + hour"
-              class="border-r border-b border-line last:border-r-0 h-12 relative cursor-pointer hover:bg-accent-soft/30"
+              :class="['border-r border-b border-line last:border-r-0 h-12 relative cursor-pointer hover:bg-accent-soft/30', { 'bg-accent-soft/50': dragOverCell === cellKey(day, hour) }]"
               @click="() => { const d = new Date(day); d.setHours(hour); mail.openNewEvent(d) }"
+              @dragover.prevent="dragOverCell = cellKey(day, hour)"
+              @dragleave="dragOverCell = null"
+              @drop.prevent="onDropCell(day, hour)"
             >
               <div
                 v-for="ev in eventsForDayHour(day, hour)"
                 :key="ev.id"
-                class="absolute inset-x-0.5 top-0.5 rounded text-[10px] text-white px-1 truncate cursor-pointer z-10"
+                :class="['absolute inset-x-0.5 top-0.5 rounded text-[10px] text-white px-1 truncate z-10 cursor-grab active:cursor-grabbing', { 'opacity-40': dragEventId === ev.id }]"
                 :style="{ backgroundColor: ev.color || '#3788d8' }"
                 :title="ev.summary"
+                draggable="true"
+                @dragstart="onDragStart($event, ev)"
+                @dragend="onDragEnd"
                 @click.stop="mail.openEditEvent(ev)"
               >{{ formatEventTime(ev.start_at) }} {{ ev.summary }}</div>
             </div>
@@ -240,14 +294,20 @@ watch(() => mail.view, async (v) => {
               {{ formatHour(hour) }}
             </div>
             <div
-              class="border-b border-line h-16 relative cursor-pointer hover:bg-accent-soft/30"
+              :class="['border-b border-line h-16 relative cursor-pointer hover:bg-accent-soft/30', { 'bg-accent-soft/50': dragOverCell === cellKey(mail.calCurrentDate, hour) }]"
               @click="() => { const d = new Date(mail.calCurrentDate); d.setHours(hour); mail.openNewEvent(d) }"
+              @dragover.prevent="dragOverCell = cellKey(mail.calCurrentDate, hour)"
+              @dragleave="dragOverCell = null"
+              @drop.prevent="onDropCell(mail.calCurrentDate, hour)"
             >
               <div
                 v-for="ev in eventsForDayHour(mail.calCurrentDate, hour)"
                 :key="ev.id"
-                class="absolute inset-x-1 top-0.5 rounded text-xs text-white px-2 py-0.5 truncate cursor-pointer z-10"
+                :class="['absolute inset-x-1 top-0.5 rounded text-xs text-white px-2 py-0.5 truncate z-10 cursor-grab active:cursor-grabbing', { 'opacity-40': dragEventId === ev.id }]"
                 :style="{ backgroundColor: ev.color || '#3788d8' }"
+                draggable="true"
+                @dragstart="onDragStart($event, ev)"
+                @dragend="onDragEnd"
                 @click.stop="mail.openEditEvent(ev)"
               >{{ formatEventTime(ev.start_at) }} – {{ ev.summary }}</div>
             </div>
