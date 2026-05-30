@@ -113,12 +113,29 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 
 }
 
-func registerCalDAVRoutes(e *echo.Echo, h *handler.Handlers, authMiddleware echo.MiddlewareFunc) {
-	// CalDAV — uses session cookie auth (same as web app).
-	dav := e.Group("/dav", authMiddleware)
+func registerCalDAVRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, db *gorm.DB) {
+	caldavAuth := appMiddleware.CalDAVAuth(cfg, db)
+
+	// /.well-known/caldav → principal discovery redirect.
+	e.GET("/.well-known/caldav", h.CalDAV.WellKnown, caldavAuth)
+	e.Add("PROPFIND", "/.well-known/caldav", h.CalDAV.WellKnown, caldavAuth)
+
+	dav := e.Group("/dav", caldavAuth)
 	dav.OPTIONS("/*", h.CalDAV.Options)
+
+	// Principal
+	dav.Add("PROPFIND", "/", h.CalDAV.PropFind)
+	dav.Add("PROPFIND", "/:user/", h.CalDAV.PropFind)
+
+	// Calendar home + collections
 	dav.Add("PROPFIND", "/:user/calendars/", h.CalDAV.PropFind)
 	dav.Add("PROPFIND", "/:user/calendars/:cal/", h.CalDAV.PropFind)
+	dav.Add("PROPFIND", "/:user/calendars/:cal/:uid", h.CalDAV.PropFind)
+
+	// REPORT (calendar-query, calendar-multiget)
+	dav.Add("REPORT", "/:user/calendars/:cal/", h.CalDAV.Report)
+
+	// Event resources
 	dav.GET("/:user/calendars/:cal/", h.CalDAV.GetCalendar)
 	dav.GET("/:user/calendars/:cal/:uid", h.CalDAV.GetEvent)
 	dav.PUT("/:user/calendars/:cal/:uid", h.CalDAV.PutEvent)
@@ -131,7 +148,7 @@ func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, db *g
 
 	registerAPIRoutes(e.Group("/api/v1"), h, authMiddleware, authRateLimit)
 	registerActiveSyncRoutes(e, cfg, db)
-	registerCalDAVRoutes(e, h, authMiddleware)
+	registerCalDAVRoutes(e, cfg, h, db)
 
 	// ── SPA + Static file handler ────────────────────────────────────────────
 	// Serves Vite build assets with correct MIME types.

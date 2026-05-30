@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v5"
 )
@@ -19,6 +20,14 @@ const (
 func CSRF() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
+			path := c.Request().URL.Path
+			if strings.HasPrefix(path, "/Microsoft-Server-ActiveSync") ||
+				strings.HasPrefix(path, "/autodiscover") ||
+				strings.HasPrefix(path, "/dav") ||
+				strings.HasPrefix(path, "/.well-known/caldav") {
+				return next(c)
+			}
+
 			method := c.Request().Method
 
 			switch method {
