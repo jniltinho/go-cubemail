@@ -65,3 +65,22 @@ compose_html    = true
 [upload]
 max_size_mb = 25
 temp_dir    = "./tmp/uploads"
+
+# Exchange ActiveSync (EAS) — mobile mail/calendar/contacts sync
+# Endpoints: /Microsoft-Server-ActiveSync, /autodiscover/autodiscover.xml
+# Auth: HTTP Basic (validated against IMAP on every request)
+[activesync]
+enabled               = true
+debug                 = false
+max_ping_interval_sec = 30
+max_sync_window_size  = 100
+protocol_version      = "16.1"
+
+# Web Push (browser notifications) — optional
+# Generate a VAPID key pair with:
+#   npx web-push generate-vapid-keys
+# Then paste the output below and run: go-cubemail migrate
+[push]
+vapid_public_key  = ""
+vapid_private_key = ""
+vapid_contact     = "mailto:admin@example.com"
