@@ -11,10 +11,9 @@
   },
   "dependencies": {
     "@lucide/vue": "^1.16.0",
-    "axios": "^1.16.1",
+    "axios": "file:./vendor/axios-1.16.1.tgz",
     "pinia": "^3.0.4",
-    "tinymce": "^6.8.6",
-    "@tiptap/vue-3": "^2.11.5",
+"@tiptap/vue-3": "^2.11.5",
     "@tiptap/core": "^2.11.5",
     "@tiptap/pm": "^2.11.5",
     "@tiptap/starter-kit": "^2.11.5",

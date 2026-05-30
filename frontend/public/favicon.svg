@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1B3A6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <rect width="20" height="16" x="2" y="4" rx="2"/>
-  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Envelope body -->
+  <rect width="28" height="20" x="2" y="6" rx="3" fill="#1B3A6B"/>
+  <!-- Envelope flap (V shape) -->
+  <path d="M2 9 L16 18.5 L30 9" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Bottom-left fold -->
+  <path d="M2 26 L12 17.5" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Bottom-right fold -->
+  <path d="M30 26 L20 17.5" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
 </svg>
