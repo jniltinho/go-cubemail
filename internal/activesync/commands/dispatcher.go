@@ -18,17 +18,18 @@ type Dispatcher struct {
 	calRepo     *repository.CalendarRepo
 	eventRepo   *repository.EventRepo
 	contactRepo *repository.ContactRepo
-	provision   *ProvisionHandler
-	folder      *FolderSyncHandler
-	ping        *PingHandler
-	sync        *SyncHandler
-	estimate    *GetItemEstimateHandler
-	sendmail    *SendMailHandler
-	meeting     *MeetingResponseHandler
-	search      *SearchHandler
-	settings    *SettingsHandler
-	itemOps     *ItemOperationsHandler
-	moveItems   *MoveItemsHandler
+	provision        *ProvisionHandler
+	folder           *FolderSyncHandler
+	ping             *PingHandler
+	sync             *SyncHandler
+	estimate         *GetItemEstimateHandler
+	sendmail         *SendMailHandler
+	meeting          *MeetingResponseHandler
+	search           *SearchHandler
+	settings         *SettingsHandler
+	itemOps          *ItemOperationsHandler
+	moveItems        *MoveItemsHandler
+	resolveRecip     *ResolveRecipientsHandler
 }
 
 // NewDispatcher constructs a command dispatcher with phase 0–5 handlers.
@@ -55,9 +56,10 @@ func NewDispatcher(cfg *config.Config, db *gorm.DB, store *state.Store, calRepo 
 		sendmail:    NewSendMailHandler(cfg),
 		meeting:     NewMeetingResponseHandler(cfg, eventRepo),
 		search:      NewSearchHandler(cfg, store),
-		settings:    NewSettingsHandler(db),
-		itemOps:     NewItemOperationsHandler(cfg, store),
-		moveItems:   NewMoveItemsHandler(cfg, store),
+		settings:     NewSettingsHandler(db),
+		itemOps:      NewItemOperationsHandler(cfg, store),
+		moveItems:    NewMoveItemsHandler(cfg, store),
+		resolveRecip: NewResolveRecipientsHandler(contactRepo),
 	}
 }
 
@@ -87,6 +89,8 @@ func (d *Dispatcher) Dispatch(ctx *Context, cmd string, body []byte) ([]byte, er
 		return d.itemOps.Handle(ctx, body)
 	case "MoveItems":
 		return d.moveItems.Handle(ctx, body)
+	case "ResolveRecipients":
+		return d.resolveRecip.Handle(ctx, body)
 	default:
 		return nil, fmt.Errorf("unsupported EAS command: %q", cmd)
 	}

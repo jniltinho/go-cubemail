@@ -154,6 +154,8 @@ func detectCommand(body []byte) string {
 		return "ItemOperations"
 	case "moveitems":
 		return "MoveItems"
+	case "resolverecipients":
+		return "ResolveRecipients"
 	default:
 		return r.XMLName.Local
 	}

@@ -34,7 +34,8 @@ var migrateCmd = &cobra.Command{
 			&model.UserSettings{},    // OOFEnabled, OOFMessage, OOFMessageHTML
 			&model.Session{},
 			&model.Calendar{},
-			&model.CalendarShare{},   // calendar sharing
+			&model.CalendarShare{},          // calendar sharing
+			&model.CalendarSubscription{},   // remote .ics subscriptions
 			&model.Event{},           // IsTask
 			&model.EventAttendee{},
 			&state.EasDevice{},

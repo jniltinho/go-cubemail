@@ -19,6 +19,7 @@ import (
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/handler"
 	appMiddleware "go-cubemail/internal/server/middleware"
+	"go-cubemail/internal/repository"
 	"go-cubemail/internal/session"
 	"gorm.io/gorm"
 )
@@ -87,6 +88,33 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 		}
 	}()
 
+	// ── Calendar subscription sync goroutine ──────────────────────────────────
+	go func() {
+		subRepo := repository.NewCalendarSubscriptionRepo(db)
+		evtRepo := repository.NewEventRepo(db)
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				subs, err := subRepo.ListDue()
+				if err != nil {
+					continue
+				}
+				for _, sub := range subs {
+					// respect per-subscription refresh interval
+					if sub.LastSyncedAt != nil &&
+						time.Since(*sub.LastSyncedAt) < time.Duration(sub.RefreshMins)*time.Minute {
+						continue
+					}
+					handler.FetchAndImportSubscription(subRepo, evtRepo, sub)
+				}
+			}
+		}
+	}()
+
 	// ── Embedded SPA filesystem (web/dist) ───────────────────────────────────
 	distFS, err := fs.Sub(embeddedFiles, "web/dist")
 	if err != nil {
@@ -95,30 +123,23 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 
 	// ── API handlers & Routes ────────────────────────────────────────────────
 	h := handler.New(cfg, db)
-	registerRoutes(e, cfg, h, distFS)
+	registerRoutes(e, cfg, h, db, distFS)
 
 	// ── Start server + graceful shutdown on SIGINT/SIGTERM ───────────────────
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	var srv *http.Server
+	// WriteTimeout 0 lets SSE and long-poll connections (Ping, SSE /events) run indefinitely.
+	// The application layer is responsible for its own timeouts on those handlers.
+	srv = &http.Server{
+		Addr:              addr,
+		Handler:           e,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      0,
+		IdleTimeout:       120 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 	if cfg.Server.TLSCert != "" && cfg.Server.TLSKey != "" {
 		slog.Info("Starting server with TLS/HTTPS")
-		srv = &http.Server{
-			Addr:              addr,
-			Handler:           e,
-			ReadTimeout:       30 * time.Second,
-			WriteTimeout:      60 * time.Second,
-			IdleTimeout:       120 * time.Second,
-			ReadHeaderTimeout: 10 * time.Second,
-		}
-	} else {
-		srv = &http.Server{
-			Addr:              addr,
-			Handler:           e,
-			ReadTimeout:       30 * time.Second,
-			WriteTimeout:      60 * time.Second,
-			IdleTimeout:       120 * time.Second,
-			ReadHeaderTimeout: 10 * time.Second,
-		}
 	}
 
 	go func() {

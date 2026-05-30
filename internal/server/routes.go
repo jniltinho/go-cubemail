@@ -55,6 +55,9 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 	api.POST("/compose/draft", h.Compose.SaveDraft)
 	api.POST("/compose/upload", h.Compose.UploadAttachment)
 
+	// Server-Sent Events (new mail push)
+	api.GET("/events", h.SSE.Events)
+
 	// Search
 	api.GET("/search", h.Search.Results)
 
@@ -90,6 +93,12 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 	api.GET("/calendar/:id/shares", h.CalendarShare.List)
 	api.POST("/calendar/:id/shares", h.CalendarShare.Create)
 	api.DELETE("/calendar/:id/shares/:shareId", h.CalendarShare.Delete)
+
+	// Calendar subscriptions (remote .ics)
+	api.GET("/calendar/subscriptions", h.CalendarSubscription.List)
+	api.POST("/calendar/subscriptions", h.CalendarSubscription.Create)
+	api.DELETE("/calendar/subscriptions/:id", h.CalendarSubscription.Delete)
+	api.POST("/calendar/subscriptions/:id/refresh", h.CalendarSubscription.Refresh)
 
 	// Events
 	api.GET("/events", h.Event.List)

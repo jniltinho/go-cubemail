@@ -1,7 +1,8 @@
 /**
  * @file sse.ts
- * @description Module responsible for periodic polling checks for new email messages on the server
- * and playing audio notification sound alerts upon delivery.
+ * @description Real-time new-mail notifications via Server-Sent Events (SSE).
+ * Falls back to 10-minute polling when EventSource is unavailable or the
+ * connection fails (e.g. reverse proxy does not support streaming).
  */
 
 import type { useMailStore } from '../stores/mail'
@@ -10,46 +11,30 @@ import type { useAuthStore } from '../stores/auth'
 type MailStore = ReturnType<typeof useMailStore>
 type AuthStore = ReturnType<typeof useAuthStore>
 
-/**
- * Periodic interval timer ID.
- */
+let sseSource: EventSource | null = null
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
-/**
- * Polling check interval defined in milliseconds (10 minutes).
- */
-const POLL_INTERVAL_MS = 10 * 60 * 1000
+const POLL_INTERVAL_MS = 10 * 60 * 1000  // 10 min fallback
+const SSE_URL = `${typeof API_BASE !== 'undefined' ? API_BASE : '/api/v1'}/events`
 
-/**
- * Synthesizes and plays a short alert notification sound using the Web Audio API.
- * Triggers a short 880Hz sine wave tone with exponential gain decay.
- */
 function playNotificationSound(): void {
-  const ctx = new AudioContext()
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-  osc.type = 'sine'
-  osc.frequency.setValueAtTime(880, ctx.currentTime)
-  gain.gain.setValueAtTime(0.3, ctx.currentTime)
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
-  osc.start(ctx.currentTime)
-  osc.stop(ctx.currentTime + 0.8)
+  try {
+    const ctx = new AudioContext()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(880, ctx.currentTime)
+    gain.gain.setValueAtTime(0.3, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.8)
+  } catch {}
 }
 
-/**
- * Starts the periodic new-mail polling loop (10 min interval).
- * On each tick it checks the inbox for new messages and plays an audio alert
- * if any were detected. This implementation replaced the originally planned
- * Server-Sent Events (SSE) push; the function names were kept short for the
- * legacy "SSE" concept but now clearly indicate polling behavior.
- * 
- * @param mail - Mail store instance (`useMailStore`).
- * @param auth - Authentication store instance (`useAuthStore`).
- */
-export function startNewMailPolling(mail: MailStore, auth: AuthStore): void {
-  stopNewMailPolling()
+function startPollingFallback(mail: MailStore, auth: AuthStore): void {
+  if (pollTimer !== null) return
   pollTimer = setInterval(async () => {
     if (!auth.isAuthenticated) return
     const hasNew = await mail.fetchFolderMessages('inbox', true)
@@ -58,9 +43,47 @@ export function startNewMailPolling(mail: MailStore, auth: AuthStore): void {
 }
 
 /**
- * Stops the active new-mail polling loop and clears the associated interval timer.
+ * Starts the SSE connection. On error or server-sent "error" event,
+ * falls back to periodic polling so the app still detects new mail.
+ */
+export function startNewMailPolling(mail: MailStore, auth: AuthStore): void {
+  stopNewMailPolling()
+
+  if (typeof EventSource === 'undefined') {
+    startPollingFallback(mail, auth)
+    return
+  }
+
+  const src = new EventSource(SSE_URL, { withCredentials: true })
+  sseSource = src
+
+  src.addEventListener('new-mail', async () => {
+    const hasNew = await mail.fetchFolderMessages('inbox', true)
+    if (hasNew) playNotificationSound()
+  })
+
+  src.addEventListener('error', () => {
+    // SSE error (proxy timeout, network) — fall back to polling.
+    stopSSE()
+    startPollingFallback(mail, auth)
+  })
+
+  // Server closed connection (e.g. IMAP error) — reconnect after 30 s via polling fallback.
+  src.onmessage = () => { /* keep-alive data messages — no action needed */ }
+}
+
+function stopSSE(): void {
+  if (sseSource) {
+    sseSource.close()
+    sseSource = null
+  }
+}
+
+/**
+ * Stops both the SSE connection and the polling fallback timer.
  */
 export function stopNewMailPolling(): void {
+  stopSSE()
   if (pollTimer !== null) {
     clearInterval(pollTimer)
     pollTimer = null

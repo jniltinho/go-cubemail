@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/model"
 	"go-cubemail/internal/repository"
+	smtppkg "go-cubemail/internal/smtp"
 	"github.com/labstack/echo/v5"
 	"gorm.io/gorm"
 )
@@ -461,6 +463,40 @@ func (h *EventHandler) Delete(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// sendIMIPReply sends a METHOD:REPLY iCalendar email to the event organizer after an RSVP.
+// smtpUser/smtpPass are the authenticated user's credentials for SMTP relay.
+func sendIMIPReply(cfg *config.Config, attendeeEmail, smtpUser, smtpPass, partStat string, event *model.Event) {
+	if cfg == nil || event.OrganizerEmail == "" {
+		return
+	}
+	label := map[string]string{"ACCEPTED": "Accepted", "DECLINED": "Declined", "TENTATIVE": "Tentative"}[partStat]
+	if label == "" {
+		label = "Response"
+	}
+	ics := fmt.Sprintf(
+		"BEGIN:VCALENDAR\r\nMETHOD:REPLY\r\nVERSION:2.0\r\nPRODID:-//go-cubemail//Calendar//EN\r\n"+
+			"BEGIN:VEVENT\r\nUID:%s\r\nSUMMARY:%s\r\nDTSTAMP:%s\r\n"+
+			"ATTENDEE;PARTSTAT=%s;CN=%s:mailto:%s\r\n"+
+			"END:VEVENT\r\nEND:VCALENDAR\r\n",
+		event.UID,
+		calpkg.FoldLine(event.Summary),
+		time.Now().UTC().Format("20060102T150405Z"),
+		partStat, attendeeEmail, attendeeEmail,
+	)
+	smtpCfg := smtppkg.Config{
+		Host: cfg.SMTP.Host, Port: cfg.SMTP.Port,
+		StartTLS: cfg.SMTP.StartTLS, TimeoutSec: cfg.SMTP.TimeoutSec,
+	}
+	_, _ = smtppkg.Send(smtpCfg, smtpUser, smtpPass, &smtppkg.Message{
+		From:    attendeeEmail,
+		To:      []string{event.OrganizerEmail},
+		Subject: fmt.Sprintf("%s: %s", label, event.Summary),
+		Attachments: []smtppkg.Attachment{
+			{Filename: "meeting-reply.ics", ContentType: "text/calendar", Data: []byte(ics)},
+		},
+	})
+}
+
 // RSVPFromMail handles POST /api/v1/events/rsvp-from-mail.
 // Accepts {uid, partstat} and updates the attendee status on the matching event,
 // creating a placeholder event from the email invitation when none exists yet.
@@ -561,6 +597,8 @@ func (h *EventHandler) RSVPFromMail(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	result, _ := h.eventRepo.Get(userID, event.ID)
+	smtpPass := getSessionPassword(c, h.cfg)
+	go sendIMIPReply(h.cfg, userEmail, userEmail, smtpPass, partStat, event)
 	if result != nil {
 		return c.JSON(http.StatusOK, toEventResponse(*result))
 	}
@@ -611,6 +649,10 @@ func (h *EventHandler) RSVP(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	result, err := h.eventRepo.Get(userID, event.ID)
+	if event.OrganizerEmail != "" {
+		smtpPass2 := getSessionPassword(c, h.cfg)
+		go sendIMIPReply(h.cfg, userEmail, userEmail, smtpPass2, partStat, event)
+	}
 	if err != nil {
 		return c.JSON(http.StatusOK, toEventResponse(*event))
 	}
