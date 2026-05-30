@@ -9,6 +9,7 @@ import (
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/database"
 	"go-cubemail/internal/model"
+	"go-cubemail/internal/activesync/state"
 	"github.com/spf13/cobra"
 )
 
@@ -30,8 +31,15 @@ var migrateCmd = &cobra.Command{
 			&model.Contact{},
 			&model.ContactGroup{},
 			&model.Draft{},
-			&model.UserSettings{},
+			&model.UserSettings{},    // OOFEnabled, OOFMessage, OOFMessageHTML
 			&model.Session{},
+			&model.Calendar{},
+			&model.CalendarShare{},   // calendar sharing
+			&model.Event{},           // IsTask
+			&model.EventAttendee{},
+			&state.EasDevice{},
+			&state.EasFolderState{},
+			&state.ImapFolderMapping{},
 		)
 		if err != nil {
 			return fmt.Errorf("migration failed: %w", err)

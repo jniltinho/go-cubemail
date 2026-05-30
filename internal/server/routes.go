@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v5"
+	"go-cubemail/internal/activesync"
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/handler"
 	appMiddleware "go-cubemail/internal/server/middleware"
+	"gorm.io/gorm"
 )
 
 func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authRateLimit echo.MiddlewareFunc) {
@@ -64,14 +66,52 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 	api.PUT("/contacts/:id", h.Contacts.Update)
 	api.DELETE("/contacts/:id", h.Contacts.Delete)
 
+	// Calendar
+	api.GET("/calendar", h.Calendar.List)
+	api.POST("/calendar", h.Calendar.Create)
+	api.PUT("/calendar/:id", h.Calendar.Update)
+	api.DELETE("/calendar/:id", h.Calendar.Delete)
+	api.POST("/calendar/activation", h.Calendar.SetActivation)
+	api.GET("/calendar/:id/export", h.Calendar.Export)
+	api.POST("/calendar/:id/import", h.Calendar.Import)
+
+	// Calendar sharing
+	api.GET("/calendar/:id/shares", h.CalendarShare.List)
+	api.POST("/calendar/:id/shares", h.CalendarShare.Create)
+	api.DELETE("/calendar/:id/shares/:shareId", h.CalendarShare.Delete)
+
+	// Events
+	api.GET("/events", h.Event.List)
+	api.GET("/events/:id", h.Event.Get)
+	api.POST("/events", h.Event.Create)
+	api.POST("/events/rsvp-from-mail", h.Event.RSVPFromMail)
+	api.PUT("/events/:id", h.Event.Update)
+	api.DELETE("/events/:id", h.Event.Delete)
+	api.POST("/events/:id/move", h.Event.Move)
+	api.POST("/events/:id/rsvp", h.Event.RSVP)
+	api.GET("/events/freebusy", h.Event.FreeBusy)
+
 }
 
-func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, distFS fs.FS) {
+func registerCalDAVRoutes(e *echo.Echo, h *handler.Handlers, authMiddleware echo.MiddlewareFunc) {
+	// CalDAV — uses session cookie auth (same as web app).
+	dav := e.Group("/dav", authMiddleware)
+	dav.OPTIONS("/*", h.CalDAV.Options)
+	dav.Add("PROPFIND", "/:user/calendars/", h.CalDAV.PropFind)
+	dav.Add("PROPFIND", "/:user/calendars/:cal/", h.CalDAV.PropFind)
+	dav.GET("/:user/calendars/:cal/", h.CalDAV.GetCalendar)
+	dav.GET("/:user/calendars/:cal/:uid", h.CalDAV.GetEvent)
+	dav.PUT("/:user/calendars/:cal/:uid", h.CalDAV.PutEvent)
+	dav.DELETE("/:user/calendars/:cal/:uid", h.CalDAV.DeleteEvent)
+}
+
+func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, db *gorm.DB, distFS fs.FS) {
 	authRateLimit := appMiddleware.NewRateLimit(5, time.Minute)
 	authMiddleware := appMiddleware.RequireAuth(cfg.Session.Name)
 
 	registerAPIRoutes(e.Group("/api/v1"), h, authMiddleware, authRateLimit)
-	// registerAPIRoutes(e.Group("/api/v2"), h, authMiddleware, authRateLimit)
+	registerActiveSyncRoutes(e, cfg, db)
+	registerCalDAVRoutes(e, h, authMiddleware)
 
 	// ── SPA + Static file handler ────────────────────────────────────────────
 	// Serves Vite build assets with correct MIME types.
@@ -117,4 +157,22 @@ func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, distF
 		_, _ = c.Response().Write(indexHTML)
 		return nil
 	})
+}
+
+// registerActiveSyncRoutes mounts EAS and Autodiscover HTTP endpoints when activesync.enabled is true.
+func registerActiveSyncRoutes(e *echo.Echo, cfg *config.Config, db *gorm.DB) {
+	if !cfg.ActiveSync.Enabled {
+		return
+	}
+	easAuth := appMiddleware.EASAuth(cfg)
+	easHandler := activesync.NewHandler(cfg, db)
+	autoHandler := activesync.NewAutodiscoverHandler(cfg)
+
+	eas := e.Group("/Microsoft-Server-ActiveSync", easAuth)
+	eas.OPTIONS("", easHandler.Options)
+	eas.POST("", easHandler.Handle)
+
+	ad := e.Group("/autodiscover")
+	ad.POST("/autodiscover.xml", autoHandler.MobileSync, easAuth)
+	e.GET("/.well-known/autodiscover/autodiscover.xml", autoHandler.MobileSync, easAuth)
 }

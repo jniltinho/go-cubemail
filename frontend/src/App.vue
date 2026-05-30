@@ -20,10 +20,12 @@ import ContactsPane  from './components/ContactsPane.vue'
 import CalendarPane  from './components/CalendarPane.vue'
 import ComposerModal from './components/ComposerModal.vue'
 import SourceViewer  from './components/SourceViewer.vue'
-import ContactModal  from './components/ContactModal.vue'
-import DialogModal   from './components/DialogModal.vue'
-import ToastContainer from './components/ToastContainer.vue'
-import SpinnerIcon   from './components/SpinnerIcon.vue'
+import ContactModal      from './components/ContactModal.vue'
+import EventEditorModal  from './components/EventEditorModal.vue'
+import CalendarSidebar   from './components/CalendarSidebar.vue'
+import DialogModal       from './components/DialogModal.vue'
+import ToastContainer    from './components/ToastContainer.vue'
+import SpinnerIcon       from './components/SpinnerIcon.vue'
 
 /** Authentication state store instance */
 const auth = useAuthStore()
@@ -108,7 +110,12 @@ onBeforeUnmount(() => {
         <ReadingPane />
       </template>
       <ContactsPane  v-else-if="mail.view === 'contacts'" style="grid-column:2/4" />
-      <CalendarPane  v-else-if="mail.view === 'calendar'" style="grid-column:2/4" />
+      <template v-else-if="mail.view === 'calendar'">
+        <div class="border-r border-line overflow-y-auto bg-panel-1 text-sm">
+          <CalendarSidebar />
+        </div>
+        <CalendarPane />
+      </template>
     </div>
   </div>
 
@@ -116,6 +123,7 @@ onBeforeUnmount(() => {
   <ComposerModal v-if="mail.composer !== null" :prefill="mail.composer" @close="mail.closeComposer()" />
   <SourceViewer  v-if="mail.sourceMail" />
   <ContactModal  v-if="mail.contactModal" />
+  <EventEditorModal />
   <DialogModal />
   <ToastContainer />
 </template>

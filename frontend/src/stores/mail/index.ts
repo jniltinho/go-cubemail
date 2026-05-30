@@ -5,6 +5,7 @@
  * and composes actions exported by distributed submodules.
  */
 
+import axios from 'axios'
 import { defineStore } from 'pinia'
 import { ref, computed, watch, watchEffect } from 'vue'
 import { useAuthStore } from '../auth'
@@ -17,7 +18,8 @@ import { useFolderActions } from './folderActions'
 import { useMailActions } from './mailActions'
 import { useComposerActions } from './composerActions'
 import { useContactActions } from './contactActions'
-import type { MailMessage, Folder, Contact, CalCell } from '../../types'
+import { useCalendarActions } from './calendarActions'
+import type { MailMessage, Folder, Contact, CalCell, Calendar, CalendarEvent, CalendarView } from '../../types'
 
 /**
  * Global unified mail, folders, and contacts controller store (`useMailStore`).
@@ -45,10 +47,24 @@ export const useMailStore = defineStore('mail', () => {
   const contactModal   = ref(false)
   /** Active contact being modified, or null if drafting new profile */
   const editingContact = ref<Contact | null>(null)
-  /** Computed cell days representing monthly calendar grids */
+  /** Computed cell days representing monthly calendar grids (legacy mock, kept for compat) */
   const calCells       = ref<CalCell[]>(buildCalCells(CAL_EVENTS))
   /** Abbreviated weekdays array used to draw column headers */
   const calDow         = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  // ── Calendar state ─────────────────────────────────────────────────────────
+  /** User's calendars list */
+  const calendars      = ref<Calendar[]>([])
+  /** Events loaded for the current view range */
+  const calEvents      = ref<CalendarEvent[]>([])
+  /** Active calendar view mode */
+  const calView        = ref<CalendarView>('month')
+  /** Anchor date for calendar navigation */
+  const calCurrentDate = ref<Date>(new Date())
+  /** Event being created or edited in the editor modal */
+  const selectedEvent  = ref<CalendarEvent | null>(null)
+  /** True when the event editor modal is open */
+  const editorOpen     = ref(false)
   /** Active primary layout panel view (e.g. 'mail', 'contacts', 'calendar') */
   const view           = ref('mail')
   /** Frontend ID key of the active folder viewed (e.g. 'inbox') */
@@ -210,15 +226,38 @@ export const useMailStore = defineStore('mail', () => {
   })
   const composerApi = useComposerActions({ auth, folders, selected, composer, sourceMail, sourceRaw })
   const contactApi  = useContactActions({ auth, toast, contacts, contactModal, editingContact })
+  const calendarApi = useCalendarActions({
+    auth, toast, calendars, events: calEvents, calView, calCurrentDate, selectedEvent, editorOpen,
+  })
 
   // ── Calendar invitation actions ────────────────────────────────────────────
-  function calendarRsvp(status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE'): void {
-    const labels: Record<string, string> = {
-      ACCEPTED:  'Invitation accepted.',
-      DECLINED:  'Invitation declined.',
-      TENTATIVE: 'Marked as tentative.',
+  async function calendarRsvp(status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE'): Promise<void> {
+    const msg = selected.value
+    const uid = msg?.calendarInfo?.uid
+    if (!uid || !auth.isApiOnline) {
+      const labels: Record<string, string> = {
+        ACCEPTED: 'Invitation accepted.', DECLINED: 'Invitation declined.', TENTATIVE: 'Marked as tentative.',
+      }
+      toast.success(labels[status] ?? 'Response sent.')
+      return
     }
-    toast.success(labels[status] ?? 'Response sent.')
+    try {
+      await axios.post(`${API_BASE}/events/rsvp-from-mail`, {
+        uid,
+        partstat:  status,
+        summary:   msg.calendarInfo?.summary ?? '',
+        start_at:  msg.calendarInfo?.start_time ?? '',
+        end_at:    msg.calendarInfo?.end_time ?? '',
+        location:  msg.calendarInfo?.location ?? '',
+      })
+      const labels: Record<string, string> = {
+        ACCEPTED: 'Invitation accepted.', DECLINED: 'Invitation declined.', TENTATIVE: 'Marked as tentative.',
+      }
+      toast.success(labels[status] ?? 'Response sent.')
+      if (calEvents.value.length > 0) await calendarApi.fetchEvents()
+    } catch {
+      toast.error('Failed to send RSVP response.')
+    }
   }
 
   function calendarDelegate(): void {
@@ -236,12 +275,21 @@ export const useMailStore = defineStore('mail', () => {
     }
   }
 
+  // Reload calendar data whenever the view or navigation date changes
+  watch([calView, calCurrentDate, calendars], () => {
+    if (view.value === 'calendar') {
+      calendarApi.fetchEvents()
+    }
+  }, { deep: false })
+
   // ── Return ─────────────────────────────────────────────────────────────────
   return {
     // state
     accent, loading, bodyLoading, mails, folders, contacts, contactModal, editingContact, calCells, calDow,
     view, folder, selectedId, selectedIds, query, composer, sourceMail, sourceRaw,
     sortBy, sortDir,
+    // calendar state
+    calendars, calEvents, calView, calCurrentDate, selectedEvent, editorOpen,
     // computed
     visibleMails, counts, selected, currentFolderLabel,
     // api
@@ -250,6 +298,7 @@ export const useMailStore = defineStore('mail', () => {
     ...mailApi,
     ...composerApi,
     ...contactApi,
+    ...calendarApi,
     calendarRsvp, calendarDelegate, calendarAddToCalendar,
   }
 })

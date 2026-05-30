@@ -6,13 +6,23 @@ import "github.com/spf13/viper"
 
 // Config is the root configuration object passed throughout the application.
 type Config struct {
-	Server   ServerConfig
-	IMAP     IMAPConfig
-	SMTP     SMTPConfig
-	Database DatabaseConfig
-	Session  SessionConfig
-	UI       UIConfig
-	Upload   UploadConfig
+	Server     ServerConfig
+	IMAP       IMAPConfig
+	SMTP       SMTPConfig
+	Database   DatabaseConfig
+	Session    SessionConfig
+	UI         UIConfig
+	Upload     UploadConfig
+	ActiveSync ActiveSyncConfig
+}
+
+// ActiveSyncConfig controls the Exchange ActiveSync (EAS) HTTP endpoint.
+type ActiveSyncConfig struct {
+	Enabled            bool   `mapstructure:"enabled"`
+	Debug              bool   `mapstructure:"debug"`
+	MaxPingIntervalSec int    `mapstructure:"max_ping_interval_sec"`
+	MaxSyncWindowSize  int    `mapstructure:"max_sync_window_size"`
+	ProtocolVersion    string `mapstructure:"protocol_version"`
 }
 
 // ServerConfig holds HTTP server settings.
@@ -122,6 +132,15 @@ func Load() *Config {
 
 	cfg.Upload.MaxSizeMB = viper.GetInt("upload.max_size_mb")
 	cfg.Upload.TempDir = viper.GetString("upload.temp_dir")
+
+	cfg.ActiveSync.Enabled = viper.GetBool("activesync.enabled")
+	cfg.ActiveSync.Debug = viper.GetBool("activesync.debug")
+	cfg.ActiveSync.MaxPingIntervalSec = viper.GetInt("activesync.max_ping_interval_sec")
+	cfg.ActiveSync.MaxSyncWindowSize = viper.GetInt("activesync.max_sync_window_size")
+	cfg.ActiveSync.ProtocolVersion = viper.GetString("activesync.protocol_version")
+	if cfg.ActiveSync.ProtocolVersion == "" {
+		cfg.ActiveSync.ProtocolVersion = "16.1"
+	}
 
 	return cfg
 }

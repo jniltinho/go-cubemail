@@ -172,6 +172,15 @@ func (c *Client) MessageCount(mailbox string) (uint32, error) {
 	return *data.NumMessages, nil
 }
 
+// FetchAllUIDs returns all message UIDs in the currently selected mailbox.
+func (c *Client) FetchAllUIDs() ([]imap.UID, error) {
+	data, err := c.Client.UIDSearch(&imap.SearchCriteria{}, nil).Wait()
+	if err != nil {
+		return nil, err
+	}
+	return data.AllUIDs(), nil
+}
+
 // SelectMailbox issues an IMAP SELECT command so subsequent operations target the named folder.
 func (c *Client) SelectMailbox(mailbox string) error {
 	_, err := c.Client.Select(mailbox, nil).Wait()

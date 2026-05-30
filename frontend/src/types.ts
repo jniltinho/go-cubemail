@@ -136,6 +136,59 @@ export interface CalCell {
 }
 
 /**
+ * Represents a user calendar (container for events).
+ */
+export interface Calendar {
+  id: number
+  name: string
+  color: string
+  is_default: boolean
+  is_active: boolean
+  include_in_free_busy: boolean
+  sort_order: number
+}
+
+/**
+ * Participant in a calendar event.
+ */
+export interface EventAttendee {
+  name?: string
+  email: string
+  partstat?: string
+  role?: string
+  rsvp?: boolean
+}
+
+/**
+ * Represents a full calendar event returned by the backend.
+ */
+export interface CalendarEvent {
+  id: number
+  calendar_id: number
+  uid: string
+  summary: string
+  description?: string
+  location?: string
+  start_at: string
+  end_at: string
+  is_all_day: boolean
+  is_transparent?: boolean
+  status?: string
+  priority?: number
+  classification?: string
+  categories?: string
+  organizer_name?: string
+  organizer_email?: string
+  rrule?: string
+  is_recurring?: boolean
+  color?: string
+  attendees?: EventAttendee[]
+}
+
+/** Calendar view mode */
+export type CalendarView = 'month' | 'week' | 'day'
+
+/**
  * Represents a floating visual toast notification.
  */
 export interface Toast {
