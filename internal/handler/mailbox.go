@@ -159,7 +159,20 @@ func (h *MailboxHandler) FoldersJSON(c *echo.Context) error {
 	return c.JSON(http.StatusOK, folders)
 }
 
-// CreateSubfolder creates a new IMAP folder, optionally nested under a parent folder.
+// CreateSubfolder godoc
+// @Summary      Create subfolder
+// @Description  Creates a new IMAP mailbox folder, optionally nested under a parent folder.
+// @Tags         mailbox
+// @Accept       x-www-form-urlencoded
+// @Produce      json
+// @Param        name    formData  string  true   "Folder name"
+// @Param        parent  formData  string  false  "Parent folder name (for nesting)"
+// @Param        delim   formData  string  false  "Hierarchy delimiter (default: /)"
+// @Success      200  {object}  map[string]string "status and full folder name"
+// @Failure      400  {object}  map[string]string "name is required"
+// @Failure      500  {object}  map[string]string "IMAP or connection error"
+// @Security     CookieAuth
+// @Router       /folders [post]
 func (h *MailboxHandler) CreateSubfolder(c *echo.Context) error {
 	parent := c.FormValue("parent")
 	name := c.FormValue("name")
@@ -187,7 +200,19 @@ func (h *MailboxHandler) CreateSubfolder(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok", "name": fullName})
 }
 
-// RenameFolder renames an existing IMAP folder.
+// RenameFolder godoc
+// @Summary      Rename folder
+// @Description  Renames an existing IMAP mailbox folder.
+// @Tags         mailbox
+// @Accept       x-www-form-urlencoded
+// @Produce      json
+// @Param        name     formData  string  true  "Current folder name"
+// @Param        newname  formData  string  true  "New folder name"
+// @Success      200  {object}  map[string]string "status ok"
+// @Failure      400  {object}  map[string]string "name or newname missing"
+// @Failure      500  {object}  map[string]string "IMAP error"
+// @Security     CookieAuth
+// @Router       /folders/rename [post]
 func (h *MailboxHandler) RenameFolder(c *echo.Context) error {
 	name := c.FormValue("name")
 	newname := c.FormValue("newname")
@@ -206,7 +231,18 @@ func (h *MailboxHandler) RenameFolder(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// DeleteFolder recursively deletes an IMAP folder and all its subfolders.
+// DeleteFolder godoc
+// @Summary      Delete folder
+// @Description  Recursively deletes an IMAP folder and all its subfolders.
+// @Tags         mailbox
+// @Accept       x-www-form-urlencoded
+// @Produce      json
+// @Param        name  formData  string  true  "Folder name to delete"
+// @Success      200  {object}  map[string]string "status ok"
+// @Failure      400  {object}  map[string]string "name missing"
+// @Failure      500  {object}  map[string]string "IMAP error"
+// @Security     CookieAuth
+// @Router       /folders/delete [post]
 func (h *MailboxHandler) DeleteFolder(c *echo.Context) error {
 	name := c.FormValue("name")
 	if name == "" {
@@ -224,7 +260,15 @@ func (h *MailboxHandler) DeleteFolder(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// UnreadCountJSON returns the number of unseen messages in the named folder.
+// UnreadCountJSON godoc
+// @Summary      Unread message count
+// @Description  Returns the number of unseen (unread) messages in the specified folder.
+// @Tags         mailbox
+// @Produce      json
+// @Param        name  path  string  true  "Folder name"
+// @Success      200  {object}  map[string]uint32 "unseen count"
+// @Security     CookieAuth
+// @Router       /folders/{name}/count [get]
 func (h *MailboxHandler) UnreadCountJSON(c *echo.Context) error {
 	name := c.Param("name")
 	s := c.Get("imap_session").(*session.IMAPSession)

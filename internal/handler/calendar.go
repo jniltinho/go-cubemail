@@ -70,8 +70,15 @@ func toCalendarResponse(cal model.Calendar) calendarResponse {
 	}
 }
 
-// List handles GET /api/v1/calendar.
-// Ensures a default "Personal" calendar exists, then returns all user calendars.
+// List godoc
+// @Summary      List calendars
+// @Description  Returns all calendars for the authenticated user. Creates a default "Personal" calendar on first access.
+// @Tags         calendar
+// @Produce      json
+// @Success      200  {object}  calendarListResponse "calendars list"
+// @Failure      500  {object}  map[string]string    "database error"
+// @Security     CookieAuth
+// @Router       /calendar [get]
 func (h *CalendarHandler) List(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -91,8 +98,18 @@ func (h *CalendarHandler) List(c *echo.Context) error {
 	return c.JSON(http.StatusOK, calendarListResponse{Calendars: out})
 }
 
-// Create handles POST /api/v1/calendar.
-// Requires a non-empty name; defaults color to #3788d8 when omitted.
+// Create godoc
+// @Summary      Create calendar
+// @Description  Creates a new calendar. Color defaults to #3788d8 when omitted.
+// @Tags         calendar
+// @Accept       json
+// @Produce      json
+// @Param        body  body      calendarRequest   true  "Calendar data"
+// @Success      201  {object}  calendarResponse  "created calendar"
+// @Failure      400  {object}  map[string]string "name required or invalid body"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /calendar [post]
 func (h *CalendarHandler) Create(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -129,8 +146,19 @@ func (h *CalendarHandler) Create(c *echo.Context) error {
 	return c.JSON(http.StatusCreated, toCalendarResponse(cal))
 }
 
-// Update handles PUT /api/v1/calendar/:id.
-// Only provided fields are changed; omitted fields keep their current values.
+// Update godoc
+// @Summary      Update calendar
+// @Description  Updates an existing calendar. Only provided fields are changed.
+// @Tags         calendar
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int               true  "Calendar ID"
+// @Param        body  body      calendarRequest   true  "Calendar data"
+// @Success      200  {object}  calendarResponse  "updated calendar"
+// @Failure      400  {object}  map[string]string "invalid id or body"
+// @Failure      404  {object}  map[string]string "not found"
+// @Security     CookieAuth
+// @Router       /calendar/{id} [put]
 func (h *CalendarHandler) Update(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -166,8 +194,17 @@ func (h *CalendarHandler) Update(c *echo.Context) error {
 	return c.JSON(http.StatusOK, toCalendarResponse(*cal))
 }
 
-// Delete handles DELETE /api/v1/calendar/:id.
-// Removes the calendar and all its events. The default calendar cannot be deleted.
+// Delete godoc
+// @Summary      Delete calendar
+// @Description  Removes a calendar and all its events. The default calendar cannot be deleted.
+// @Tags         calendar
+// @Produce      json
+// @Param        id  path  int  true  "Calendar ID"
+// @Success      200  {object}  map[string]string "status ok"
+// @Failure      400  {object}  map[string]string "invalid id or cannot delete default"
+// @Failure      404  {object}  map[string]string "not found"
+// @Security     CookieAuth
+// @Router       /calendar/{id} [delete]
 func (h *CalendarHandler) Delete(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -190,8 +227,17 @@ func (h *CalendarHandler) Delete(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// SetActivation handles POST /api/v1/calendar/activation.
-// Body: {"ids": [1,2], "active": true|false}.
+// SetActivation godoc
+// @Summary      Toggle calendar visibility
+// @Description  Sets the is_active flag for multiple calendars at once. Hidden calendars are excluded from the event view.
+// @Tags         calendar
+// @Accept       json
+// @Produce      json
+// @Param        body  body      calendarActivationRequest  true  "IDs and active flag"
+// @Success      200  {object}  map[string]string           "status ok"
+// @Failure      400  {object}  map[string]string           "ids required or invalid body"
+// @Security     CookieAuth
+// @Router       /calendar/activation [post]
 func (h *CalendarHandler) SetActivation(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -210,8 +256,17 @@ func (h *CalendarHandler) SetActivation(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// Export handles GET /api/v1/calendar/:id/export.
-// Streams all events in the calendar as a text/calendar (.ics) download.
+// Export godoc
+// @Summary      Export calendar as ICS
+// @Description  Streams all events in the calendar as a downloadable calendar.ics file.
+// @Tags         calendar
+// @Produce      text/calendar
+// @Param        id  path  int  true  "Calendar ID"
+// @Success      200  {file}    binary            "ICS file download"
+// @Failure      400  {object}  map[string]string "invalid id"
+// @Failure      404  {object}  map[string]string "not found"
+// @Security     CookieAuth
+// @Router       /calendar/{id}/export [get]
 func (h *CalendarHandler) Export(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -236,9 +291,19 @@ func (h *CalendarHandler) Export(c *echo.Context) error {
 	return err
 }
 
-// Import handles POST /api/v1/calendar/:id/import.
-// Accepts multipart form field "file" with ICS content.
-// Upserts events by UID and returns imported/updated/skipped counts.
+// Import godoc
+// @Summary      Import calendar from ICS
+// @Description  Accepts a multipart ICS file upload and upserts events by UID. Returns imported/updated/skipped counts.
+// @Tags         calendar
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        id    path      int   true  "Calendar ID"
+// @Param        file  formData  file  true  "ICS file"
+// @Success      200  {object}  map[string]any    "imported, updated, skipped counts"
+// @Failure      400  {object}  map[string]string "no file, parse error, or invalid id"
+// @Failure      404  {object}  map[string]string "calendar not found"
+// @Security     CookieAuth
+// @Router       /calendar/{id}/import [post]
 func (h *CalendarHandler) Import(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {

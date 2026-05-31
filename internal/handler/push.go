@@ -27,8 +27,15 @@ type subscribePayload struct {
 	} `json:"keys"`
 }
 
-// VAPIDPublicKey handles GET /api/v1/push/vapid-public-key.
-// Returns the VAPID public key so the browser can subscribe.
+// VAPIDPublicKey godoc
+// @Summary      Get VAPID public key
+// @Description  Returns the server VAPID public key required for the browser to create a Web Push subscription.
+// @Tags         push
+// @Produce      json
+// @Success      200  {object}  map[string]string "public_key"
+// @Failure      503  {object}  map[string]string "push not configured"
+// @Security     CookieAuth
+// @Router       /push/vapid-public-key [get]
 func (h *PushHandler) VAPIDPublicKey(c *echo.Context) error {
 	key := h.cfg.Push.VAPIDPublicKey
 	if key == "" {
@@ -37,8 +44,18 @@ func (h *PushHandler) VAPIDPublicKey(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"public_key": key})
 }
 
-// Subscribe handles POST /api/v1/push/subscribe.
-// Stores the browser PushSubscription object sent after Notification.requestPermission.
+// Subscribe godoc
+// @Summary      Register push subscription
+// @Description  Stores the browser PushSubscription (endpoint + keys) after the user grants notification permission.
+// @Tags         push
+// @Accept       json
+// @Produce      json
+// @Param        body  body      subscribePayload  true  "Push subscription payload"
+// @Success      200  {object}  map[string]string "status subscribed"
+// @Failure      400  {object}  map[string]string "invalid body or missing fields"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /push/subscribe [post]
 func (h *PushHandler) Subscribe(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -63,8 +80,17 @@ func (h *PushHandler) Subscribe(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "subscribed"})
 }
 
-// Unsubscribe handles DELETE /api/v1/push/unsubscribe.
-// Removes the push subscription when the user denies notifications.
+// Unsubscribe godoc
+// @Summary      Remove push subscription
+// @Description  Deletes the push subscription for the given endpoint when the user revokes notification permission.
+// @Tags         push
+// @Accept       json
+// @Produce      json
+// @Param        body  body      object            true  "endpoint to remove"
+// @Success      200  {object}  map[string]string "status unsubscribed"
+// @Failure      400  {object}  map[string]string "invalid body"
+// @Security     CookieAuth
+// @Router       /push/unsubscribe [delete]
 func (h *PushHandler) Unsubscribe(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {

@@ -1,5 +1,250 @@
 basePath: /api/v1
 definitions:
+  handler.attendeeRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      partstat:
+        type: string
+      role:
+        type: string
+      rsvp:
+        type: boolean
+    type: object
+  handler.attendeeResponse:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      partstat:
+        type: string
+      role:
+        type: string
+      rsvp:
+        type: boolean
+    type: object
+  handler.calendarActivationRequest:
+    properties:
+      active:
+        type: boolean
+      ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  handler.calendarListResponse:
+    properties:
+      calendars:
+        items:
+          $ref: '#/definitions/handler.calendarResponse'
+        type: array
+    type: object
+  handler.calendarRequest:
+    properties:
+      color:
+        type: string
+      include_in_free_busy:
+        type: boolean
+      name:
+        type: string
+      sort_order:
+        type: integer
+    type: object
+  handler.calendarResponse:
+    properties:
+      color:
+        type: string
+      id:
+        type: integer
+      include_in_free_busy:
+        type: boolean
+      is_active:
+        type: boolean
+      is_default:
+        type: boolean
+      name:
+        type: string
+      sort_order:
+        type: integer
+    type: object
+  handler.contactRequest:
+    properties:
+      company:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      notes:
+        type: string
+      phone:
+        type: string
+      title:
+        type: string
+    type: object
+  handler.contactResponse:
+    properties:
+      company:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      notes:
+        type: string
+      phone:
+        type: string
+      title:
+        type: string
+    type: object
+  handler.eventListResponse:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/handler.eventResponse'
+        type: array
+    type: object
+  handler.eventMoveRequest:
+    properties:
+      calendar_id:
+        type: integer
+      end_at:
+        type: string
+      start_at:
+        type: string
+    type: object
+  handler.eventRequest:
+    properties:
+      attendees:
+        items:
+          $ref: '#/definitions/handler.attendeeRequest'
+        type: array
+      calendar_id:
+        type: integer
+      categories:
+        type: string
+      classification:
+        type: string
+      description:
+        type: string
+      end_at:
+        type: string
+      is_all_day:
+        type: boolean
+      is_transparent:
+        type: boolean
+      location:
+        type: string
+      organizer_email:
+        type: string
+      organizer_name:
+        type: string
+      priority:
+        type: integer
+      rrule:
+        type: string
+      start_at:
+        type: string
+      status:
+        type: string
+      summary:
+        type: string
+    type: object
+  handler.eventResponse:
+    properties:
+      attendees:
+        items:
+          $ref: '#/definitions/handler.attendeeResponse'
+        type: array
+      calendar_id:
+        type: integer
+      categories:
+        type: string
+      classification:
+        type: string
+      color:
+        type: string
+      description:
+        type: string
+      end_at:
+        type: string
+      id:
+        type: integer
+      is_all_day:
+        type: boolean
+      is_recurring:
+        type: boolean
+      is_transparent:
+        type: boolean
+      location:
+        type: string
+      organizer_email:
+        type: string
+      organizer_name:
+        type: string
+      priority:
+        type: integer
+      rrule:
+        type: string
+      start_at:
+        type: string
+      status:
+        type: string
+      summary:
+        type: string
+      uid:
+        type: string
+    type: object
+  handler.identityRequest:
+    properties:
+      display_name:
+        type: string
+      email:
+        type: string
+      is_default:
+        type: boolean
+      reply_to:
+        type: string
+      signature:
+        type: string
+    type: object
+  handler.identityResponse:
+    properties:
+      display_name:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      is_default:
+        type: boolean
+      reply_to:
+        type: string
+      signature:
+        type: string
+    type: object
+  handler.settingsRequest:
+    properties:
+      compose_html:
+        type: boolean
+      date_format:
+        type: string
+      oof_enabled:
+        type: boolean
+      oof_message:
+        type: string
+      rows_per_page:
+        type: integer
+      signature_pos:
+        type: string
+      timezone:
+        type: string
+    type: object
   handler.settingsResponse:
     properties:
       compose_html:
@@ -15,6 +260,68 @@ definitions:
       signature_pos:
         type: string
       timezone:
+        type: string
+    type: object
+  handler.shareRequest:
+    properties:
+      can_write:
+        type: boolean
+      email:
+        type: string
+    type: object
+  handler.shareResponse:
+    properties:
+      calendar_id:
+        type: integer
+      calendar_name:
+        type: string
+      can_write:
+        type: boolean
+      id:
+        type: integer
+      shared_with:
+        type: string
+    type: object
+  handler.subscribePayload:
+    properties:
+      endpoint:
+        type: string
+      keys:
+        properties:
+          auth:
+            type: string
+          p256dh:
+            type: string
+        type: object
+    type: object
+  handler.subscriptionRequest:
+    properties:
+      color:
+        type: string
+      name:
+        type: string
+      refresh_mins:
+        type: integer
+      url:
+        type: string
+    type: object
+  handler.subscriptionResponse:
+    properties:
+      calendar_id:
+        type: integer
+      color:
+        type: string
+      id:
+        type: integer
+      last_error:
+        type: string
+      last_synced_at:
+        type: string
+      name:
+        type: string
+      refresh_mins:
+        type: integer
+      url:
         type: string
     type: object
   imap.MailboxInfo:
@@ -165,6 +472,1120 @@ paths:
       summary: IMAP storage quota
       tags:
       - auth
+  /calendar:
+    get:
+      description: Returns all calendars for the authenticated user. Creates a default
+        "Personal" calendar on first access.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: calendars list
+          schema:
+            $ref: '#/definitions/handler.calendarListResponse'
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: List calendars
+      tags:
+      - calendar
+    post:
+      consumes:
+      - application/json
+      description: 'Creates a new calendar. Color defaults to #3788d8 when omitted.'
+      parameters:
+      - description: Calendar data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.calendarRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created calendar
+          schema:
+            $ref: '#/definitions/handler.calendarResponse'
+        "400":
+          description: name required or invalid body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Create calendar
+      tags:
+      - calendar
+  /calendar/{id}:
+    delete:
+      description: Removes a calendar and all its events. The default calendar cannot
+        be deleted.
+      parameters:
+      - description: Calendar ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid id or cannot delete default
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Delete calendar
+      tags:
+      - calendar
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing calendar. Only provided fields are changed.
+      parameters:
+      - description: Calendar ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Calendar data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.calendarRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated calendar
+          schema:
+            $ref: '#/definitions/handler.calendarResponse'
+        "400":
+          description: invalid id or body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Update calendar
+      tags:
+      - calendar
+  /calendar/{id}/export:
+    get:
+      description: Streams all events in the calendar as a downloadable calendar.ics
+        file.
+      parameters:
+      - description: Calendar ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - text/calendar
+      responses:
+        "200":
+          description: ICS file download
+          schema:
+            type: file
+        "400":
+          description: invalid id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Export calendar as ICS
+      tags:
+      - calendar
+  /calendar/{id}/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Accepts a multipart ICS file upload and upserts events by UID.
+        Returns imported/updated/skipped counts.
+      parameters:
+      - description: Calendar ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ICS file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: imported, updated, skipped counts
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: no file, parse error, or invalid id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: calendar not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Import calendar from ICS
+      tags:
+      - calendar
+  /calendar/{id}/shares:
+    get:
+      description: Returns all shares for the specified calendar owned by the authenticated
+        user.
+      parameters:
+      - description: Calendar ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: shares list
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: calendar not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: List calendar shares
+      tags:
+      - calendar
+    post:
+      consumes:
+      - application/json
+      description: Grants another user access to the specified calendar, optionally
+        with write permission.
+      parameters:
+      - description: Calendar ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Grantee email and permissions
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.shareRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created share
+          schema:
+            $ref: '#/definitions/handler.shareResponse'
+        "400":
+          description: invalid body, user not found, or self-share
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: calendar not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Share calendar
+      tags:
+      - calendar
+  /calendar/{id}/shares/{shareId}:
+    delete:
+      description: Revokes a previously granted calendar share.
+      parameters:
+      - description: Calendar ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Share ID
+        in: path
+        name: shareId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid shareId
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: share not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Remove calendar share
+      tags:
+      - calendar
+  /calendar/activation:
+    post:
+      consumes:
+      - application/json
+      description: Sets the is_active flag for multiple calendars at once. Hidden
+        calendars are excluded from the event view.
+      parameters:
+      - description: IDs and active flag
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.calendarActivationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: ids required or invalid body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Toggle calendar visibility
+      tags:
+      - calendar
+  /calendar/subscriptions:
+    get:
+      description: Returns all remote ICS subscriptions for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: subscriptions list
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: List calendar subscriptions
+      tags:
+      - calendar
+    post:
+      consumes:
+      - application/json
+      description: Stores a remote ICS URL subscription and triggers an immediate
+        background fetch to validate and import events.
+      parameters:
+      - description: Subscription data (url, name, color, refresh_mins)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.subscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created subscription
+          schema:
+            $ref: '#/definitions/handler.subscriptionResponse'
+        "400":
+          description: url required or invalid
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Subscribe to remote calendar
+      tags:
+      - calendar
+  /calendar/subscriptions/{id}:
+    delete:
+      description: Deletes a remote ICS calendar subscription.
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Remove calendar subscription
+      tags:
+      - calendar
+  /calendar/subscriptions/{id}/refresh:
+    post:
+      description: Triggers an immediate background re-fetch and import of the remote
+        ICS calendar.
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status refreshing
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Refresh calendar subscription
+      tags:
+      - calendar
+  /compose/draft:
+    post:
+      description: Saves an email draft (currently a stub; returns ok immediately).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Save draft
+      tags:
+      - compose
+  /compose/send:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Composes and delivers an email via SMTP, then saves a copy to the
+        Sent folder.
+      parameters:
+      - description: Sender email (defaults to session user)
+        in: formData
+        name: from_email
+        type: string
+      - description: Sender display name
+        in: formData
+        name: from_name
+        type: string
+      - description: Comma-separated recipient list
+        in: formData
+        name: to
+        required: true
+        type: string
+      - description: Comma-separated CC list
+        in: formData
+        name: cc
+        type: string
+      - description: Comma-separated BCC list
+        in: formData
+        name: bcc
+        type: string
+      - description: Email subject
+        in: formData
+        name: subject
+        required: true
+        type: string
+      - description: HTML body
+        in: formData
+        name: body_html
+        type: string
+      - description: Plain-text body
+        in: formData
+        name: body_plain
+        type: string
+      - description: Reply-To address
+        in: formData
+        name: reply_to
+        type: string
+      - description: File attachments
+        in: formData
+        name: attachments
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status sent
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "502":
+          description: SMTP delivery error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Send email
+      tags:
+      - compose
+  /compose/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Pre-uploads an attachment for use in a composed email (currently
+        a stub).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: files list (empty)
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Upload attachment
+      tags:
+      - compose
+  /contacts:
+    get:
+      description: Returns all contacts for the authenticated user, ordered by name.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: list of contacts
+          schema:
+            items:
+              $ref: '#/definitions/handler.contactResponse'
+            type: array
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: List contacts
+      tags:
+      - contacts
+    post:
+      consumes:
+      - application/json
+      description: Adds a new contact. Both name and email are required.
+      parameters:
+      - description: Contact data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.contactRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created contact
+          schema:
+            $ref: '#/definitions/handler.contactResponse'
+        "400":
+          description: name and email required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Create contact
+      tags:
+      - contacts
+  /contacts/{id}:
+    delete:
+      description: Permanently removes a contact by ID.
+      parameters:
+      - description: Contact ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Delete contact
+      tags:
+      - contacts
+    put:
+      consumes:
+      - application/json
+      description: Replaces all fields of an existing contact identified by :id.
+      parameters:
+      - description: Contact ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Contact data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.contactRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated contact
+          schema:
+            $ref: '#/definitions/handler.contactResponse'
+        "400":
+          description: invalid body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Update contact
+      tags:
+      - contacts
+  /contacts/export:
+    get:
+      description: Streams all contacts as a downloadable contacts.csv file.
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: CSV file download
+          schema:
+            type: file
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Export contacts as CSV
+      tags:
+      - contacts
+  /contacts/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Parses an uploaded .csv or .vcf file and bulk-inserts contacts.
+        Returns imported/total counts.
+      parameters:
+      - description: CSV or VCF file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: imported and total counts
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: no file or parse error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: file read error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Import contacts from CSV or VCF
+      tags:
+      - contacts
+  /events:
+    get:
+      description: Returns all events overlapping the given UTC date range, optionally
+        filtered by calendar IDs.
+      parameters:
+      - description: Range start (RFC3339)
+        in: query
+        name: start
+        required: true
+        type: string
+      - description: Range end (RFC3339)
+        in: query
+        name: end
+        required: true
+        type: string
+      - description: Comma-separated calendar IDs to filter
+        in: query
+        name: calendar_ids
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: events list
+          schema:
+            $ref: '#/definitions/handler.eventListResponse'
+        "400":
+          description: invalid start, end, or calendar_ids
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: List events
+      tags:
+      - events
+    post:
+      consumes:
+      - application/json
+      description: Creates a new calendar event. Uses the default calendar when calendar_id
+        is omitted.
+      parameters:
+      - description: Event data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.eventRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created event
+          schema:
+            $ref: '#/definitions/handler.eventResponse'
+        "400":
+          description: missing required fields or invalid calendar_id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Create event
+      tags:
+      - events
+  /events/{id}:
+    delete:
+      description: Permanently removes a calendar event by ID.
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Delete event
+      tags:
+      - events
+    get:
+      description: Returns a single event by ID, including attendees and calendar
+        color.
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: event detail
+          schema:
+            $ref: '#/definitions/handler.eventResponse'
+        "400":
+          description: invalid id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Get event
+      tags:
+      - events
+    put:
+      consumes:
+      - application/json
+      description: Replaces all event fields and increments the iCalendar sequence
+        number.
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Event data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.eventRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated event
+          schema:
+            $ref: '#/definitions/handler.eventResponse'
+        "400":
+          description: invalid id, body, or calendar_id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Update event
+      tags:
+      - events
+  /events/{id}/move:
+    post:
+      consumes:
+      - application/json
+      description: Updates start_at, end_at, and optionally calendar_id for drag-and-drop
+        or resize operations.
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New time range and optional calendar_id
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.eventMoveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated event
+          schema:
+            $ref: '#/definitions/handler.eventResponse'
+        "400":
+          description: invalid id, body, or timestamps
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Move or resize event
+      tags:
+      - events
+  /events/{id}/rsvp:
+    post:
+      consumes:
+      - application/json
+      description: Updates the authenticated user's attendee participation status
+        (ACCEPTED, DECLINED, TENTATIVE, NEEDS-ACTION) and sends an IMIP reply to the
+        organizer.
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: '{partstat: string}'
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated event
+          schema:
+            $ref: '#/definitions/handler.eventResponse'
+        "400":
+          description: invalid id, body, or partstat
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: RSVP to event
+      tags:
+      - events
+  /events/freebusy:
+    get:
+      description: Returns busy time slots for the authenticated user within a given
+        UTC date range. Transparent events are excluded.
+      parameters:
+      - description: Range start (RFC3339)
+        in: query
+        name: start
+        required: true
+        type: string
+      - description: Range end (RFC3339)
+        in: query
+        name: end
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: user, start, end, busy slots
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid start or end
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Get free/busy schedule
+      tags:
+      - events
+  /events/rsvp-from-mail:
+    post:
+      consumes:
+      - application/json
+      description: Updates attendee status by iCalendar UID. Auto-creates a placeholder
+        event from the invitation when none exists yet. Sends an IMIP reply to the
+        organizer.
+      parameters:
+      - description: uid, partstat, summary, start_at, end_at, location
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated event
+          schema:
+            $ref: '#/definitions/handler.eventResponse'
+        "201":
+          description: auto-created event
+          schema:
+            $ref: '#/definitions/handler.eventResponse'
+        "400":
+          description: invalid body, uid, or partstat
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: RSVP from email invitation
+      tags:
+      - events
   /folders:
     get:
       description: Returns the complete hierarchical list of IMAP mailboxes/folders
@@ -183,7 +1604,348 @@ paths:
       summary: List IMAP folders
       tags:
       - mailbox
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Creates a new IMAP mailbox folder, optionally nested under a parent
+        folder.
+      parameters:
+      - description: Folder name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Parent folder name (for nesting)
+        in: formData
+        name: parent
+        type: string
+      - description: 'Hierarchy delimiter (default: /)'
+        in: formData
+        name: delim
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status and full folder name
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: name is required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: IMAP or connection error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Create subfolder
+      tags:
+      - mailbox
+  /folders/{name}/count:
+    get:
+      description: Returns the number of unseen (unread) messages in the specified
+        folder.
+      parameters:
+      - description: Folder name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: unseen count
+          schema:
+            additionalProperties:
+              format: int32
+              type: integer
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Unread message count
+      tags:
+      - mailbox
+  /folders/delete:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Recursively deletes an IMAP folder and all its subfolders.
+      parameters:
+      - description: Folder name to delete
+        in: formData
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: name missing
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: IMAP error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Delete folder
+      tags:
+      - mailbox
+  /folders/rename:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Renames an existing IMAP mailbox folder.
+      parameters:
+      - description: Current folder name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: New folder name
+        in: formData
+        name: newname
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: name or newname missing
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: IMAP error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Rename folder
+      tags:
+      - mailbox
+  /identities:
+    get:
+      description: 'Returns all From: identities for the user. Seeds a default identity
+        from the IMAP username on first access.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: identities list
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: List sender identities
+      tags:
+      - settings
+    post:
+      consumes:
+      - application/json
+      description: 'Adds a new From: identity (display name, email, reply-to, signature).'
+      parameters:
+      - description: Identity data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.identityRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created identity
+          schema:
+            $ref: '#/definitions/handler.identityResponse'
+        "400":
+          description: email required or invalid body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Create sender identity
+      tags:
+      - settings
+  /identities/{id}:
+    delete:
+      description: Permanently removes the specified sender identity.
+      parameters:
+      - description: Identity ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Delete sender identity
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      description: Replaces all fields of the specified sender identity.
+      parameters:
+      - description: Identity ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Identity data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.identityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated identity
+          schema:
+            $ref: '#/definitions/handler.identityResponse'
+        "400":
+          description: invalid id, body, or missing email
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Update sender identity
+      tags:
+      - settings
+  /identities/{id}/default:
+    post:
+      description: 'Marks the specified identity as the default From: address, clearing
+        the flag on all others.'
+      parameters:
+      - description: Identity ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Set default sender identity
+      tags:
+      - settings
   /mail/{mailbox}:
+    delete:
+      description: Permanently expunges all messages in Trash. If the given mailbox
+        is not Trash, moves all its messages to Trash instead.
+      parameters:
+      - description: Mailbox folder name
+        in: path
+        name: mailbox
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Empty trash / clear folder
+      tags:
+      - mail
     get:
       description: Returns a paginated list of email message envelopes for the specified
         folder, ordered newest first.
@@ -217,6 +1979,418 @@ paths:
       summary: List emails in mailbox
       tags:
       - mailbox
+  /mail/{mailbox}/{uid}:
+    delete:
+      description: Moves a message to Trash. If already in Trash, permanently expunges
+        it.
+      parameters:
+      - description: Mailbox folder name
+        in: path
+        name: mailbox
+        required: true
+        type: string
+      - description: Message UID
+        in: path
+        name: uid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid uid
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Delete message
+      tags:
+      - mail
+    get:
+      description: 'Fetches the full message: envelope, sanitized HTML body, plain-text
+        body, and attachment list. Marks the message as seen.'
+      parameters:
+      - description: Mailbox folder name
+        in: path
+        name: mailbox
+        required: true
+        type: string
+      - description: Message UID
+        in: path
+        name: uid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message envelope, html_body, plain_body, attachments, calendar
+            info
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid uid
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: message not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Read message
+      tags:
+      - mail
+  /mail/{mailbox}/{uid}/attachment/{part}:
+    get:
+      description: Downloads a single attachment identified by its MIME part number.
+      parameters:
+      - description: Mailbox folder name
+        in: path
+        name: mailbox
+        required: true
+        type: string
+      - description: Message UID
+        in: path
+        name: uid
+        required: true
+        type: integer
+      - description: MIME part number
+        in: path
+        name: part
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: attachment binary
+          schema:
+            type: file
+        "400":
+          description: invalid uid or part
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: message or attachment not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Download attachment
+      tags:
+      - mail
+  /mail/{mailbox}/{uid}/download:
+    get:
+      description: Streams the raw RFC822 message bytes as a downloadable .eml file
+        attachment.
+      parameters:
+      - description: Mailbox folder name
+        in: path
+        name: mailbox
+        required: true
+        type: string
+      - description: Message UID
+        in: path
+        name: uid
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: raw email file
+          schema:
+            type: file
+        "400":
+          description: invalid uid
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: message not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Download message as .eml
+      tags:
+      - mail
+  /mail/{mailbox}/{uid}/flag:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Sets or clears the "seen" or "flagged" IMAP flag on a message.
+      parameters:
+      - description: Mailbox folder name
+        in: path
+        name: mailbox
+        required: true
+        type: string
+      - description: Message UID
+        in: path
+        name: uid
+        required: true
+        type: integer
+      - description: 'Flag name: seen or flagged'
+        in: formData
+        name: flag
+        required: true
+        type: string
+      - description: 1 to set, 0 to clear
+        in: formData
+        name: value
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid uid
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Set or clear message flag
+      tags:
+      - mail
+  /mail/{mailbox}/{uid}/move:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Moves a message to the destination folder specified in the form
+        body.
+      parameters:
+      - description: Source mailbox folder name
+        in: path
+        name: mailbox
+        required: true
+        type: string
+      - description: Message UID
+        in: path
+        name: uid
+        required: true
+        type: integer
+      - description: Destination folder name
+        in: formData
+        name: dest
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid uid
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Move message to folder
+      tags:
+      - mail
+  /mail/{mailbox}/{uid}/raw:
+    get:
+      description: Returns the raw RFC822 message bytes as plain text for source viewing.
+      parameters:
+      - description: Mailbox folder name
+        in: path
+        name: mailbox
+        required: true
+        type: string
+      - description: Message UID
+        in: path
+        name: uid
+        required: true
+        type: integer
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: raw email source
+          schema:
+            type: string
+        "400":
+          description: invalid uid
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: message not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: View raw message source
+      tags:
+      - mail
+  /push/subscribe:
+    post:
+      consumes:
+      - application/json
+      description: Stores the browser PushSubscription (endpoint + keys) after the
+        user grants notification permission.
+      parameters:
+      - description: Push subscription payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.subscribePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status subscribed
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid body or missing fields
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Register push subscription
+      tags:
+      - push
+  /push/unsubscribe:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes the push subscription for the given endpoint when the user
+        revokes notification permission.
+      parameters:
+      - description: endpoint to remove
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status unsubscribed
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: invalid body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Remove push subscription
+      tags:
+      - push
+  /push/vapid-public-key:
+    get:
+      description: Returns the server VAPID public key required for the browser to
+        create a Web Push subscription.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: public_key
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: push not configured
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Get VAPID public key
+      tags:
+      - push
+  /search:
+    get:
+      description: Searches a mailbox using IMAP SEARCH with an OR across Subject
+        and From fields.
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: 'Folder to search (default: INBOX)'
+        in: query
+        name: mailbox
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: mailbox, messages, query
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: IMAP or connection error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Search messages
+      tags:
+      - search
   /settings:
     get:
       description: Returns the logged-in user's complete UI settings and preferences
@@ -237,6 +2411,42 @@ paths:
       security:
       - CookieAuth: []
       summary: Get user preferences
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      description: Updates the logged-in user's settings. Only provided fields are
+        changed.
+      parameters:
+      - description: Settings fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.settingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated settings
+          schema:
+            $ref: '#/definitions/handler.settingsResponse'
+        "400":
+          description: invalid body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: database error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Save user preferences
       tags:
       - settings
 schemes:

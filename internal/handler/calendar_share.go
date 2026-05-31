@@ -43,7 +43,17 @@ type shareResponse struct {
 	CanWrite     bool   `json:"can_write"`
 }
 
-// List handles GET /api/v1/calendar/:id/shares.
+// List godoc
+// @Summary      List calendar shares
+// @Description  Returns all shares for the specified calendar owned by the authenticated user.
+// @Tags         calendar
+// @Produce      json
+// @Param        id  path  int  true  "Calendar ID"
+// @Success      200  {object}  map[string]any    "shares list"
+// @Failure      400  {object}  map[string]string "invalid id"
+// @Failure      404  {object}  map[string]string "calendar not found"
+// @Security     CookieAuth
+// @Router       /calendar/{id}/shares [get]
 func (h *CalendarShareHandler) List(c *echo.Context) error {
 	ownerID, err := getUserID(c, h.db)
 	if err != nil {
@@ -76,7 +86,19 @@ func (h *CalendarShareHandler) List(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{"shares": out})
 }
 
-// Create handles POST /api/v1/calendar/:id/shares.
+// Create godoc
+// @Summary      Share calendar
+// @Description  Grants another user access to the specified calendar, optionally with write permission.
+// @Tags         calendar
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int            true  "Calendar ID"
+// @Param        body  body      shareRequest   true  "Grantee email and permissions"
+// @Success      201  {object}  shareResponse  "created share"
+// @Failure      400  {object}  map[string]string "invalid body, user not found, or self-share"
+// @Failure      404  {object}  map[string]string "calendar not found"
+// @Security     CookieAuth
+// @Router       /calendar/{id}/shares [post]
 func (h *CalendarShareHandler) Create(c *echo.Context) error {
 	ownerID, err := getUserID(c, h.db)
 	if err != nil {
@@ -119,7 +141,18 @@ func (h *CalendarShareHandler) Create(c *echo.Context) error {
 	})
 }
 
-// Delete handles DELETE /api/v1/calendar/:id/shares/:shareId.
+// Delete godoc
+// @Summary      Remove calendar share
+// @Description  Revokes a previously granted calendar share.
+// @Tags         calendar
+// @Produce      json
+// @Param        id       path  int  true  "Calendar ID"
+// @Param        shareId  path  int  true  "Share ID"
+// @Success      200  {object}  map[string]string "status ok"
+// @Failure      400  {object}  map[string]string "invalid shareId"
+// @Failure      404  {object}  map[string]string "share not found"
+// @Security     CookieAuth
+// @Router       /calendar/{id}/shares/{shareId} [delete]
 func (h *CalendarShareHandler) Delete(c *echo.Context) error {
 	ownerID, err := getUserID(c, h.db)
 	if err != nil {

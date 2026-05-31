@@ -258,9 +258,17 @@ func parseCalendarIDs(raw string) ([]uint, error) {
 	return ids, nil
 }
 
-// FreeBusy handles GET /api/v1/events/freebusy?start=&end=.
-// Returns busy periods for the authenticated user within the requested range.
-// Used by the event editor to show availability.
+// FreeBusy godoc
+// @Summary      Get free/busy schedule
+// @Description  Returns busy time slots for the authenticated user within a given UTC date range. Transparent events are excluded.
+// @Tags         events
+// @Produce      json
+// @Param        start  query  string  true  "Range start (RFC3339)"
+// @Param        end    query  string  true  "Range end (RFC3339)"
+// @Success      200  {object}  map[string]any    "user, start, end, busy slots"
+// @Failure      400  {object}  map[string]string "invalid start or end"
+// @Security     CookieAuth
+// @Router       /events/freebusy [get]
 func (h *EventHandler) FreeBusy(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -304,8 +312,18 @@ func (h *EventHandler) FreeBusy(c *echo.Context) error {
 	})
 }
 
-// List handles GET /api/v1/events?start=&end=&calendar_ids=.
-// Returns events overlapping the requested UTC time range.
+// List godoc
+// @Summary      List events
+// @Description  Returns all events overlapping the given UTC date range, optionally filtered by calendar IDs.
+// @Tags         events
+// @Produce      json
+// @Param        start         query  string  true   "Range start (RFC3339)"
+// @Param        end           query  string  true   "Range end (RFC3339)"
+// @Param        calendar_ids  query  string  false  "Comma-separated calendar IDs to filter"
+// @Success      200  {object}  eventListResponse "events list"
+// @Failure      400  {object}  map[string]string "invalid start, end, or calendar_ids"
+// @Security     CookieAuth
+// @Router       /events [get]
 func (h *EventHandler) List(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -340,7 +358,17 @@ func (h *EventHandler) List(c *echo.Context) error {
 	return c.JSON(http.StatusOK, eventListResponse{Events: out})
 }
 
-// Get handles GET /api/v1/events/:id.
+// Get godoc
+// @Summary      Get event
+// @Description  Returns a single event by ID, including attendees and calendar color.
+// @Tags         events
+// @Produce      json
+// @Param        id  path  int  true  "Event ID"
+// @Success      200  {object}  eventResponse     "event detail"
+// @Failure      400  {object}  map[string]string "invalid id"
+// @Failure      404  {object}  map[string]string "not found"
+// @Security     CookieAuth
+// @Router       /events/{id} [get]
 func (h *EventHandler) Get(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -357,8 +385,18 @@ func (h *EventHandler) Get(c *echo.Context) error {
 	return c.JSON(http.StatusOK, toEventResponse(*event))
 }
 
-// Create handles POST /api/v1/events.
-// Uses the default calendar when calendar_id is omitted or zero.
+// Create godoc
+// @Summary      Create event
+// @Description  Creates a new calendar event. Uses the default calendar when calendar_id is omitted.
+// @Tags         events
+// @Accept       json
+// @Produce      json
+// @Param        body  body      eventRequest   true  "Event data"
+// @Success      201  {object}  eventResponse  "created event"
+// @Failure      400  {object}  map[string]string "missing required fields or invalid calendar_id"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /events [post]
 func (h *EventHandler) Create(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -401,8 +439,19 @@ func (h *EventHandler) Create(c *echo.Context) error {
 	return c.JSON(http.StatusCreated, toEventResponse(*created))
 }
 
-// Update handles PUT /api/v1/events/:id.
-// Replaces all event fields and regenerates ICalContent with an incremented sequence.
+// Update godoc
+// @Summary      Update event
+// @Description  Replaces all event fields and increments the iCalendar sequence number.
+// @Tags         events
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int            true  "Event ID"
+// @Param        body  body      eventRequest   true  "Event data"
+// @Success      200  {object}  eventResponse  "updated event"
+// @Failure      400  {object}  map[string]string "invalid id, body, or calendar_id"
+// @Failure      404  {object}  map[string]string "not found"
+// @Security     CookieAuth
+// @Router       /events/{id} [put]
 func (h *EventHandler) Update(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -444,7 +493,17 @@ func (h *EventHandler) Update(c *echo.Context) error {
 	return c.JSON(http.StatusOK, toEventResponse(*updated))
 }
 
-// Delete handles DELETE /api/v1/events/:id.
+// Delete godoc
+// @Summary      Delete event
+// @Description  Permanently removes a calendar event by ID.
+// @Tags         events
+// @Produce      json
+// @Param        id  path  int  true  "Event ID"
+// @Success      200  {object}  map[string]string "status ok"
+// @Failure      400  {object}  map[string]string "invalid id"
+// @Failure      404  {object}  map[string]string "not found"
+// @Security     CookieAuth
+// @Router       /events/{id} [delete]
 func (h *EventHandler) Delete(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -497,9 +556,18 @@ func sendIMIPReply(cfg *config.Config, attendeeEmail, smtpUser, smtpPass, partSt
 	})
 }
 
-// RSVPFromMail handles POST /api/v1/events/rsvp-from-mail.
-// Accepts {uid, partstat} and updates the attendee status on the matching event,
-// creating a placeholder event from the email invitation when none exists yet.
+// RSVPFromMail godoc
+// @Summary      RSVP from email invitation
+// @Description  Updates attendee status by iCalendar UID. Auto-creates a placeholder event from the invitation when none exists yet. Sends an IMIP reply to the organizer.
+// @Tags         events
+// @Accept       json
+// @Produce      json
+// @Param        body  body      object         true  "uid, partstat, summary, start_at, end_at, location"
+// @Success      200  {object}  eventResponse  "updated event"
+// @Success      201  {object}  eventResponse  "auto-created event"
+// @Failure      400  {object}  map[string]string "invalid body, uid, or partstat"
+// @Security     CookieAuth
+// @Router       /events/rsvp-from-mail [post]
 func (h *EventHandler) RSVPFromMail(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -605,8 +673,19 @@ func (h *EventHandler) RSVPFromMail(c *echo.Context) error {
 	return c.JSON(http.StatusOK, toEventResponse(*event))
 }
 
-// RSVP handles POST /api/v1/events/:id/rsvp.
-// Updates the authenticated user's attendee participation status (ACCEPTED, DECLINED, TENTATIVE).
+// RSVP godoc
+// @Summary      RSVP to event
+// @Description  Updates the authenticated user's attendee participation status (ACCEPTED, DECLINED, TENTATIVE, NEEDS-ACTION) and sends an IMIP reply to the organizer.
+// @Tags         events
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int            true  "Event ID"
+// @Param        body  body      object         true  "{partstat: string}"
+// @Success      200  {object}  eventResponse  "updated event"
+// @Failure      400  {object}  map[string]string "invalid id, body, or partstat"
+// @Failure      404  {object}  map[string]string "not found"
+// @Security     CookieAuth
+// @Router       /events/{id}/rsvp [post]
 func (h *EventHandler) RSVP(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -659,8 +738,19 @@ func (h *EventHandler) RSVP(c *echo.Context) error {
 	return c.JSON(http.StatusOK, toEventResponse(*result))
 }
 
-// Move handles POST /api/v1/events/:id/move.
-// Updates start_at, end_at, and optionally calendar_id (drag-resize / move).
+// Move godoc
+// @Summary      Move or resize event
+// @Description  Updates start_at, end_at, and optionally calendar_id for drag-and-drop or resize operations.
+// @Tags         events
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int               true  "Event ID"
+// @Param        body  body      eventMoveRequest  true  "New time range and optional calendar_id"
+// @Success      200  {object}  eventResponse     "updated event"
+// @Failure      400  {object}  map[string]string "invalid id, body, or timestamps"
+// @Failure      404  {object}  map[string]string "not found"
+// @Security     CookieAuth
+// @Router       /events/{id}/move [post]
 func (h *EventHandler) Move(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {

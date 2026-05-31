@@ -15,8 +15,17 @@ type SearchHandler struct {
 	cfg *config.Config
 }
 
-// Results searches the given mailbox (default: INBOX) using an OR across Subject and From fields.
-// Query parameter: q (search text), mailbox (optional folder name).
+// Results godoc
+// @Summary      Search messages
+// @Description  Searches a mailbox using IMAP SEARCH with an OR across Subject and From fields.
+// @Tags         search
+// @Produce      json
+// @Param        q        query  string  true   "Search query"
+// @Param        mailbox  query  string  false  "Folder to search (default: INBOX)"
+// @Success      200  {object}  map[string]any    "mailbox, messages, query"
+// @Failure      500  {object}  map[string]string "IMAP or connection error"
+// @Security     CookieAuth
+// @Router       /search [get]
 func (h *SearchHandler) Results(c *echo.Context) error {
 	q := c.QueryParam("q")
 	mailbox := c.QueryParam("mailbox")

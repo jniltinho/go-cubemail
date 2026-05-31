@@ -79,7 +79,15 @@ func splitName(full string) (first, last string) {
 	return full, ""
 }
 
-// Index returns all contacts for the authenticated user, ordered by name.
+// Index godoc
+// @Summary      List contacts
+// @Description  Returns all contacts for the authenticated user, ordered by name.
+// @Tags         contacts
+// @Produce      json
+// @Success      200  {array}   contactResponse   "list of contacts"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /contacts [get]
 func (h *ContactsHandler) Index(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {
@@ -96,7 +104,18 @@ func (h *ContactsHandler) Index(c *echo.Context) error {
 	return c.JSON(http.StatusOK, out)
 }
 
-// Create adds a new contact. Both name and email are required.
+// Create godoc
+// @Summary      Create contact
+// @Description  Adds a new contact. Both name and email are required.
+// @Tags         contacts
+// @Accept       json
+// @Produce      json
+// @Param        body  body      contactRequest    true  "Contact data"
+// @Success      201  {object}  contactResponse   "created contact"
+// @Failure      400  {object}  map[string]string "name and email required"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /contacts [post]
 func (h *ContactsHandler) Create(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {
@@ -126,7 +145,19 @@ func (h *ContactsHandler) Create(c *echo.Context) error {
 	return c.JSON(http.StatusCreated, toResponse(ct))
 }
 
-// Update replaces all fields of an existing contact identified by :id.
+// Update godoc
+// @Summary      Update contact
+// @Description  Replaces all fields of an existing contact identified by :id.
+// @Tags         contacts
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int              true  "Contact ID"
+// @Param        body  body      contactRequest   true  "Contact data"
+// @Success      200  {object}  contactResponse  "updated contact"
+// @Failure      400  {object}  map[string]string "invalid body"
+// @Failure      404  {object}  map[string]string "not found"
+// @Security     CookieAuth
+// @Router       /contacts/{id} [put]
 func (h *ContactsHandler) Update(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {
@@ -155,7 +186,16 @@ func (h *ContactsHandler) Update(c *echo.Context) error {
 	return c.JSON(http.StatusOK, toResponse(*ct))
 }
 
-// Delete permanently removes a contact by :id.
+// Delete godoc
+// @Summary      Delete contact
+// @Description  Permanently removes a contact by ID.
+// @Tags         contacts
+// @Produce      json
+// @Param        id  path  int  true  "Contact ID"
+// @Success      200  {object}  map[string]string "status ok"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /contacts/{id} [delete]
 func (h *ContactsHandler) Delete(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {
@@ -168,7 +208,15 @@ func (h *ContactsHandler) Delete(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// Export streams all contacts as a downloadable CSV file.
+// Export godoc
+// @Summary      Export contacts as CSV
+// @Description  Streams all contacts as a downloadable contacts.csv file.
+// @Tags         contacts
+// @Produce      text/csv
+// @Success      200  {file}    binary "CSV file download"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /contacts/export [get]
 func (h *ContactsHandler) Export(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {
@@ -193,8 +241,18 @@ func (h *ContactsHandler) Export(c *echo.Context) error {
 	return err
 }
 
-// Import parses an uploaded .csv or .vcf file and bulk-inserts contacts.
-// Returns the count of successfully imported contacts.
+// Import godoc
+// @Summary      Import contacts from CSV or VCF
+// @Description  Parses an uploaded .csv or .vcf file and bulk-inserts contacts. Returns imported/total counts.
+// @Tags         contacts
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file  formData  file  true  "CSV or VCF file"
+// @Success      200  {object}  map[string]any    "imported and total counts"
+// @Failure      400  {object}  map[string]string "no file or parse error"
+// @Failure      500  {object}  map[string]string "file read error"
+// @Security     CookieAuth
+// @Router       /contacts/import [post]
 func (h *ContactsHandler) Import(c *echo.Context) error {
 	userID, err := h.getUserID(c)
 	if err != nil {

@@ -8,11 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/labstack/echo/v5"
 	"go-cubemail/internal/activesync"
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/handler"
 	appMiddleware "go-cubemail/internal/server/middleware"
+
+	"github.com/labstack/echo/v5"
 	"gorm.io/gorm"
 )
 

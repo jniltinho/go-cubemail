@@ -101,7 +101,18 @@ func (h *SettingsHandler) GetSettings(c *echo.Context) error {
 	})
 }
 
-// SaveSettings handles PUT /api/v1/settings.
+// SaveSettings godoc
+// @Summary      Save user preferences
+// @Description  Updates the logged-in user's settings. Only provided fields are changed.
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Param        body  body      settingsRequest   true  "Settings fields to update"
+// @Success      200  {object}  settingsResponse  "updated settings"
+// @Failure      400  {object}  map[string]string "invalid body"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /settings [put]
 func (h *SettingsHandler) SaveSettings(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -150,8 +161,15 @@ func (h *SettingsHandler) SaveSettings(c *echo.Context) error {
 	})
 }
 
-// ListIdentities handles GET /api/v1/identities.
-// Ensures at least one default identity (seeded from IMAP username) on first access.
+// ListIdentities godoc
+// @Summary      List sender identities
+// @Description  Returns all From: identities for the user. Seeds a default identity from the IMAP username on first access.
+// @Tags         settings
+// @Produce      json
+// @Success      200  {object}  map[string]any    "identities list"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /identities [get]
 func (h *SettingsHandler) ListIdentities(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -176,7 +194,18 @@ func (h *SettingsHandler) ListIdentities(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{"identities": out})
 }
 
-// CreateIdentity handles POST /api/v1/identities.
+// CreateIdentity godoc
+// @Summary      Create sender identity
+// @Description  Adds a new From: identity (display name, email, reply-to, signature).
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Param        body  body      identityRequest   true  "Identity data"
+// @Success      201  {object}  identityResponse  "created identity"
+// @Failure      400  {object}  map[string]string "email required or invalid body"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /identities [post]
 func (h *SettingsHandler) CreateIdentity(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -207,7 +236,19 @@ func (h *SettingsHandler) CreateIdentity(c *echo.Context) error {
 	return c.JSON(http.StatusCreated, toIdentityResponse(id))
 }
 
-// UpdateIdentity handles PUT /api/v1/identities/:id.
+// UpdateIdentity godoc
+// @Summary      Update sender identity
+// @Description  Replaces all fields of the specified sender identity.
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int               true  "Identity ID"
+// @Param        body  body      identityRequest   true  "Identity data"
+// @Success      200  {object}  identityResponse  "updated identity"
+// @Failure      400  {object}  map[string]string "invalid id, body, or missing email"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /identities/{id} [put]
 func (h *SettingsHandler) UpdateIdentity(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -243,7 +284,17 @@ func (h *SettingsHandler) UpdateIdentity(c *echo.Context) error {
 	return c.JSON(http.StatusOK, toIdentityResponse(id))
 }
 
-// DeleteIdentity handles DELETE /api/v1/identities/:id.
+// DeleteIdentity godoc
+// @Summary      Delete sender identity
+// @Description  Permanently removes the specified sender identity.
+// @Tags         settings
+// @Produce      json
+// @Param        id  path  int  true  "Identity ID"
+// @Success      200  {object}  map[string]string "status ok"
+// @Failure      400  {object}  map[string]string "invalid id"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /identities/{id} [delete]
 func (h *SettingsHandler) DeleteIdentity(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -259,7 +310,17 @@ func (h *SettingsHandler) DeleteIdentity(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// SetDefaultIdentity handles POST /api/v1/identities/:id/default.
+// SetDefaultIdentity godoc
+// @Summary      Set default sender identity
+// @Description  Marks the specified identity as the default From: address, clearing the flag on all others.
+// @Tags         settings
+// @Produce      json
+// @Param        id  path  int  true  "Identity ID"
+// @Success      200  {object}  map[string]string "status ok"
+// @Failure      400  {object}  map[string]string "invalid id"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /identities/{id}/default [post]
 func (h *SettingsHandler) SetDefaultIdentity(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {

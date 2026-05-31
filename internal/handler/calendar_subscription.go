@@ -56,7 +56,15 @@ func toSubResponse(s model.CalendarSubscription) subscriptionResponse {
 	return r
 }
 
-// List handles GET /api/v1/calendar/subscriptions.
+// List godoc
+// @Summary      List calendar subscriptions
+// @Description  Returns all remote ICS subscriptions for the authenticated user.
+// @Tags         calendar
+// @Produce      json
+// @Success      200  {object}  map[string]any    "subscriptions list"
+// @Failure      500  {object}  map[string]string "database error"
+// @Security     CookieAuth
+// @Router       /calendar/subscriptions [get]
 func (h *CalendarSubscriptionHandler) List(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -73,8 +81,18 @@ func (h *CalendarSubscriptionHandler) List(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{"subscriptions": out})
 }
 
-// Create handles POST /api/v1/calendar/subscriptions.
-// Fetches the remote URL immediately to validate it, then stores the subscription.
+// Create godoc
+// @Summary      Subscribe to remote calendar
+// @Description  Stores a remote ICS URL subscription and triggers an immediate background fetch to validate and import events.
+// @Tags         calendar
+// @Accept       json
+// @Produce      json
+// @Param        body  body      subscriptionRequest   true  "Subscription data (url, name, color, refresh_mins)"
+// @Success      201  {object}  subscriptionResponse  "created subscription"
+// @Failure      400  {object}  map[string]string     "url required or invalid"
+// @Failure      500  {object}  map[string]string     "database error"
+// @Security     CookieAuth
+// @Router       /calendar/subscriptions [post]
 func (h *CalendarSubscriptionHandler) Create(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -127,7 +145,17 @@ func (h *CalendarSubscriptionHandler) Create(c *echo.Context) error {
 	return c.JSON(http.StatusCreated, toSubResponse(sub))
 }
 
-// Delete handles DELETE /api/v1/calendar/subscriptions/:id.
+// Delete godoc
+// @Summary      Remove calendar subscription
+// @Description  Deletes a remote ICS calendar subscription.
+// @Tags         calendar
+// @Produce      json
+// @Param        id  path  int  true  "Subscription ID"
+// @Success      200  {object}  map[string]string "status ok"
+// @Failure      400  {object}  map[string]string "invalid id"
+// @Failure      404  {object}  map[string]string "not found"
+// @Security     CookieAuth
+// @Router       /calendar/subscriptions/{id} [delete]
 func (h *CalendarSubscriptionHandler) Delete(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {
@@ -146,8 +174,17 @@ func (h *CalendarSubscriptionHandler) Delete(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// Refresh handles POST /api/v1/calendar/subscriptions/:id/refresh.
-// Triggers an immediate re-fetch of the subscription.
+// Refresh godoc
+// @Summary      Refresh calendar subscription
+// @Description  Triggers an immediate background re-fetch and import of the remote ICS calendar.
+// @Tags         calendar
+// @Produce      json
+// @Param        id  path  int  true  "Subscription ID"
+// @Success      200  {object}  map[string]string "status refreshing"
+// @Failure      400  {object}  map[string]string "invalid id"
+// @Failure      404  {object}  map[string]string "not found"
+// @Security     CookieAuth
+// @Router       /calendar/subscriptions/{id}/refresh [post]
 func (h *CalendarSubscriptionHandler) Refresh(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {

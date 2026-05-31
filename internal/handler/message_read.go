@@ -14,8 +14,18 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
-// Read fetches a message's envelope, sanitized HTML body, plain-text body, and attachment list.
-// The message is marked as seen. The HTML body is sanitized via bluemonday before returning.
+// Read godoc
+// @Summary      Read message
+// @Description  Fetches the full message: envelope, sanitized HTML body, plain-text body, and attachment list. Marks the message as seen.
+// @Tags         mail
+// @Produce      json
+// @Param        mailbox  path  string  true  "Mailbox folder name"
+// @Param        uid      path  int     true  "Message UID"
+// @Success      200  {object}  map[string]any    "message envelope, html_body, plain_body, attachments, calendar info"
+// @Failure      400  {object}  map[string]string "invalid uid"
+// @Failure      404  {object}  map[string]string "message not found"
+// @Security     CookieAuth
+// @Router       /mail/{mailbox}/{uid} [get]
 func (h *MessageHandler) Read(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)
@@ -128,7 +138,18 @@ func (h *MessageHandler) Read(c *echo.Context) error {
 	})
 }
 
-// Download serves the raw RFC822 message as a downloadable .eml attachment.
+// Download godoc
+// @Summary      Download message as .eml
+// @Description  Streams the raw RFC822 message bytes as a downloadable .eml file attachment.
+// @Tags         mail
+// @Produce      application/octet-stream
+// @Param        mailbox  path  string  true  "Mailbox folder name"
+// @Param        uid      path  int     true  "Message UID"
+// @Success      200  {file}   binary "raw email file"
+// @Failure      400  {object}  map[string]string "invalid uid"
+// @Failure      404  {object}  map[string]string "message not found"
+// @Security     CookieAuth
+// @Router       /mail/{mailbox}/{uid}/download [get]
 func (h *MessageHandler) Download(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)
@@ -161,7 +182,18 @@ func (h *MessageHandler) Download(c *echo.Context) error {
 	return c.Blob(http.StatusOK, "message/rfc822", rawMsg)
 }
 
-// Raw serves the raw RFC822 message bytes as plain text.
+// Raw godoc
+// @Summary      View raw message source
+// @Description  Returns the raw RFC822 message bytes as plain text for source viewing.
+// @Tags         mail
+// @Produce      plain
+// @Param        mailbox  path  string  true  "Mailbox folder name"
+// @Param        uid      path  int     true  "Message UID"
+// @Success      200  {string}  string "raw email source"
+// @Failure      400  {object}  map[string]string "invalid uid"
+// @Failure      404  {object}  map[string]string "message not found"
+// @Security     CookieAuth
+// @Router       /mail/{mailbox}/{uid}/raw [get]
 func (h *MessageHandler) Raw(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)
@@ -188,7 +220,19 @@ func (h *MessageHandler) Raw(c *echo.Context) error {
 	return c.Blob(http.StatusOK, "text/plain; charset=utf-8", rawMsg)
 }
 
-// Attachment downloads a single attachment identified by its MIME part number.
+// Attachment godoc
+// @Summary      Download attachment
+// @Description  Downloads a single attachment identified by its MIME part number.
+// @Tags         mail
+// @Produce      application/octet-stream
+// @Param        mailbox  path  string  true  "Mailbox folder name"
+// @Param        uid      path  int     true  "Message UID"
+// @Param        part     path  int     true  "MIME part number"
+// @Success      200  {file}    binary "attachment binary"
+// @Failure      400  {object}  map[string]string "invalid uid or part"
+// @Failure      404  {object}  map[string]string "message or attachment not found"
+// @Security     CookieAuth
+// @Router       /mail/{mailbox}/{uid}/attachment/{part} [get]
 func (h *MessageHandler) Attachment(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	uid, err := strconv.ParseUint(c.Param("uid"), 10, 32)

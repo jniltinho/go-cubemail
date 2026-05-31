@@ -34,6 +34,26 @@ func (h *ComposeHandler) imapConn(s *session.IMAPSession) (*imap.Client, error) 
 		time.Duration(h.cfg.IMAP.TimeoutSec)*time.Second, s.Username, pass, h.cfg.Server.Debug)
 }
 
+// Send godoc
+// @Summary      Send email
+// @Description  Composes and delivers an email via SMTP, then saves a copy to the Sent folder.
+// @Tags         compose
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        from_email    formData  string  false  "Sender email (defaults to session user)"
+// @Param        from_name     formData  string  false  "Sender display name"
+// @Param        to            formData  string  true   "Comma-separated recipient list"
+// @Param        cc            formData  string  false  "Comma-separated CC list"
+// @Param        bcc           formData  string  false  "Comma-separated BCC list"
+// @Param        subject       formData  string  true   "Email subject"
+// @Param        body_html     formData  string  false  "HTML body"
+// @Param        body_plain    formData  string  false  "Plain-text body"
+// @Param        reply_to      formData  string  false  "Reply-To address"
+// @Param        attachments   formData  file    false  "File attachments"
+// @Success      200  {object}  map[string]string "status sent"
+// @Failure      502  {object}  map[string]string "SMTP delivery error"
+// @Security     CookieAuth
+// @Router       /compose/send [post]
 // Send composes and delivers an email via SMTP, then appends a copy to the Sent folder.
 // The Sent folder name is resolved from IMAP mailbox attributes to support servers with
 // non-standard folder names (e.g. "[Gmail]/Sent Mail").
@@ -115,12 +135,27 @@ func (h *ComposeHandler) Send(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "sent"})
 }
 
-// SaveDraft is a stub endpoint reserved for future draft persistence support.
+// SaveDraft godoc
+// @Summary      Save draft
+// @Description  Saves an email draft (currently a stub; returns ok immediately).
+// @Tags         compose
+// @Produce      json
+// @Success      200  {object}  map[string]string "status ok"
+// @Security     CookieAuth
+// @Router       /compose/draft [post]
 func (h *ComposeHandler) SaveDraft(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
-// UploadAttachment is a stub endpoint reserved for future attachment upload support.
+// UploadAttachment godoc
+// @Summary      Upload attachment
+// @Description  Pre-uploads an attachment for use in a composed email (currently a stub).
+// @Tags         compose
+// @Accept       multipart/form-data
+// @Produce      json
+// @Success      200  {object}  map[string]any "files list (empty)"
+// @Security     CookieAuth
+// @Router       /compose/upload [post]
 func (h *ComposeHandler) UploadAttachment(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{"files": []any{}})
 }

@@ -16,6 +16,7 @@ package main
 
 import (
 	"embed"
+	_ "go-cubemail/docs"
 
 	"go-cubemail/cmd"
 )
