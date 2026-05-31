@@ -172,7 +172,7 @@ func ParseICalImport(data []byte) ([]ImportEvent, error) {
 			continue
 		}
 
-		propRaw, val, ok := strings.Cut(line, ":")
+		propRaw, val, ok := CutProperty(line)
 		if !ok {
 			continue
 		}
@@ -183,11 +183,11 @@ func ParseICalImport(data []byte) ([]ImportEvent, error) {
 		case "UID":
 			cur.UID = val
 		case "SUMMARY":
-			cur.Summary = val
+			cur.Summary = unescapeICalText(val)
 		case "DESCRIPTION":
-			cur.Description = val
+			cur.Description = unescapeICalText(val)
 		case "LOCATION":
-			cur.Location = val
+			cur.Location = unescapeICalText(val)
 		case "DTSTART":
 			t, allDay := parseICalTime(propRaw, val)
 			cur.StartAt = t
@@ -258,3 +258,28 @@ func FoldLine(s string) string {
 
 // foldLine is the unexported alias kept for internal use.
 func foldLine(s string) string { return FoldLine(s) }
+
+// CutProperty splits an iCalendar line into the raw property (with parameters) and the value.
+// It correctly handles colons inside quoted parameter values (e.g. ALTREP="data:text/html,...").
+func CutProperty(line string) (propRaw, val string, ok bool) {
+	inQuotes := false
+	for i := 0; i < len(line); i++ {
+		char := line[i]
+		if char == '"' {
+			inQuotes = !inQuotes
+		} else if char == ':' && !inQuotes {
+			return line[:i], line[i+1:], true
+		}
+	}
+	return "", "", false
+}
+
+// unescapeICalText unescapes standard iCalendar string characters like newlines, commas, and semicolons.
+func unescapeICalText(s string) string {
+	s = strings.ReplaceAll(s, "\\n", "\n")
+	s = strings.ReplaceAll(s, "\\N", "\n")
+	s = strings.ReplaceAll(s, "\\,", ",")
+	s = strings.ReplaceAll(s, "\\;", ";")
+	s = strings.ReplaceAll(s, "\\\\", "\\")
+	return s
+}

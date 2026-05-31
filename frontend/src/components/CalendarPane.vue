@@ -151,6 +151,23 @@ async function onDropCell(date: Date, hour?: number) {
   await mail.moveEvent(id, newStart.toISOString(), newEnd.toISOString())
 }
 
+function eventStyle(ev: CalendarEvent, view: 'day' | 'week'): Record<string, string> {
+  const start = new Date(ev.start_at)
+  const end = new Date(ev.end_at)
+  const durationMin = (end.getTime() - start.getTime()) / (60 * 1000)
+  
+  const hourHeight = view === 'day' ? 64 : 48
+  const height = (durationMin / 60) * hourHeight
+  const minutes = start.getMinutes()
+  const top = (minutes / 60) * hourHeight
+  
+  return {
+    backgroundColor: ev.color || '#3788d8',
+    height: `${Math.max(height - 4, 20)}px`,
+    top: `${top + 2}px`,
+  }
+}
+
 // ── Load data on mount and when switching to calendar view ─────────────────
 onMounted(async () => {
   await mail.fetchCalendars()
@@ -271,8 +288,8 @@ watch(() => mail.view, async (v) => {
               <div
                 v-for="ev in eventsForDayHour(day, hour)"
                 :key="ev.id"
-                :class="['absolute inset-x-0.5 top-0.5 rounded text-[10px] text-white px-1 truncate z-10 cursor-grab active:cursor-grabbing', { 'opacity-40': dragEventId === ev.id }]"
-                :style="{ backgroundColor: ev.color || '#3788d8' }"
+                :class="['absolute inset-x-0.5 rounded text-[10px] text-white px-1 truncate z-10 cursor-grab active:cursor-grabbing', { 'opacity-40': dragEventId === ev.id }]"
+                :style="eventStyle(ev, 'week')"
                 :title="ev.summary"
                 draggable="true"
                 @dragstart="onDragStart($event, ev)"
@@ -303,8 +320,8 @@ watch(() => mail.view, async (v) => {
               <div
                 v-for="ev in eventsForDayHour(mail.calCurrentDate, hour)"
                 :key="ev.id"
-                :class="['absolute inset-x-1 top-0.5 rounded text-xs text-white px-2 py-0.5 truncate z-10 cursor-grab active:cursor-grabbing', { 'opacity-40': dragEventId === ev.id }]"
-                :style="{ backgroundColor: ev.color || '#3788d8' }"
+                :class="['absolute inset-x-1 rounded text-xs text-white px-2 py-0.5 truncate z-10 cursor-grab active:cursor-grabbing', { 'opacity-40': dragEventId === ev.id }]"
+                :style="eventStyle(ev, 'day')"
                 draggable="true"
                 @dragstart="onDragStart($event, ev)"
                 @dragend="onDragEnd"

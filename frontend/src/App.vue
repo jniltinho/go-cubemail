@@ -59,8 +59,8 @@ function onKey(e) {
  */
 watch(() => auth.isAuthenticated, async (authed) => {
   if (authed) {
-    startNewMailPolling(mail, auth)
     await mail.loadFromApi()
+    startNewMailPolling(mail, auth)
     initWebPush() // non-blocking; silently skipped if push not configured
   } else {
     stopNewMailPolling()

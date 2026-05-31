@@ -23,7 +23,6 @@ type Handlers struct {
 	CalDAV              *CalDAVHandler
 	CardDAV             *CardDAVHandler
 	Push                *PushHandler
-	SSE                 *SSEHandler
 }
 
 // New initialises all handler instances with the shared configuration and database connection.
@@ -53,7 +52,6 @@ func New(cfg *config.Config, db *gorm.DB) *Handlers {
 		CalDAV:   &CalDAVHandler{cfg: cfg, db: db, calRepo: calRepo, eventRepo: eventRepo},
 		CardDAV:  &CardDAVHandler{cfg: cfg, db: db, contactRepo: repository.NewContactRepo(db)},
 		Push:     &PushHandler{cfg: cfg, db: db, pushRepo: repository.NewPushSubscriptionRepo(db)},
-		SSE:      &SSEHandler{cfg: cfg, db: db, pushRepo: repository.NewPushSubscriptionRepo(db)},
 		CalendarSubscription: &CalendarSubscriptionHandler{
 			cfg: cfg, db: db, calRepo: calRepo, subRepo: subRepo, evtRepo: eventRepo,
 		},

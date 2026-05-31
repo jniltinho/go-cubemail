@@ -44,7 +44,7 @@ export async function initWebPush(): Promise<void> {
     if (!sub) {
       sub = await swReg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        applicationServerKey: urlBase64ToUint8Array(vapidKey) as any,
       })
     }
     if (!sub) return

@@ -25,7 +25,7 @@ func (r *EventRepo) ListByRange(userID uint, start, end time.Time, calendarIDs [
 	// Fetch non-recurring events that overlap the window.
 	q := r.db.Preload("Attendees").Preload("Calendar").
 		Where("user_id = ? AND is_task = ?", userID, false).
-		Where("(rrule = '' OR rrule IS NULL) AND recurrence_id IS NULL").
+		Where("(r_rule = '' OR r_rule IS NULL) AND recurrence_id IS NULL").
 		Where("start_at < ? AND end_at > ?", end, start)
 	if len(calendarIDs) > 0 {
 		q = q.Where("calendar_id IN ?", calendarIDs)
@@ -38,7 +38,7 @@ func (r *EventRepo) ListByRange(userID uint, start, end time.Time, calendarIDs [
 	// Fetch recurring master events (rrule non-empty, no recurrence_id).
 	qr := r.db.Preload("Attendees").Preload("Calendar").
 		Where("user_id = ? AND is_task = ?", userID, false).
-		Where("rrule != '' AND rrule IS NOT NULL AND recurrence_id IS NULL").
+		Where("r_rule != '' AND r_rule IS NOT NULL AND recurrence_id IS NULL").
 		Where("start_at < ?", end)
 	if len(calendarIDs) > 0 {
 		qr = qr.Where("calendar_id IN ?", calendarIDs)
