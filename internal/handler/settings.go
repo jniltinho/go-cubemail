@@ -72,7 +72,15 @@ func toIdentityResponse(id model.Identity) identityResponse {
 	}
 }
 
-// GetSettings handles GET /api/v1/settings.
+// GetSettings godoc
+// @Summary      Get user preferences
+// @Description  Returns the logged-in user's complete UI settings and preferences (e.g. theme, timezone, signatures, out of office status).
+// @Tags         settings
+// @Produce      json
+// @Success      200  {object}  settingsResponse "Success response containing settings details"
+// @Failure      500  {object}  map[string]string "User lookup or database retrieval failure"
+// @Security     CookieAuth
+// @Router       /settings [get]
 func (h *SettingsHandler) GetSettings(c *echo.Context) error {
 	userID, err := getUserID(c, h.db)
 	if err != nil {

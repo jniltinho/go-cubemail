@@ -19,7 +19,7 @@ LDFLAGS    := -ldflags "-s -w \
 	-X $(PREFIX).GitCommit=$(GIT_COMMIT)"
 
 .PHONY: all build build-prod run clean frontend frontend-dev dev \
-        migrate tidy deps install-upx certs help
+        migrate tidy deps install-upx certs swagger help
 
 ## Default: build frontend + go binary
 all: clean frontend build
@@ -99,6 +99,13 @@ install-upx:
 	mv "$(UPX_DIR)/upx" "$(UPX_BIN)"
 	rm -rf "$(UPX_DIR)" "$(UPX_ARCHIVE)"
 
+## Generate Swagger documentation (swag init)
+swagger:
+	@echo "Generating Swagger documentation..."
+	go run github.com/swaggo/swag/cmd/swag@latest init -g main.go --parseDependency --parseInternal
+	@echo "Swagger docs generated in docs/"
+	@echo "Don't forget to run 'make build' afterwards so the docs are embedded."
+
 help:
 	@echo "Makefile commands:"
 	@echo "  all              - Clean, build frontend + Go binary"
@@ -114,4 +121,5 @@ help:
 	@echo "  deps             - Download Go dependencies"
 	@echo "  deps-frontend    - Install frontend npm packages"
 	@echo "  certs            - Generate self-signed SSL certificates"
+	@echo "  swagger          - Generate Swagger API documentation"
 	@echo "  install-upx      - Download and install UPX binary"

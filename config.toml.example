@@ -22,6 +22,7 @@ base_url    = "http://localhost:8080"
 # To use HTTPS, fill in the certificate and key file paths
 tls_cert    = ""
 tls_key     = ""
+swagger_enable = true
 
 [imap]
 host            = "mail.example.com"

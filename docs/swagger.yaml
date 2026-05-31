@@ -1,0 +1,251 @@
+basePath: /api/v1
+definitions:
+  handler.settingsResponse:
+    properties:
+      compose_html:
+        type: boolean
+      date_format:
+        type: string
+      oof_enabled:
+        type: boolean
+      oof_message:
+        type: string
+      rows_per_page:
+        type: integer
+      signature_pos:
+        type: string
+      timezone:
+        type: string
+    type: object
+  imap.MailboxInfo:
+    properties:
+      delim:
+        type: string
+      depth:
+        description: nesting level (0 = top-level)
+        type: integer
+      displayName:
+        description: last path segment (used for tree display)
+        type: string
+      hasChildren:
+        description: true if at least one subfolder exists under this folder
+        type: boolean
+      iconType:
+        description: '"inbox" | "drafts" | "sent" | "trash" | "junk" | "folder"'
+        type: string
+      isSystem:
+        description: true for INBOX, Sent, Drafts, Trash — cannot be renamed or deleted
+        type: boolean
+      isTrash:
+        type: boolean
+      messages:
+        format: int32
+        type: integer
+      name:
+        type: string
+      noSelect:
+        description: true when the folder is a hierarchy placeholder (\Noselect)
+        type: boolean
+      paddingLeft:
+        description: left-padding in px for tree indentation in the UI
+        type: integer
+      parentName:
+        description: full name of the parent folder; empty for top-level
+        type: string
+      unseen:
+        format: int32
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Self-hosted webmail application API backed by IMAP and SMTP.
+  title: Go-Cubemail API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Logs in a user using their IMAP credentials and sets a secure session
+        cookie.
+      parameters:
+      - description: Email address of the user
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Password of the user
+        in: formData
+        name: password
+        required: true
+        type: string
+      - description: Optional custom IMAP host (defaults to server config)
+        in: formData
+        name: imap_host
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response containing username
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Required parameters missing or too long
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid credentials or IMAP server unreachable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Session error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Authenticate user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      description: Invalidates the user's active session and deletes the session cookie.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success status
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      summary: Log out user
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Returns the active session username and global UI date/time format.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Session details containing username and datetime_format
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Current user profile
+      tags:
+      - auth
+  /auth/quota:
+    get:
+      description: Fetches the user's active IMAP mailbox storage usage and limit
+        in bytes.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Quota details containing used and limit bytes
+          schema:
+            additionalProperties:
+              format: int64
+              type: integer
+            type: object
+      security:
+      - CookieAuth: []
+      summary: IMAP storage quota
+      tags:
+      - auth
+  /folders:
+    get:
+      description: Returns the complete hierarchical list of IMAP mailboxes/folders
+        with unseen/total counts and tree structure metadata.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response containing the list of folders
+          schema:
+            items:
+              $ref: '#/definitions/imap.MailboxInfo'
+            type: array
+      security:
+      - CookieAuth: []
+      summary: List IMAP folders
+      tags:
+      - mailbox
+  /mail/{mailbox}:
+    get:
+      description: Returns a paginated list of email message envelopes for the specified
+        folder, ordered newest first.
+      parameters:
+      - description: Mailbox folder name (e.g. INBOX, Drafts, Sent, Trash)
+        in: path
+        name: mailbox
+        required: true
+        type: string
+      - description: Page number (defaults to 1)
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response containing mailbox, messages, page, and total
+            count
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Mailbox not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: List emails in mailbox
+      tags:
+      - mailbox
+  /settings:
+    get:
+      description: Returns the logged-in user's complete UI settings and preferences
+        (e.g. theme, timezone, signatures, out of office status).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response containing settings details
+          schema:
+            $ref: '#/definitions/handler.settingsResponse'
+        "500":
+          description: User lookup or database retrieval failure
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - CookieAuth: []
+      summary: Get user preferences
+      tags:
+      - settings
+schemes:
+- http
+- https
+securityDefinitions:
+  CookieAuth:
+    description: The session cookie 'gorc_session' is required for authenticated endpoints.
+    in: header
+    name: Cookie
+    type: apiKey
+swagger: "2.0"

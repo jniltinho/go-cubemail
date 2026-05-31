@@ -168,6 +168,7 @@ func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, db *g
 	registerAPIRoutes(e.Group("/api/v1"), h, authMiddleware, authRateLimit)
 	registerActiveSyncRoutes(e, cfg, db)
 	registerCalDAVRoutes(e, cfg, h, db)
+	registerSwagger(e, cfg.Server.SwaggerEnable)
 
 	// ── SPA + Static file handler ────────────────────────────────────────────
 	// Serves Vite build assets with correct MIME types.

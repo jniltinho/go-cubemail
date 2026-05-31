@@ -18,8 +18,20 @@ type AuthHandler struct {
 	cfg *config.Config
 }
 
-// DoLogin authenticates the user via IMAP and sets an encrypted session cookie.
-// Returns JSON {"username": "..."} on success or {"error": "..."} on failure.
+// DoLogin godoc
+// @Summary      Authenticate user
+// @Description  Logs in a user using their IMAP credentials and sets a secure session cookie.
+// @Tags         auth
+// @Accept       x-www-form-urlencoded
+// @Produce      json
+// @Param        username   formData  string  true  "Email address of the user"
+// @Param        password   formData  string  true  "Password of the user"
+// @Param        imap_host  formData  string  false "Optional custom IMAP host (defaults to server config)"
+// @Success      200  {object}  map[string]string "Success response containing username"
+// @Failure      400  {object}  map[string]string "Required parameters missing or too long"
+// @Failure      401  {object}  map[string]string "Invalid credentials or IMAP server unreachable"
+// @Failure      500  {object}  map[string]string "Session error"
+// @Router       /auth/login [post]
 func (h *AuthHandler) DoLogin(c *echo.Context) error {
 	imapHost := c.FormValue("imap_host")
 	username := strings.TrimSpace(c.FormValue("username"))
@@ -76,7 +88,13 @@ func (h *AuthHandler) DoLogin(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"username": username})
 }
 
-// DoLogout invalidates the current session and clears the cookie.
+// DoLogout godoc
+// @Summary      Log out user
+// @Description  Invalidates the user's active session and deletes the session cookie.
+// @Tags         auth
+// @Produce      json
+// @Success      200  {object}  map[string]bool "Success status"
+// @Router       /auth/logout [post]
 func (h *AuthHandler) DoLogout(c *echo.Context) error {
 	cookie, err := c.Cookie(h.cfg.Session.Name)
 	if err == nil {
@@ -92,7 +110,14 @@ func (h *AuthHandler) DoLogout(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
 }
 
-// Me returns the current session username and UI settings for the Vue router auth guard.
+// Me godoc
+// @Summary      Current user profile
+// @Description  Returns the active session username and global UI date/time format.
+// @Tags         auth
+// @Produce      json
+// @Success      200  {object}  map[string]string "Session details containing username and datetime_format"
+// @Security     CookieAuth
+// @Router       /auth/me [get]
 func (h *AuthHandler) Me(c *echo.Context) error {
 	s := c.Get("imap_session").(*session.IMAPSession)
 	return c.JSON(http.StatusOK, map[string]string{
@@ -101,8 +126,14 @@ func (h *AuthHandler) Me(c *echo.Context) error {
 	})
 }
 
-// Quota returns IMAP storage quota in bytes: {"used": N, "limit": N}.
-// Returns zeros without error when the server does not support QUOTA.
+// Quota godoc
+// @Summary      IMAP storage quota
+// @Description  Fetches the user's active IMAP mailbox storage usage and limit in bytes.
+// @Tags         auth
+// @Produce      json
+// @Success      200  {object}  map[string]int64 "Quota details containing used and limit bytes"
+// @Security     CookieAuth
+// @Router       /auth/quota [get]
 func (h *AuthHandler) Quota(c *echo.Context) error {
 	s := c.Get("imap_session").(*session.IMAPSession)
 	pass, err := s.Password(h.cfg.Server.SecretKey)

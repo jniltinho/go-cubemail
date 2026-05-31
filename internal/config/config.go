@@ -43,6 +43,7 @@ type ServerConfig struct {
 	BaseURL   string `mapstructure:"base_url"`
 	TLSCert   string `mapstructure:"tls_cert"`
 	TLSKey    string `mapstructure:"tls_key"`
+	SwaggerEnable bool `mapstructure:"swagger_enable"`
 }
 
 // IMAPConfig holds IMAP connection settings.
@@ -110,6 +111,7 @@ func Load() *Config {
 	cfg.Server.BaseURL = viper.GetString("server.base_url")
 	cfg.Server.TLSCert = viper.GetString("server.tls_cert")
 	cfg.Server.TLSKey = viper.GetString("server.tls_key")
+	cfg.Server.SwaggerEnable = viper.GetBool("server.swagger_enable")
 
 	cfg.IMAP.Host = viper.GetString("imap.host")
 	cfg.IMAP.Port = viper.GetInt("imap.port")

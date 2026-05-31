@@ -61,7 +61,17 @@ func (h *MailboxHandler) resolveCreateDelimiter(conn *imap.Client, parent, reque
 	return "/"
 }
 
-// List returns a paginated list of message envelopes for the given mailbox, ordered newest first.
+// List godoc
+// @Summary      List emails in mailbox
+// @Description  Returns a paginated list of email message envelopes for the specified folder, ordered newest first.
+// @Tags         mailbox
+// @Produce      json
+// @Param        mailbox  path   string  true  "Mailbox folder name (e.g. INBOX, Drafts, Sent, Trash)"
+// @Param        page     query  int     false "Page number (defaults to 1)"
+// @Success      200  {object}  map[string]any "Success response containing mailbox, messages, page, and total count"
+// @Failure      404  {object}  map[string]string "Mailbox not found"
+// @Security     CookieAuth
+// @Router       /mail/{mailbox} [get]
 func (h *MailboxHandler) List(c *echo.Context) error {
 	mailbox := c.Param("mailbox")
 	s := c.Get("imap_session").(*session.IMAPSession)
@@ -126,7 +136,14 @@ func (h *MailboxHandler) List(c *echo.Context) error {
 	})
 }
 
-// FoldersJSON returns the full list of IMAP folders with tree-structure metadata.
+// FoldersJSON godoc
+// @Summary      List IMAP folders
+// @Description  Returns the complete hierarchical list of IMAP mailboxes/folders with unseen/total counts and tree structure metadata.
+// @Tags         mailbox
+// @Produce      json
+// @Success      200  {array}   imap.MailboxInfo "Success response containing the list of folders"
+// @Security     CookieAuth
+// @Router       /folders [get]
 func (h *MailboxHandler) FoldersJSON(c *echo.Context) error {
 	s := c.Get("imap_session").(*session.IMAPSession)
 	conn, err := h.imapConn(s)
