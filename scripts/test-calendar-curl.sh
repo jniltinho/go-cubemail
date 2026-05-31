@@ -11,14 +11,21 @@ COOKIE_JAR="${COOKIE_JAR:-/tmp/gorc-calendar-curl.txt}"
 
 rm -f "$COOKIE_JAR"
 
+echo "=== 0. Fetch CSRF cookie ==="
+curl -sf -c "$COOKIE_JAR" "$BASE/auth/me" > /dev/null || true
+CSRF=$(grep csrf_token "$COOKIE_JAR" | awk '{print $7}')
+echo "CSRF token: $CSRF"
+
 echo "=== 1. Login ==="
-curl -sf -c "$COOKIE_JAR" -X POST "$BASE/auth/login" \
+curl -sf -b "$COOKIE_JAR" -c "$COOKIE_JAR" -X POST "$BASE/auth/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
+  -H "X-CSRF-Token: $CSRF" \
   -d "username=$USER&password=$PASS" | jq .
 
-echo "=== 2. CSRF ==="
-curl -sf -b "$COOKIE_JAR" -c "$COOKIE_JAR" "$BASE/auth/me" > /dev/null
+echo "=== 2. Refresh CSRF after login ==="
+curl -sf -b "$COOKIE_JAR" -c "$COOKIE_JAR" "$BASE/auth/me" > /dev/null || true
 CSRF=$(grep csrf_token "$COOKIE_JAR" | awk '{print $7}')
+echo "CSRF token: $CSRF"
 
 echo "=== 3. List calendars ==="
 curl -sf -b "$COOKIE_JAR" "$BASE/calendar" | jq .

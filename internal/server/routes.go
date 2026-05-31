@@ -125,6 +125,12 @@ func registerCalDAVRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers,
 	e.Add("PROPFIND", "/.well-known/carddav", h.CardDAV.WellKnown, caldavAuth)
 
 	dav := e.Group("/dav", caldavAuth)
+
+	// CardDAV OPTIONS must be registered before the CalDAV wildcard so the
+	// specific /:user/contacts/* path wins over OPTIONS /*.
+	dav.OPTIONS("/:user/contacts/", h.CardDAV.Options)
+	dav.OPTIONS("/:user/contacts/:ab/", h.CardDAV.Options)
+	dav.OPTIONS("/:user/contacts/:ab/:uid", h.CardDAV.Options)
 	dav.OPTIONS("/*", h.CalDAV.Options)
 
 	// Principal
@@ -140,7 +146,6 @@ func registerCalDAVRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers,
 	dav.Add("REPORT", "/:user/calendars/:cal/", h.CalDAV.Report)
 
 	// CardDAV — contacts
-	dav.OPTIONS("/contacts/*", h.CardDAV.Options)
 	dav.Add("PROPFIND", "/:user/contacts/", h.CardDAV.PropFind)
 	dav.Add("PROPFIND", "/:user/contacts/:ab/", h.CardDAV.PropFind)
 	dav.Add("PROPFIND", "/:user/contacts/:ab/:uid", h.CardDAV.PropFind)
