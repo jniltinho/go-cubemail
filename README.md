@@ -1,24 +1,40 @@
 # Go CubeMail
 
-A modern, lightweight, self-hosted webmail client written in Go with a Vue 3 + TypeScript frontend.
+A modern, lightweight, self-hosted webmail + groupware client written in Go with a Vue 3 + TypeScript frontend.
 
 Go CubeMail connects directly to your existing mail servers using standard IMAP (reading) and SMTP (sending) protocols. It provides a clean, responsive web interface inspired by the classic Roundcube "Larry" theme, delivered as a single compiled binary with the frontend embedded at build time.
 
-**No email data is stored** — everything happens in real time against your IMAP server. The database is used only for contacts, identities, user settings, and sessions.
+In addition to mail, it includes a full calendar with CalDAV/CardDAV servers and an ActiveSync (EAS) server for synchronization with Apple Calendar, Thunderbird, Outlook and mobile devices.
+
+**No email data is stored** — everything happens in real time against your IMAP server. The database is used only for contacts, identities, user settings, calendar events, and sessions.
 
 ## Key Features
 
-- **Direct IMAP + SMTP** — Works with any standards-compliant mail server
-- **Modern Vue 3 SPA** — Fast, reactive 3-column layout (sidebar, message list, reading pane)
-- **Full email workflow** — Compose (TipTap), reply, forward, move, flag, delete, drafts, attachments
+**Mail Client**
+
+- **Direct IMAP + SMTP** — Works with any standards-compliant mail server (no email data stored in the app DB)
+- **Modern Vue 3 SPA** — Fast, reactive 3-column layout inspired by Roundcube "Larry"
+- **Full email workflow** — Rich-text compose (TipTap), reply / reply-all, forward, move, flag, delete, drafts, attachments, drag-and-drop to folders
 - **Contacts** — Complete CRUD with CSV import/export and autocomplete in the composer
 - **Search** — Server-side IMAP SEARCH
 - **Keyboard shortcuts** — Vim-style navigation (`j`/`k`, `r`, `c`, `#`, etc.)
-- **New mail notifications** — Lightweight client-side polling (10-minute interval) with audio alert (real-time push via SSE is planned)
-- **Customization** — Runtime accent color picker, configurable date formats, rows per page
-- **Single binary deployment** — Frontend is compiled and embedded via `//go:embed`
-- **Easy configuration** — Built-in `init` command to generate ready-to-use config files
-- **Production ready** — CSRF protection, security headers, rate limiting, TLS support, systemd example
+- **Real-time notifications** — Server-Sent Events (SSE) for new mail with heartbeats + optional browser Web Push (VAPID configurable)
+- **Customization & Identities** — Accent color, date formats, rows per page, multiple sender identities with signatures, OOF settings
+
+**Groupware & Sync**
+
+- **Calendar** — Month, week and day views, RRULE recurrence, free/busy, iCal import/export, sharing, RSVP via iMIP
+- **CalDAV server** (RFC 4791) — Compatible with Apple Calendar, Thunderbird and other clients
+- **CardDAV server** (RFC 6352) — Full vCard address book synchronization
+- **ActiveSync / EAS server** — Mail, calendar (vevent), contacts (vcard) and tasks (vtodo) synchronization (EAS 16.1)
+- **Remote subscriptions** — Subscribe to external .ics calendars with background refresh
+
+**Developer & Operations**
+
+- **Interactive API documentation** — Swagger UI (toggleable via `swagger_enable`) with comprehensive OpenAPI annotations
+- **Single binary deployment** — Vue frontend is built and embedded via `//go:embed`
+- **Easy configuration** — Built-in `init` command generates ready-to-use TOML config
+- **Production ready** — CSRF protection, security headers, rate limiting, TLS, systemd example, configurable session cleanup
 
 ## Architecture Highlights
 
@@ -26,18 +42,21 @@ Go CubeMail connects directly to your existing mail servers using standard IMAP 
 - **Frontend**: Vue 3 (Composition API) + TypeScript + Vite + Pinia + Tailwind CSS v4 + TipTap
 - **No Node.js at runtime** — Vite is used only for building
 - **Authentication**: IMAP login with AES-GCM encrypted credentials in secure cookies
-- **Real-time / Notifications**: Client-side polling (10 min). True server-side push (SSE) is planned for the future.
+- **Real-time / Notifications**: Server-Sent Events (SSE) for new-mail push (with 55s heartbeats for proxy compatibility) + Web Push notifications via VAPID. Background workers for calendar subscription refresh.
+- **Groupware servers**: Full CalDAV (RFC 4791), CardDAV (RFC 6352) and Microsoft ActiveSync/EAS (mail + calendar + contacts + tasks) implementations.
 
 ## Tech Stack
 
-| Layer       | Technology                          |
-|-------------|-------------------------------------|
-| Language    | Go 1.26+                            |
-| Web         | Echo v5, GORM, Cobra, Viper         |
-| Email       | IMAP (emersion/go-imap), SMTP (wneessen/go-mail) |
-| Frontend    | Vue 3 + TS, Pinia, Vite, Tailwind v4 |
-| Editor      | TipTap                              |
-| Database    | SQLite (dev) / MariaDB / PostgreSQL (prod) |
+| Layer            | Technology                                              |
+|------------------|---------------------------------------------------------|
+| Language         | Go 1.26+                                                |
+| Web / API        | Echo v5, GORM, Cobra, Viper, swaggo/swag (OpenAPI)      |
+| Email            | IMAP (emersion/go-imap), SMTP (wneessen/go-mail)        |
+| Frontend         | Vue 3 + TS, Pinia, Vite, Tailwind CSS v4, TipTap        |
+| Real-time        | SSE (Server-Sent Events) + Web Push (VAPID)             |
+| Sync Protocols   | CalDAV (RFC 4791), CardDAV (RFC 6352), ActiveSync/EAS   |
+| Calendar         | rrule-go (recurrence), iCalendar handling               |
+| Database         | SQLite (dev) / MariaDB / PostgreSQL (prod)              |
 
 ## Quick Start
 
@@ -65,6 +84,8 @@ make build
 ```
 
 Access at http://localhost:8080
+
+> **Tip:** Run `make swagger` (requires Go) to (re)generate the OpenAPI docs served by the integrated Swagger UI when `swagger_enable = true`.
 
 ### Development
 
@@ -103,10 +124,17 @@ Full production installation guide (MariaDB / PostgreSQL + systemd) is available
   - `serve` — Start the web server
   - `migrate` — Run database migrations
   - `version` — Show version information
-- `internal/` — All Go business logic (handlers, IMAP/SMTP, models, repositories)
+- `internal/` — Core Go packages:
+  - `handler/` — API handlers (mail, compose, contacts, calendar, settings, identities, push, SSE, CalDAV, CardDAV, ActiveSync)
+  - `calendar/`, `activesync/` — Calendar logic and EAS server
+  - `imap/`, `smtp/` — Protocol clients
+  - `model/`, `repository/`, `session/` — App data (GORM) and IMAP session management
+  - `server/`, `config/` — Echo setup, routing, middleware, configuration
 - `frontend/` — Vue 3 + TypeScript source (built to `web/dist/`)
-- `web/` — Embedded assets (`dist/` for the SPA and `files/` for other embedded resources)
-- `DOCUMENTS/` — Documentation index, setup guides, SDD, development & contributing guides, and code audit report
+- `web/` — Embedded assets (`dist/` for the SPA and `files/` for other embedded resources including default config)
+- `docs/` — Auto-generated OpenAPI (Swagger) specs
+- `DOCUMENTS/` — Documentation index, setup guides, SDD, development & contributing guides, DAV/ActiveSync guides, and releasing process
+- `scripts/` — Testing helpers for CalDAV, CardDAV and ActiveSync protocols
 
 ## Documentation
 
@@ -117,8 +145,12 @@ Key documents include:
 - [Software Design Document (SDD)](DOCUMENTS/docs/SDD.md) — Architecture, design decisions, and technical overview.
 - [Development Guide](DOCUMENTS/docs/DEVELOPMENT.md) — Local setup, build process, and development workflow.
 - [Contributing Guide](DOCUMENTS/docs/CONTRIBUTING.md) — How to contribute code, report issues, and follow project standards.
+- [Releasing Guide](DOCUMENTS/docs/RELEASING.md) — How version tags and polished GitHub Releases are produced.
+- [DAV & Sync Setup](DOCUMENTS/docs/DAV_AND_SYNC_SETUP.md) — Configuration and testing of CalDAV, CardDAV and ActiveSync.
 - [Code Audit Report](DOCUMENTS/docs/CODE_AUDIT_AND_IMPROVEMENTS.md) — Recent documentation and code quality review.
 - [Production Setup Guide](DOCUMENTS/setup/README.md) — Step-by-step installation for production environments (Ubuntu + MariaDB).
+
+The API is also documented live via Swagger UI (when `swagger_enable = true` in config) at `/swagger/`.
 
 ## License
 
