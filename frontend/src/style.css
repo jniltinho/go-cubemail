@@ -138,6 +138,8 @@ button, input, select, textarea { font-family: inherit; border-radius: 0; }
   .mail-row.selected {
     background: var(--color-row-selected);
     box-shadow: inset 3px 0 0 var(--accent);
+    outline: 1px solid var(--accent-2);
+    outline-offset: -1px;
   }
   .mail-row.unread .from,
   .mail-row.unread .subject { color: #0E1A2E; font-weight: 700; }

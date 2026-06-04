@@ -13,10 +13,7 @@ VERSION    := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "dev")
 BUILD_TIME := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
-LDFLAGS    := -ldflags "-s -w \
-	-X $(PREFIX).Version=$(VERSION) \
-	-X $(PREFIX).BuildDate=$(BUILD_TIME) \
-	-X $(PREFIX).GitCommit=$(GIT_COMMIT)"
+LDFLAGS    := -trimpath -ldflags "-s -w -X $(PREFIX).Version=$(VERSION) -X $(PREFIX).BuildDate=$(BUILD_TIME) -X $(PREFIX).GitCommit=$(GIT_COMMIT)"
 
 .PHONY: all build build-prod run clean frontend frontend-dev dev \
         migrate tidy deps install-upx certs swagger help
