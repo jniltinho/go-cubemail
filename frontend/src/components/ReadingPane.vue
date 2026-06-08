@@ -104,11 +104,52 @@ const srcdoc = computed(() => {
 <template>
   <div class="relative bg-white flex flex-col min-h-0">
     <!-- Empty state -->
-    <div v-if="!m" class="flex-1 grid place-items-center text-ink-mute bg-panel-2">
-      <div class="text-center py-6 px-8 border border-dashed border-line bg-white max-w-[320px]">
-        <Icon name="mail" :size="40" class="text-[#D2DCEB] mb-2" />
-        <div class="font-bold text-ink mb-1.5">No message selected</div>
-        <div class="text-[12px]">Pick a message from the list on the left to read it here.</div>
+    <div v-if="!m" class="flex-1 flex flex-col items-center justify-center bg-panel-2">
+      <div class="es-root">
+        <svg class="es-icon" width="132" height="115" viewBox="0 0 132 115" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="es-ls" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="rgba(0,0,0,0.10)"/>
+            </filter>
+            <filter id="es-es" x="-15%" y="-5%" width="130%" height="140%">
+              <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="rgba(0,0,0,0.10)"/>
+            </filter>
+            <linearGradient id="es-bl" x1="9" y1="47" x2="66" y2="110" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#7DD8FF"/>
+              <stop offset="100%" stop-color="#1A9BF5"/>
+            </linearGradient>
+            <linearGradient id="es-br" x1="123" y1="47" x2="66" y2="110" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#7DD8FF"/>
+              <stop offset="100%" stop-color="#1A9BF5"/>
+            </linearGradient>
+            <linearGradient id="es-fp" x1="9" y1="16" x2="123" y2="47" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#D486FD"/>
+              <stop offset="100%" stop-color="#9333EA"/>
+            </linearGradient>
+          </defs>
+          <!-- Open flap (purple, behind envelope body) -->
+          <polygon points="9,47 66,16 123,47" fill="url(#es-fp)"/>
+          <!-- Envelope body -->
+          <rect x="9" y="47" width="114" height="63" fill="white" filter="url(#es-es)"/>
+          <!-- Left blue panel (inside open envelope) -->
+          <polygon points="9,47 66,83 9,110" fill="url(#es-bl)"/>
+          <!-- Right blue panel (inside open envelope) -->
+          <polygon points="123,47 66,83 123,110" fill="url(#es-br)"/>
+          <!-- White V fold (bottom center) -->
+          <polygon points="9,110 66,83 123,110" fill="white"/>
+          <!-- V fold crease lines -->
+          <line x1="9" y1="110" x2="66" y2="83" stroke="rgba(0,0,0,0.06)" stroke-width="0.75"/>
+          <line x1="123" y1="110" x2="66" y2="83" stroke="rgba(0,0,0,0.06)" stroke-width="0.75"/>
+          <!-- Letter emerging from envelope -->
+          <rect x="41" y="9" width="50" height="53" fill="white" filter="url(#es-ls)"/>
+          <!-- Letter text lines -->
+          <rect x="51" y="21" width="30" height="2.5" fill="#DDE5F2"/>
+          <rect x="51" y="29" width="22" height="2.5" fill="#DDE5F2"/>
+          <rect x="51" y="37" width="26" height="2.5" fill="#DDE5F2"/>
+          <rect x="51" y="45" width="18" height="2.5" fill="#DDE5F2"/>
+        </svg>
+        <p class="es-title">Select an item to read</p>
+        <p class="es-sub">Nothing selected</p>
       </div>
     </div>
 
@@ -280,3 +321,36 @@ const srcdoc = computed(() => {
     </template>
   </div>
 </template>
+
+<style scoped>
+.es-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: es-appear 0.45s ease-out both;
+}
+.es-icon {
+  animation: es-float 3.2s ease-in-out infinite;
+}
+.es-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1f2a;
+  letter-spacing: -0.2px;
+}
+.es-sub {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: #9ca3af;
+}
+@keyframes es-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-7px); }
+}
+@keyframes es-appear {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
