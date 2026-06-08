@@ -1,98 +1,133 @@
 # Go CubeMail
 
-**Self-hosted webmail + calendar that works with your existing mail server.**
+[![Go Version](https://img.shields.io/github/go-mod/go-version/jniltinho/go-cubemail)](https://go.dev/)
+[![License](https://img.shields.io/github/license/jniltinho/go-cubemail)](./LICENSE)
+[![Release](https://img.shields.io/github/v/release/jniltinho/go-cubemail)](https://github.com/jniltinho/go-cubemail/releases)
+[![Stars](https://img.shields.io/github/stars/jniltinho/go-cubemail?style=social)](https://github.com/jniltinho/go-cubemail/stargazers)
 
-Go CubeMail gives you a modern, fast web interface for email and calendar — without moving your data. It talks directly to your IMAP/SMTP server and includes full CalDAV, CardDAV and ActiveSync servers so your calendar and contacts sync natively with Apple Calendar, Thunderbird, Outlook and mobile devices.
+**Modern self-hosted webmail with calendar and contacts — works with your existing mail server.**
 
-- **Single binary** — everything (frontend + backend) in one file. No separate web server or Node.js required at runtime.
-- **Privacy by design** — your emails never leave your IMAP server. The database only stores contacts, settings and sessions.
-- **Real groupware** — mail + full calendar + contacts with native sync protocols.
+A single Go binary with the entire Vue 3 frontend embedded. Connects directly to your IMAP/SMTP server and exposes full CalDAV, CardDAV and Exchange ActiveSync (EAS) servers so calendars and contacts sync natively with Apple Calendar, Outlook, Thunderbird, iOS, Android and more.
 
-[→ Download latest release](https://github.com/jniltinho/go-cubemail/releases) | [Documentation](DOCUMENTS/README.md)
+No email migration. No data duplication. Your messages stay on your IMAP server.
 
-Inspired by the classic Roundcube "Larry" theme, but built with Vue 3 + Go.
+Built with a modern Vue 3 + Go stack, inspired by the classic Roundcube "Larry" theme.
 
-## Key Features
+## Quick Start
 
-- **Works with your existing mail server** — No migration. Uses standard IMAP + SMTP.
-- **Modern webmail** — Fast 3-column interface, rich-text composer, drag & drop, reply-all, search, keyboard shortcuts.
-- **Real-time new mail** — Instant notifications via SSE + optional browser push notifications.
-- **Full calendar** — Month/week/day views, recurring events, free/busy, sharing and RSVP.
-- **Native sync for all your devices**:
-  - CalDAV (Apple Calendar, Thunderbird)
-  - CardDAV (contacts)
-  - ActiveSync/EAS (Outlook, iOS, Android, Windows Mail)
-- **Multiple identities & signatures** — Send from different addresses with custom signatures and OOF replies.
-- **Single binary deployment** — One file to run. Frontend is embedded.
-- **Easy to configure** — `./go-cubemail init` generates a ready-to-use config.
-- **Privacy focused** — Your emails stay on your IMAP server. Only contacts, settings and sessions are stored locally.
-
-## Quick Start (Self-Hosted)
-
-### Easiest: Use a pre-built release
+### Pre-built release (recommended)
 
 1. Download the latest Linux binary from the [Releases page](https://github.com/jniltinho/go-cubemail/releases)
-2. Extract and run:
+2. Extract and initialize:
+
    ```bash
    tar -xzf go-cubemail_*.tar.gz
    ./go-cubemail init
    ./go-cubemail migrate
    ./go-cubemail serve
    ```
+
 3. Open http://localhost:8080
+
+Pre-built binaries are published on every release. For production setup with MariaDB + systemd, see the [Production Setup Guide](DOCUMENTS/setup/README.md).
 
 ### Build from source
 
-Requires Go 1.26+ and Node.js (only for the build step).
+Requires Go 1.26+ and Node.js (build time only).
 
 ```bash
-make frontend   # build Vue frontend
-make build      # build the single Go binary
+git clone https://github.com/jniltinho/go-cubemail.git
+cd go-cubemail
 
+make all          # builds Vue 3 frontend + embeds into Go binary
 ./bin/go-cubemail init
 ./bin/go-cubemail migrate
 ./bin/go-cubemail serve
 ```
 
-Access at http://localhost:8080
+Access at http://localhost:8080.
 
-For development mode (with hot reload), see the [Development Guide](DOCUMENTS/docs/DEVELOPMENT.md).
+Swagger UI (when enabled): `http://localhost:8080/swagger/`.
+
+## Screenshots
+
+| Webmail — 3-column Larry-style interface | Composer with rich text |
+|------------------------------------------|-------------------------|
+| ![Webmail](DOCUMENTS/screenshots/screenshot_01.png) | ![Composer](DOCUMENTS/screenshots/screenshot_02.png) |
+
+| Contacts management | Calendar view |
+|---------------------|---------------|
+| ![Contacts](DOCUMENTS/screenshots/screenshot_03.png) | ![Calendar](DOCUMENTS/screenshots/screenshot_04.png) |
+
+More screenshots in [DOCUMENTS/screenshots](DOCUMENTS/screenshots).
+
+## Key Features
+
+- **Works with your existing mail server** — No migration. Uses standard IMAP + SMTP. Supports any IMAP-compatible server (Dovecot, Cyrus, Exchange IMAP, etc.).
+- **Single binary deployment** — Vue 3 frontend is compiled and embedded. One executable, no separate web server or Node.js at runtime.
+- **Real groupware, not just webmail**:
+  - Full webmail (3-column UI, rich-text composer, drag & drop, search, keyboard shortcuts)
+  - Calendar with recurring events (month/week/day views in UI + full CalDAV backend)
+  - Contacts with import/export (CSV + vCard via CardDAV)
+- **Native sync for all your devices**:
+  - **CalDAV** — Apple Calendar, Thunderbird (TbSync), Evolution, GNOME Calendar
+  - **CardDAV** — Apple Contacts, Thunderbird, Evolution
+  - **ActiveSync (EAS)** — iOS Mail/Calendar, Android (Outlook/Gmail), Outlook desktop (mail + calendar + contacts)
+- **Web Push notifications** — Real-time new mail alerts in the browser even when the tab is in the background (requires HTTPS + VAPID keys).
+- **Privacy by design** — Your emails never leave your IMAP server. The database only stores contacts, calendar events, identities, settings and sessions.
+- **Multiple identities & signatures** — Send from different addresses with per-identity signatures.
+- **Easy to operate** — `./go-cubemail init` generates a ready-to-use config. Database migrations are a single command. Production examples with systemd + MariaDB/PostgreSQL included.
+- **Production API** — Versioned REST API with Swagger documentation. Useful for automation and integrations.
+- **CLI tools** — `init`, `migrate`, `serve`, `version`.
+
+## Documentation
+
+- [Production Setup Guide](DOCUMENTS/setup/README.md) — Ubuntu + MariaDB + systemd deployment (recommended for production)
+- [DAV & Sync Setup](DOCUMENTS/docs/DAV_AND_SYNC_SETUP.md) — CalDAV, CardDAV and ActiveSync configuration + client setup (Thunderbird, iOS, Outlook, Android)
+- [Development Guide](DOCUMENTS/docs/DEVELOPMENT.md) — Local development with hot reload
+- [Contributing Guide](DOCUMENTS/docs/CONTRIBUTING.md)
+- Full API reference via Swagger UI (enable `swagger_enable = true` in config)
+
+## Tech Stack
+
+**Backend**: Go 1.26, Echo v5, GORM, Cobra, Viper, Swaggo (OpenAPI)
+
+**Frontend (embedded)**: Vue 3 + TypeScript + Vite, Pinia, Vue Router, Tailwind CSS v4, TipTap (rich text), Lucide icons
+
+**Email & Sync**:
+- IMAP: `emersion/go-imap/v2`
+- SMTP: `wneessen/go-mail`
+- CalDAV / CardDAV: custom implementation
+- ActiveSync (EAS): `remdev/go-activesync` + custom command handlers
+- iCalendar (RRULE, VEVENT): custom parser + recurrence engine
+
+**Packaging**: Single binary with embedded SPA, UPX compression support, systemd unit example
 
 ## Configuration
 
-The easiest way is to run:
+The easiest way to start:
 
 ```bash
 ./go-cubemail init
 ```
 
-This creates a ready-to-edit `config_*.toml` file. Rename it to `config.toml`, fill in your IMAP/SMTP details, and you're done.
+This creates a `config_*.toml` file. Rename to `config.toml`, fill in your IMAP/SMTP and database details.
 
-You can also copy `config.toml.example`.
+All settings can be overridden with `GORC_` environment variables.
 
-All settings can be overridden with `GORC_` environment variables (e.g. `GORC_SERVER_PORT=9000`).
-
-For production (MariaDB/PostgreSQL + systemd), see the [Production Setup Guide](DOCUMENTS/setup/README.md).
-
-## Documentation & Help
-
-- [Production Setup Guide](DOCUMENTS/setup/README.md) — Recommended way to run in production (MariaDB/PostgreSQL + systemd)
-- [DAV & Sync Setup](DOCUMENTS/docs/DAV_AND_SYNC_SETUP.md) — How to configure CalDAV, CardDAV and ActiveSync
-- Full API reference available via Swagger UI when enabled (`swagger_enable = true`)
-
-For developers and contributors, see the [Documentation Index](DOCUMENTS/README.md).
+See the [Production Setup Guide](DOCUMENTS/setup/README.md) for MariaDB/PostgreSQL + systemd examples.
 
 ## License
 
-MIT License
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
-Contributions are welcome! Please read:
+Contributions are welcome. Please read:
 
 - [Contributing Guide](DOCUMENTS/docs/CONTRIBUTING.md)
 - [Development Guide](DOCUMENTS/docs/DEVELOPMENT.md)
 
-All code, docs and commits must be in English.
+All code, comments and documentation must be in English (see [English Only Policy](DOCUMENTS/specs/english_only.md)).
 
 Found a bug or have an idea? [Open an issue](https://github.com/jniltinho/go-cubemail/issues).
