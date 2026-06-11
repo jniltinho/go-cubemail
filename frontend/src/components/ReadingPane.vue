@@ -12,6 +12,7 @@ import { useMailStore } from '../stores/mail'
 import { extIcon, extColor } from '../utils/helpers'
 import Icon from './Icon.vue'
 import SpinnerIcon from './SpinnerIcon.vue'
+import EnvelopeIllustration from './EnvelopeIllustration.vue'
 
 /**
  * Parses a calendar date string in DD/MM/YYYY or DD/MM/YYYY HH:MM format
@@ -106,48 +107,7 @@ const srcdoc = computed(() => {
     <!-- Empty state -->
     <div v-if="!m" class="flex-1 flex flex-col items-center justify-center bg-panel-2">
       <div class="es-root">
-        <svg class="es-icon" width="132" height="115" viewBox="0 0 132 115" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <filter id="es-ls" x="-30%" y="-30%" width="160%" height="160%">
-              <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="rgba(0,0,0,0.10)"/>
-            </filter>
-            <filter id="es-es" x="-15%" y="-5%" width="130%" height="140%">
-              <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="rgba(0,0,0,0.10)"/>
-            </filter>
-            <linearGradient id="es-bl" x1="9" y1="47" x2="66" y2="110" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#7DD8FF"/>
-              <stop offset="100%" stop-color="#1A9BF5"/>
-            </linearGradient>
-            <linearGradient id="es-br" x1="123" y1="47" x2="66" y2="110" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#7DD8FF"/>
-              <stop offset="100%" stop-color="#1A9BF5"/>
-            </linearGradient>
-            <linearGradient id="es-fp" x1="9" y1="16" x2="123" y2="47" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#D486FD"/>
-              <stop offset="100%" stop-color="#9333EA"/>
-            </linearGradient>
-          </defs>
-          <!-- Open flap (purple, behind envelope body) -->
-          <polygon points="9,47 66,16 123,47" fill="url(#es-fp)"/>
-          <!-- Envelope body -->
-          <rect x="9" y="47" width="114" height="63" fill="white" filter="url(#es-es)"/>
-          <!-- Left blue panel (inside open envelope) -->
-          <polygon points="9,47 66,83 9,110" fill="url(#es-bl)"/>
-          <!-- Right blue panel (inside open envelope) -->
-          <polygon points="123,47 66,83 123,110" fill="url(#es-br)"/>
-          <!-- White V fold (bottom center) -->
-          <polygon points="9,110 66,83 123,110" fill="white"/>
-          <!-- V fold crease lines -->
-          <line x1="9" y1="110" x2="66" y2="83" stroke="rgba(0,0,0,0.06)" stroke-width="0.75"/>
-          <line x1="123" y1="110" x2="66" y2="83" stroke="rgba(0,0,0,0.06)" stroke-width="0.75"/>
-          <!-- Letter emerging from envelope -->
-          <rect x="41" y="9" width="50" height="53" fill="white" filter="url(#es-ls)"/>
-          <!-- Letter text lines -->
-          <rect x="51" y="21" width="30" height="2.5" fill="#DDE5F2"/>
-          <rect x="51" y="29" width="22" height="2.5" fill="#DDE5F2"/>
-          <rect x="51" y="37" width="26" height="2.5" fill="#DDE5F2"/>
-          <rect x="51" y="45" width="18" height="2.5" fill="#DDE5F2"/>
-        </svg>
+        <EnvelopeIllustration class="es-icon" />
         <p class="es-title">Select an item to read</p>
         <p class="es-sub">Nothing selected</p>
       </div>
