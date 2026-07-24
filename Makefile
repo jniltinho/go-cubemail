@@ -42,7 +42,7 @@ dev:
 ## Build Go binary (requires web/dist/ to exist)
 build:
 	@echo "Building Go application..."
-	CGO_ENABLED=1 go build -o $(BIN) $(LDFLAGS) .
+	CGO_ENABLED=0 go build -o $(BIN) $(LDFLAGS) .
 
 ## Run the unit test suite.
 ## Scoped to ./internal/... because the root package embeds web/dist, which does
@@ -63,7 +63,7 @@ test-integration:
 ## Full production build: frontend + Go + UPX compression
 build-prod: clean frontend
 	@echo "Building Go application (production)..."
-	CGO_ENABLED=1 go build -o $(BIN) $(LDFLAGS) .
+	CGO_ENABLED=0 go build -o $(BIN) $(LDFLAGS) .
 	upx --best --lzma $(BIN)
 
 ## Run the application binary

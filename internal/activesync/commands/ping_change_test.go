@@ -17,7 +17,7 @@ import (
 	"go-cubemail/internal/activesync/state"
 	"go-cubemail/internal/model"
 	"go-cubemail/internal/repository"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )

@@ -20,7 +20,7 @@ import (
 	"go-cubemail/internal/model"
 	"go-cubemail/internal/activesync/state"
 	"github.com/labstack/echo/v5"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
