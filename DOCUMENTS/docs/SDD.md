@@ -35,7 +35,7 @@ There is no email session database — all message reading/writing occurs in rea
 | CLI / bootstrap | Cobra | v1.9+ |
 | Configuration | Viper | v2.x |
 | ORM / App DB | GORM | v2.x |
-| App Database | SQLite (dev) / MariaDB / PostgreSQL (prod) | — |
+| App Database | SQLite (pure-Go, `glebarez/sqlite`, no CGO) / MariaDB / PostgreSQL | — |
 | Email reading protocol | IMAP (`emersion/go-imap/v2`) | v2.0-beta |
 | Email sending protocol | SMTP (`wneessen/go-mail`) | v0.7+ |
 | HTML sanitization | bluemonday | v1.0+ |
@@ -785,7 +785,7 @@ github.com/labstack/echo/v5          v5.1.1
 github.com/spf13/cobra               v1.9.1
 github.com/spf13/viper               v1.21.0
 gorm.io/gorm                         v1.31.1
-gorm.io/driver/sqlite
+github.com/glebarez/sqlite           v1.11.0  (pure-Go SQLite, no CGO)
 gorm.io/driver/mysql
 gorm.io/driver/postgres              (PostgreSQL support)
 github.com/emersion/go-imap/v2       v2.0.0-beta.8
