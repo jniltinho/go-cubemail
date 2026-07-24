@@ -673,9 +673,76 @@ clean       # remove binary
 ### 11.3 Out of Scope (v0.2)
 
 - Multiple simultaneous IMAP accounts
-- CalDAV / CardDAV
 - Plugins / extensions
 - WebSocket bidirectional push (SSE is sufficient)
+
+> CalDAV / CardDAV were listed here in earlier revisions. They are now
+> implemented — see section 11.4.
+
+### 11.4 DAV Synchronisation Layer
+
+> Summary only. The full architecture, design rationale, remaining work and
+> testing strategy live in the
+> [CalDAV & CardDAV Implementation Guide](DAV_IMPLEMENTATION.md).
+
+`/dav` serves CalDAV (RFC 4791) and CardDAV (RFC 6352) to external clients.
+The REST API and the DAV server share the same tables, so a change made in the
+web UI reaches Thunderbird or iOS on the next sync and vice versa.
+
+**Data model.** Calendars and address books are collections with a *stable*
+`URI` column: DAV URLs are never derived from the display name, so renaming a
+collection does not invalidate every client's sync state. Objects carry a
+`ResourceURI` — the file name the client chose, deliberately independent from
+the iCalendar/vCard UID — plus an `ETag` and the `SyncRevision` of their last
+write.
+
+**Blobs are authoritative.** `Event.ICalContent` and `Contact.VCardContent`
+hold the payload exactly as the client sent it; the flat columns are only an
+index for the UI, search and ActiveSync. Web-UI edits *patch* the stored vCard
+(`internal/contacts.ApplyToVCard`) instead of regenerating it, so ADR, PHOTO,
+BDAY, extra EMAIL/TEL entries and `X-*` extensions survive a round trip.
+
+**Three change-tracking mechanisms, all required:**
+
+| Mechanism | Scope | Purpose |
+|---|---|---|
+| ETag (`sha256`) | one object | conditional `If-Match` / `If-None-Match`; blocks lost updates |
+| CTag | one collection | legacy clients decide whether to list the collection |
+| sync-token (RFC 6578) | one collection | delta sync, including deletions |
+
+Deletions are the reason the `dav_changes` changelog exists: a token derived
+only from surviving rows can never tell a client that an object is gone, which
+leaves ghost entries and forces endless full syncs. Every write appends a
+changelog row and bumps the collection's `sync_token` **inside the same
+transaction** as the object write (`internal/dav.Record`). Entries older than
+30 days are pruned by a background goroutine, which raises the collection's
+`PrunedRevision`; a client presenting an older token gets
+`403 DAV:valid-sync-token`, the signal to run a full sync.
+
+**Package layout:**
+
+| Path | Responsibility |
+|---|---|
+| `internal/dav/` | ETag, CTag, sync-token, changelog, conditional requests |
+| `internal/contacts/` | vCard parse / build / patch (folding, grouped props) |
+| `internal/handler/dav_entry.go` | single entry point; parses the path, enforces user scoping |
+| `internal/handler/dav_paths.go` | DAV URL construction and parsing |
+| `internal/handler/dav_xml.go` | PROPFIND/REPORT/PROPPATCH decoding, multistatus building |
+| `internal/handler/caldav.go` | CalDAV collections, objects and REPORTs |
+| `internal/handler/carddav.go` | CardDAV collections, objects and REPORTs |
+
+**Routing.** WebDAV uses methods Echo's router does not know (`PROPFIND`,
+`REPORT`, `MKCALENDAR`, `PROPPATCH`, `MKCOL`). The whole `/dav` subtree is
+registered against one catch-all handler per method, which then parses the path
+itself — enumerating routes per depth is what produced the earlier
+trailing-slash and 405 bugs.
+
+**Authentication.** HTTP Basic validated against IMAP, with a 5-minute
+in-memory cache keyed by `HMAC-SHA256(user + password)` under a per-process
+key. Clients poll every few minutes and issue several requests per cycle; an
+uncached path opens an IMAP connection for each one, which overloads the mail
+server and can trip its brute-force protection. Failed authentications are
+never cached.
 
 ---
 

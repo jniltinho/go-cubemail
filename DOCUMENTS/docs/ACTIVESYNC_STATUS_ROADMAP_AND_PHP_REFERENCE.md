@@ -16,6 +16,7 @@ This document consolidates **everything implemented so far**, **what remains to 
 3. [Command matrix — implemented vs pending](#3-command-matrix--implemented-vs-pending)
 4. [File map (Go server)](#4-file-map-go-server)
 5. [Known limitations](#5-known-limitations)
+5.1. [Shared data layer with CalDAV / CardDAV](#51-shared-data-layer-with-caldav--carddav)
 6. [What we still need to do](#6-what-we-still-need-to-do)
 7. [Verification checklist](#7-verification-checklist)
 8. [Go client for testing ActiveSync](#8-go-client-for-testing-activesync)
@@ -209,8 +210,11 @@ internal/server/middleware/eas_auth.go
 
 - Calendar: no RRule, timezone blob, rich Body, recurrence on EAS.
 - MeetingResponse: no organizer iMIP reply via SMTP.
-- `vtodo/*`: stub only.
-- Ping does not monitor calendar/contacts collections.
+- `vtodo/*`: stub only, and tasks belong to no DAV collection — they are not
+  exposed over CalDAV and fall back to timestamp change detection.
+- A contact's phone is stored in a single column, so the type a device assigned
+  (mobile / business / home) is not preserved in the index; the stored vCard
+  keeps all of them.
 
 ### Search & directory
 
@@ -227,7 +231,42 @@ internal/server/middleware/eas_auth.go
 
 - Protocol version fixed at **14.1** in config.
 - Ping long-poll requires reverse proxy timeout ≥ heartbeat.
+- A client `Add` that carries nothing usable is skipped without a per-item
+  status, because `eas.SyncAdd` in the WBXML library has no `Status` field.
+  Everything that can be stored is accepted precisely so this path is not hit —
+  a device retries an unanswered `Add` indefinitely.
 - EAS production may require Microsoft licensing (see implementation guide §2).
+
+---
+
+## 5.1 Shared data layer with CalDAV / CardDAV
+
+ActiveSync and DAV write to the same rows through the same repositories, so a
+change made on a phone reaches Thunderbird and vice versa. Consequences worth
+knowing before touching either side:
+
+- **Collections are shared.** One calendar or address book is one EAS folder and
+  one DAV collection. `internal/activesync/commands/collections.go` maps
+  `vevent/<uri>` and `vcard/<uri>` to the DAV collection URI, keeping
+  `personal` as an alias for the default so devices synced by earlier builds are
+  not forced to resync.
+- **FolderSync reports hierarchy changes**, so a calendar created in Thunderbird
+  reaches an already-paired device. The last list sent is stored under the
+  synthetic `__hierarchy__` collection in the folder-state table.
+- **The vCard blob is authoritative.** An EAS edit updates the flat columns and
+  the repository patches the stored card, so addresses, photos, birthdays and
+  extra numbers survive an edit made on a phone.
+- **Writes advance the DAV sync token**, which is what makes an EAS change
+  visible to CalDAV/CardDAV clients on their next delta.
+- **Change detection prefers `SyncRevision`** (monotonic, per collection) and
+  falls back to `UpdatedAt` for rows outside any DAV collection. The timestamp
+  alone cannot separate two edits made within the same second.
+- **Ping does not scan rows** while a collection is quiet: it compares the
+  collection sync token first — one integer read — and only then compares
+  id/updated_at pairs. It never loads the iCalendar or vCard payloads.
+
+See the [CalDAV & CardDAV Implementation Guide](DAV_IMPLEMENTATION.md) for the
+DAV side of this contract.
 
 ---
 

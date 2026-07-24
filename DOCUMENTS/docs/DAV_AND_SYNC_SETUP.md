@@ -122,12 +122,17 @@ Client
 
 ### Supported features
 
-- Multiple personal calendars per user (create, rename, colour, delete)
-- Full CRUD for events (VEVENT, VTIMEZONE, VALARM)
+- Multiple personal calendars per user (create, rename, colour, delete), each at
+  its own stable URL — renaming a calendar does not break client sync state
+- Full CRUD for events; the iCalendar payload is stored and returned byte for
+  byte, so VTIMEZONE, VALARM and `X-*` properties survive a round trip
 - Recurring events (RRULE: DAILY, WEEKLY, MONTHLY, YEARLY)
 - Standard discovery via `.well-known/caldav` redirect
-- `calendar-multiget` REPORT for efficient bulk fetch
-- `getctag` and `getetag` for change detection
+- `sync-collection` REPORT (RFC 6578) — delta sync including deletions
+- `calendar-query` and `calendar-multiget` REPORTs
+- `MKCALENDAR` and `PROPPATCH`, so clients can create and rename calendars
+- Conditional writes via `If-Match` / `If-None-Match`, answering **412** on a
+  conflict so two clients cannot silently overwrite each other
 
 ---
 
@@ -159,11 +164,20 @@ Client
 
 ### Supported features
 
-- Single address book per user (`default`) backed by the GORM contacts table
-- vCard 3.0 export and import (FN, N, EMAIL, TEL, ORG, NOTE)
-- `addressbook-multiget` REPORT for efficient bulk sync
-- ETag-based conflict detection
-- `DAV: 1, 2, addressbook` capability header on OPTIONS
+- Multiple address books per user, provisioned as `default` on first access and
+  creatable with `MKCOL`
+- vCard 3.0 and 4.0: the card is stored exactly as the client sent it, so
+  addresses, photos, birthdays, extra e-mails and phone numbers and `X-*`
+  extensions are never lost — including when the contact is edited from the
+  web UI, which patches the stored card instead of regenerating it
+- `sync-collection` REPORT (RFC 6578) — delta sync including deletions
+- `addressbook-query` with `prop-filter` text matching, and `addressbook-multiget`
+- Conditional writes via `If-Match` / `If-None-Match` (**412** on conflict)
+- `DAV: 1, 2, 3, access-control, calendar-access, addressbook` on OPTIONS
+
+> Contact groups (`KIND:group`), the global address list and automatically
+> collected contacts are not implemented yet — see
+> [§6 of the implementation guide](DAV_IMPLEMENTATION.md#6-remaining-work).
 
 ---
 

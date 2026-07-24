@@ -73,6 +73,8 @@ More screenshots in [DOCUMENTS/screenshots](DOCUMENTS/screenshots).
   - **CalDAV** — Apple Calendar, Thunderbird (TbSync), Evolution, GNOME Calendar
   - **CardDAV** — Apple Contacts, Thunderbird, Evolution
   - **ActiveSync (EAS)** — iOS Mail/Calendar, Android (Outlook/Gmail), Outlook desktop (mail + calendar + contacts)
+  - Every calendar and address book syncs as its own folder, over both DAV and ActiveSync — create one in Thunderbird and it appears on the phone
+  - Changes made in one client reach the others through a delta sync, deletions included
 - **Web Push notifications** — Real-time new mail alerts in the browser even when the tab is in the background (requires HTTPS + VAPID keys).
 - **Privacy by design** — Your emails never leave your IMAP server. The database only stores contacts, calendar events, identities, settings and sessions.
 - **Multiple identities & signatures** — Send from different addresses with per-identity signatures.
@@ -84,6 +86,7 @@ More screenshots in [DOCUMENTS/screenshots](DOCUMENTS/screenshots).
 
 - [Production Setup Guide](DOCUMENTS/setup/README.md) — Ubuntu + MariaDB + systemd deployment (recommended for production)
 - [DAV & Sync Setup](DOCUMENTS/docs/DAV_AND_SYNC_SETUP.md) — CalDAV, CardDAV and ActiveSync configuration + client setup (Thunderbird, iOS, Outlook, Android)
+- [CalDAV & CardDAV Implementation](DOCUMENTS/docs/DAV_IMPLEMENTATION.md) — DAV server architecture, design rationale and roadmap
 - [Development Guide](DOCUMENTS/docs/DEVELOPMENT.md) — Local development with hot reload
 - [Contributing Guide](DOCUMENTS/docs/CONTRIBUTING.md)
 - Full API reference via Swagger UI (enable `swagger_enable = true` in config)

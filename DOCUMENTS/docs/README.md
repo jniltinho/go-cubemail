@@ -20,6 +20,7 @@ This directory contains the main technical and contributor documentation for **g
 | [Calendar Go Reference](CALENDAR_GO_REFERENCE.md) | Documentation of all Go types and functions in the calendar backend packages. |
 | [Calendar cURL Testing Guide](CALENDAR_CURL_TESTING.md) | How to test every calendar API endpoint with curl (auth, CRUD, ICS import/export). |
 | [Calendar API Testing Guide](CALENDAR_API_TESTING.md) | Legacy API testing guide (superseded by cURL guide for curl-specific workflows). |
+| [CalDAV & CardDAV Implementation Guide](DAV_IMPLEMENTATION.md) | Architecture of the DAV server (collections, blob fidelity, ETag/CTag/sync-token), design rationale, remaining work, testing strategy and known pitfalls. |
 | [ActiveSync Implementation Guide](ACTIVESYNC_IMPLEMENTATION.md) | Step-by-step plan to build a Microsoft Exchange ActiveSync (EAS) server in Go for mobile mail/calendar/contacts sync. |
 | [ActiveSync Go Reference](ACTIVESYNC_GO_REFERENCE.md) | Documentation of all Go types and functions in the ActiveSync backend packages. |
 | [ActiveSync cURL Testing Guide](ACTIVESYNC_CURL_TESTING.md) | Test EAS endpoints with curl (OPTIONS, Provision, FolderSync, Ping, Autodiscover). |
