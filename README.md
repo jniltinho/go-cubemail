@@ -17,17 +17,24 @@ Built with a modern Vue 3 + Go stack, inspired by the classic Roundcube "Larry" 
 
 ### Pre-built release (recommended)
 
-1. Download the latest Linux binary from the [Releases page](https://github.com/jniltinho/go-cubemail/releases)
-2. Extract and initialize:
+1. Download the latest Linux (amd64) binary from the [Releases page](https://github.com/jniltinho/go-cubemail/releases)
+2. Extract and generate a config file:
 
    ```bash
    tar -xzf go-cubemail_*.tar.gz
-   ./go-cubemail init
+   ./go-cubemail init -o config.toml
+   ```
+
+3. Edit `config.toml` with your IMAP/SMTP server details — without it the server
+   starts against the built-in defaults and will not reach your mail server.
+4. Create the database schema and start:
+
+   ```bash
    ./go-cubemail migrate
    ./go-cubemail serve
    ```
 
-3. Open http://localhost:8080
+5. Open http://localhost:8080
 
 Pre-built binaries are published on every release. For production setup with MariaDB + systemd, see the [Production Setup Guide](DOCUMENTS/setup/README.md).
 
@@ -39,8 +46,8 @@ Requires Go 1.26+ and Node.js (build time only).
 git clone https://github.com/jniltinho/go-cubemail.git
 cd go-cubemail
 
-make all          # builds Vue 3 frontend + embeds into Go binary
-./bin/go-cubemail init
+make all                            # builds Vue 3 frontend + embeds into Go binary
+./bin/go-cubemail init -o config.toml   # then edit config.toml
 ./bin/go-cubemail migrate
 ./bin/go-cubemail serve
 ```
@@ -48,6 +55,16 @@ make all          # builds Vue 3 frontend + embeds into Go binary
 Access at http://localhost:8080.
 
 Swagger UI (when enabled): `http://localhost:8080/swagger/`.
+
+### Upgrading
+
+Replace the binary and run the migration again before starting the new version:
+
+```bash
+./go-cubemail migrate
+```
+
+Migrations are idempotent, so running them when nothing changed is harmless.
 
 ## Screenshots
 
@@ -74,11 +91,12 @@ More screenshots in [DOCUMENTS/screenshots](DOCUMENTS/screenshots).
   - **CardDAV** — Apple Contacts, Thunderbird, Evolution
   - **ActiveSync (EAS)** — iOS Mail/Calendar, Android (Outlook/Gmail), Outlook desktop (mail + calendar + contacts)
   - Every calendar and address book syncs as its own folder, over both DAV and ActiveSync — create one in Thunderbird and it appears on the phone
-  - Changes made in one client reach the others through a delta sync, deletions included
+  - Delta sync: clients fetch only what changed, deletions included, and a conflicting edit is refused instead of silently overwriting
+  - What a client sends is what it gets back — addresses, photos, birthdays, alarms and custom fields are never dropped in a round trip
 - **Web Push notifications** — Real-time new mail alerts in the browser even when the tab is in the background (requires HTTPS + VAPID keys).
 - **Privacy by design** — Your emails never leave your IMAP server. The database only stores contacts, calendar events, identities, settings and sessions.
 - **Multiple identities & signatures** — Send from different addresses with per-identity signatures.
-- **Easy to operate** — `./go-cubemail init` generates a ready-to-use config. Database migrations are a single command. Production examples with systemd + MariaDB/PostgreSQL included.
+- **Easy to operate** — `init` generates a ready-to-use config, migrations are a single idempotent command. Production examples with systemd + MariaDB/PostgreSQL included.
 - **Production API** — Versioned REST API with Swagger documentation. Useful for automation and integrations.
 - **CLI tools** — `init`, `migrate`, `serve`, `version`.
 
@@ -95,12 +113,12 @@ More screenshots in [DOCUMENTS/screenshots](DOCUMENTS/screenshots).
 
 **Backend**: Go 1.26, Echo v5, GORM, Cobra, Viper, Swaggo (OpenAPI)
 
-**Frontend (embedded)**: Vue 3 + TypeScript + Vite, Pinia, Vue Router, Tailwind CSS v4, TipTap (rich text), Lucide icons
+**Frontend (embedded)**: Vue 3 + TypeScript + Vite, Pinia, Tailwind CSS v4, TipTap (rich text), Lucide icons
 
 **Email & Sync**:
 - IMAP: `emersion/go-imap/v2`
 - SMTP: `wneessen/go-mail`
-- CalDAV / CardDAV: custom implementation
+- CalDAV / CardDAV: custom implementation (RFC 4791 / 6352, with RFC 6578 delta sync)
 - ActiveSync (EAS): `remdev/go-activesync` + custom command handlers
 - iCalendar (RRULE, VEVENT): custom parser + recurrence engine
 
@@ -111,12 +129,16 @@ More screenshots in [DOCUMENTS/screenshots](DOCUMENTS/screenshots).
 The easiest way to start:
 
 ```bash
-./go-cubemail init
+./go-cubemail init -o config.toml
 ```
 
-This creates a `config_*.toml` file. Rename to `config.toml`, fill in your IMAP/SMTP and database details.
+Then fill in your IMAP/SMTP and database details. Without `-o`, the file is
+named `config_<timestamp>.toml` so an existing config is never overwritten —
+rename it to `config.toml` before starting the server.
 
-All settings can be overridden with `GORC_` environment variables.
+The config file is looked up as `./config.toml`, then `/etc/go-cubemail/config.toml`,
+or wherever `--config` points. All settings can be overridden with `GORC_`
+environment variables.
 
 See the [Production Setup Guide](DOCUMENTS/setup/README.md) for MariaDB/PostgreSQL + systemd examples.
 
