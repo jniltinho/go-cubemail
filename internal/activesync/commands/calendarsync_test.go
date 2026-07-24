@@ -50,12 +50,32 @@ func TestModelContactToEas(t *testing.T) {
 	}
 }
 
-func TestParseCollectionIDs(t *testing.T) {
-	if !parseVEventCollectionID("vevent/personal") {
-		t.Fatal("expected vevent collection")
+func TestCollectionURI(t *testing.T) {
+	tests := []struct {
+		name         string
+		collectionID string
+		prefix       string
+		wantURI      string
+		wantOK       bool
+	}{
+		{name: "default calendar", collectionID: "vevent/personal", prefix: prefixCalendar, wantURI: "personal", wantOK: true},
+		{name: "named calendar", collectionID: "vevent/work", prefix: prefixCalendar, wantURI: "work", wantOK: true},
+		{name: "default contacts", collectionID: "vcard/personal", prefix: prefixContacts, wantURI: "personal", wantOK: true},
+		{name: "wrong class", collectionID: "vcard/personal", prefix: prefixCalendar, wantOK: false},
+		{name: "missing collection", collectionID: "vevent/", prefix: prefixCalendar, wantOK: false},
+		// A nested segment could otherwise be used to address another user.
+		{name: "path traversal", collectionID: "vevent/../other", prefix: prefixCalendar, wantOK: false},
 	}
-	if !parseVCardCollectionID("vcard/personal") {
-		t.Fatal("expected vcard collection")
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			uri, ok := collectionURI(tc.collectionID, tc.prefix)
+			if ok != tc.wantOK {
+				t.Fatalf("ok = %v, want %v", ok, tc.wantOK)
+			}
+			if ok && uri != tc.wantURI {
+				t.Fatalf("uri = %q, want %q", uri, tc.wantURI)
+			}
+		})
 	}
 }
 

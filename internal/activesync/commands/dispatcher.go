@@ -34,12 +34,13 @@ type Dispatcher struct {
 
 // NewDispatcher constructs a command dispatcher with phase 0–5 handlers.
 func NewDispatcher(cfg *config.Config, db *gorm.DB, store *state.Store, calRepo *repository.CalendarRepo) *Dispatcher {
-	folders := NewFolderBuilder(cfg, store)
+	folders := NewFolderBuilder(cfg, store, calRepo, repository.NewAddressBookRepo(db))
 	mail := NewMailSyncEngine(cfg, store)
 	eventRepo := repository.NewEventRepo(db)
 	contactRepo := repository.NewContactRepo(db)
+	bookRepo := repository.NewAddressBookRepo(db)
 	calendar := NewCalendarSyncEngine(store, calRepo, eventRepo)
-	contacts := NewContactsSyncEngine(store, contactRepo)
+	contacts := NewContactsSyncEngine(store, contactRepo, bookRepo)
 	tasks := NewTasksSyncEngine(store, eventRepo)
 	return &Dispatcher{
 		cfg:         cfg,
@@ -49,7 +50,7 @@ func NewDispatcher(cfg *config.Config, db *gorm.DB, store *state.Store, calRepo 
 		eventRepo:   eventRepo,
 		contactRepo: contactRepo,
 		provision:   &ProvisionHandler{},
-		folder:      &FolderSyncHandler{store: store, folders: folders, calRepo: calRepo},
+		folder:      &FolderSyncHandler{store: store, folders: folders},
 		ping:        NewPingHandler(cfg, store, mail, calendar, contacts),
 		sync:        NewSyncHandler(store, mail, calendar, contacts, tasks),
 		estimate:    NewGetItemEstimateHandler(mail, calendar, contacts, tasks),

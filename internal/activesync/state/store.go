@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -92,19 +93,70 @@ func (s *Store) SetCollectionSyncKey(deviceID uint, collectionID, syncKey string
 	return s.db.Save(&st).Error
 }
 
-// NextCollectionSyncKey increments the per-collection sync key and returns the new value.
+// syncKeyCASAttempts bounds the compare-and-swap retry loop.
+//
+// Each round at least one contender wins, so a caller needs about as many
+// attempts as there are concurrent writers on the same collection. In practice
+// that is one or two — a device waits for its Sync response before issuing the
+// next request for a collection — but a client that retries after a timeout can
+// briefly double up, and the bound is cheap.
+const syncKeyCASAttempts = 50
+
+// syncKeyRetryBackoff spaces out retries so contenders stop colliding in
+// lockstep, which is what turns a busy collection into repeated CAS failures.
+const syncKeyRetryBackoff = 200 * time.Microsecond
+
+// NextCollectionSyncKey increments the per-collection sync key and returns the
+// new value.
+//
+// The increment is a compare-and-swap rather than a read-modify-write: the
+// UPDATE only applies while the key still holds the value that was read, so two
+// concurrent Sync requests for the same collection — which devices do pipeline —
+// cannot both be handed the same key. Handing out a duplicate key would make the
+// server accept a stale request as current and silently drop a batch of changes.
+//
+// A plain transaction would not be enough on its own: without row locking, both
+// readers would still see the same starting value.
 func (s *Store) NextCollectionSyncKey(deviceID uint, collectionID string) (string, error) {
-	cur, err := s.GetCollectionSyncKey(deviceID, collectionID)
-	if err != nil {
-		return "", err
+	for attempt := 0; attempt < syncKeyCASAttempts; attempt++ {
+		var st EasFolderState
+		err := s.db.Where("eas_device_id = ? AND collection_id = ?", deviceID, collectionID).
+			First(&st).Error
+
+		if err == gorm.ErrRecordNotFound {
+			// First sync for this collection. A unique index on
+			// (device, collection) makes a lost race here a duplicate-key
+			// error, which the retry resolves by taking the update path.
+			st = EasFolderState{
+				EasDeviceID:  deviceID,
+				CollectionID: collectionID,
+				SyncKey:      "1",
+			}
+			if err := s.db.Create(&st).Error; err != nil {
+				continue
+			}
+			return st.SyncKey, nil
+		}
+		if err != nil {
+			return "", err
+		}
+
+		n, _ := strconv.ParseUint(st.SyncKey, 10, 64)
+		next := strconv.FormatUint(n+1, 10)
+
+		res := s.db.Model(&EasFolderState{}).
+			Where("id = ? AND sync_key = ?", st.ID, st.SyncKey).
+			Update("sync_key", next)
+		if res.Error != nil {
+			return "", res.Error
+		}
+		if res.RowsAffected == 1 {
+			return next, nil
+		}
+		// Another request advanced the key first; re-read and try again.
+		time.Sleep(syncKeyRetryBackoff)
 	}
-	n, _ := strconv.ParseUint(cur, 10, 64)
-	n++
-	next := strconv.FormatUint(n, 10)
-	if err := s.SetCollectionSyncKey(deviceID, collectionID, next); err != nil {
-		return "", err
-	}
-	return next, nil
+	return "", fmt.Errorf("sync key for collection %q is contended", collectionID)
 }
 
 // FolderGUID returns a stable EAS folder ID for an IMAP mailbox path.

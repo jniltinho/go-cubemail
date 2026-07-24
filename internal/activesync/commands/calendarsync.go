@@ -34,17 +34,13 @@ func NewCalendarSyncEngine(store *state.Store, calRepo *repository.CalendarRepo,
 // when GetChanges is set → bump sync key and persist ItemSyncCache.
 // Returns SyncStatusInvalidSyncKey (3) when the client key is stale.
 func (c *CalendarSyncEngine) SyncCollection(ctx *Context, dev *state.EasDevice, col eas.SyncCollection) (eas.SyncCollection, error) {
-	if !parseVEventCollectionID(col.CollectionID) {
+	cal, ok := resolveCalendarCollection(c.calRepo, ctx.UserID, col.CollectionID)
+	if !ok {
 		return eas.SyncCollection{
 			SyncKey:      col.SyncKey,
 			CollectionID: col.CollectionID,
 			Status:       eas.SyncStatusProtocolError,
 		}, nil
-	}
-
-	cal, err := c.calRepo.EnsureDefault(ctx.UserID)
-	if err != nil {
-		return eas.SyncCollection{}, err
 	}
 
 	fst, err := c.store.GetFolderState(dev.ID, col.CollectionID)
@@ -96,6 +92,12 @@ func (c *CalendarSyncEngine) SyncCollection(ctx *Context, dev *state.EasDevice, 
 		return eas.SyncCollection{}, err
 	}
 	fst.SyncKey = newKey
+	// Record the collection revision so Ping can skip the row scan while the
+	// collection is quiet. Read after applying changes so a write that lands
+	// mid-request is reported on the next Ping instead of being swallowed.
+	if rev, err := c.calRepo.Revision(ctx.UserID, cal.ID); err == nil {
+		cache.DavRevision = rev
+	}
 	fst.SyncCache = state.EncodeItemSyncCache(cache)
 	if err := c.store.SaveFolderState(fst); err != nil {
 		return eas.SyncCollection{}, err
@@ -107,12 +109,9 @@ func (c *CalendarSyncEngine) SyncCollection(ctx *Context, dev *state.EasDevice, 
 // EstimateCount returns the number of events in the user's default calendar.
 // Used by GetItemEstimate for vevent/* collection IDs.
 func (c *CalendarSyncEngine) EstimateCount(ctx *Context, collectionID string) (int32, error) {
-	if !parseVEventCollectionID(collectionID) {
+	cal, ok := resolveCalendarCollection(c.calRepo, ctx.UserID, collectionID)
+	if !ok {
 		return 0, fmt.Errorf("invalid calendar collection")
-	}
-	cal, err := c.calRepo.EnsureDefault(ctx.UserID)
-	if err != nil {
-		return 0, err
 	}
 	events, err := c.eventRepo.ListByCalendar(ctx.UserID, cal.ID)
 	if err != nil {
@@ -137,7 +136,10 @@ func (c *CalendarSyncEngine) applyClientCommands(ctx *Context, cmds *eas.SyncCom
 			return nil, err
 		}
 		sid := serverIDForUint(event.ID)
-		cache.Items[sid] = state.ItemSyncItem{UpdatedAt: event.UpdatedAt.Unix()}
+		cache.Items[sid] = state.ItemSyncItem{
+			UpdatedAt: event.UpdatedAt.Unix(),
+			Revision:  event.SyncRevision,
+		}
 		responses.Add = append(responses.Add, eas.SyncAdd{
 			ClientID: add.ClientID,
 			ServerID: sid,
@@ -162,7 +164,10 @@ func (c *CalendarSyncEngine) applyClientCommands(ctx *Context, cmds *eas.SyncCom
 		if err := c.eventRepo.Update(event); err != nil {
 			return nil, err
 		}
-		cache.Items[chg.ServerID] = state.ItemSyncItem{UpdatedAt: event.UpdatedAt.Unix()}
+		cache.Items[chg.ServerID] = state.ItemSyncItem{
+			UpdatedAt: event.UpdatedAt.Unix(),
+			Revision:  event.SyncRevision,
+		}
 	}
 
 	for _, del := range cmds.Delete {
@@ -194,7 +199,10 @@ func (c *CalendarSyncEngine) buildServerChanges(userID, calendarID uint, cache s
 	eventByID := make(map[string]model.Event, len(events))
 	for _, ev := range events {
 		sid := serverIDForUint(ev.ID)
-		current[sid] = state.ItemSyncItem{UpdatedAt: ev.UpdatedAt.Unix()}
+		current[sid] = state.ItemSyncItem{
+			UpdatedAt: ev.UpdatedAt.Unix(),
+			Revision:  ev.SyncRevision,
+		}
 		eventByID[sid] = ev
 	}
 
@@ -210,7 +218,7 @@ func (c *CalendarSyncEngine) buildServerChanges(userID, calendarID uint, cache s
 			queue = append(queue, pending{kind: "add", serverID: sid})
 			continue
 		}
-		if prev.UpdatedAt != item.UpdatedAt {
+		if !prev.SameVersion(item) {
 			queue = append(queue, pending{kind: "change", serverID: sid})
 		}
 	}
@@ -412,11 +420,6 @@ func easPartStatToICal(status int32) string {
 	default:
 		return "NEEDS-ACTION"
 	}
-}
-
-// parseVEventCollectionID reports whether collectionID is a supported calendar collection (vevent/*).
-func parseVEventCollectionID(collectionID string) bool {
-	return strings.HasPrefix(collectionID, "vevent/")
 }
 
 // syncWindow returns the Sync batch size, defaulting to defaultSyncWindow when windowSize is zero.

@@ -8,6 +8,7 @@ import (
 	"github.com/remdev/go-activesync/wbxml"
 	"go-cubemail/internal/activesync/state"
 	"go-cubemail/internal/config"
+	"go-cubemail/internal/repository"
 )
 
 // PingHandler implements the MS-ASCMD Ping command with long-poll change detection.
@@ -127,25 +128,20 @@ func (h *PingHandler) pingCalendarChanged(ctx *Context, dev *state.EasDevice, fo
 			continue
 		}
 		cache := state.LoadItemSyncCache(fst.SyncCache)
-		cal, err := h.calendar.calRepo.EnsureDefault(ctx.UserID)
+		cal, ok := resolveCalendarCollection(h.calendar.calRepo, ctx.UserID, folder.ID)
+		if !ok {
+			continue
+		}
+		if rev, err := h.calendar.calRepo.Revision(ctx.UserID, cal.ID); err == nil &&
+			unchangedSince(cache, rev) {
+			continue
+		}
+		stamps, err := h.calendar.eventRepo.ListEventStamps(ctx.UserID, cal.ID)
 		if err != nil {
 			continue
 		}
-		events, err := h.calendar.eventRepo.ListByCalendar(ctx.UserID, cal.ID)
-		if err != nil {
-			continue
-		}
-		if len(events) != len(cache.Items) {
+		if stampsDiffer(cache, stamps) {
 			changedIDs = append(changedIDs, folder.ID)
-			continue
-		}
-		for _, ev := range events {
-			sid := serverIDForUint(ev.ID)
-			item, ok := cache.Items[sid]
-			if !ok || item.UpdatedAt != ev.UpdatedAt.Unix() {
-				changedIDs = append(changedIDs, folder.ID)
-				break
-			}
 		}
 	}
 	return changedIDs, nil
@@ -160,22 +156,51 @@ func (h *PingHandler) pingContactsChanged(ctx *Context, dev *state.EasDevice, fo
 			continue
 		}
 		cache := state.LoadItemSyncCache(fst.SyncCache)
-		contacts, err := h.contacts.contactRepo.List(ctx.UserID)
+		book, ok := resolveAddressBookCollection(h.contacts.bookRepo, ctx.UserID, folder.ID)
+		if !ok {
+			continue
+		}
+		if rev, err := h.contacts.bookRepo.Revision(ctx.UserID, book.ID); err == nil &&
+			unchangedSince(cache, rev) {
+			continue
+		}
+		stamps, err := h.contacts.contactRepo.ListContactStamps(ctx.UserID, book.ID)
 		if err != nil {
 			continue
 		}
-		if len(contacts) != len(cache.Items) {
+		if stampsDiffer(cache, stamps) {
 			changedIDs = append(changedIDs, folder.ID)
-			continue
-		}
-		for _, ct := range contacts {
-			sid := serverIDForUint(ct.ID)
-			item, ok := cache.Items[sid]
-			if !ok || item.UpdatedAt != ct.UpdatedAt.Unix() {
-				changedIDs = append(changedIDs, folder.ID)
-				break
-			}
 		}
 	}
 	return changedIDs, nil
+}
+
+// unchangedSince reports that the collection token has not moved since the last
+// Sync, which proves nothing in the collection changed.
+//
+// This is the fast path of the long-poll: one integer read instead of a scan.
+// A zero token means the collection predates the DAV revision counter (or the
+// last Sync did not record one), so the caller must fall back to comparing rows.
+func unchangedSince(cache state.ItemSyncCache, revision uint64) bool {
+	return revision != 0 && cache.DavRevision == revision
+}
+
+// stampsDiffer compares the collection's current object versions against what
+// the device last received. It is the authoritative check; the revision above
+// only decides whether it is worth running.
+func stampsDiffer(cache state.ItemSyncCache, stamps []repository.ObjectStamp) bool {
+	if len(stamps) != len(cache.Items) {
+		return true
+	}
+	for _, s := range stamps {
+		item, ok := cache.Items[serverIDForUint(s.ID)]
+		if !ok {
+			return true
+		}
+		current := state.ItemSyncItem{UpdatedAt: s.UpdatedAt.Unix(), Revision: s.SyncRevision}
+		if !item.SameVersion(current) {
+			return true
+		}
+	}
+	return false
 }

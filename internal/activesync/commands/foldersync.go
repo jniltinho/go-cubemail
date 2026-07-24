@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -16,7 +17,6 @@ import (
 type FolderSyncHandler struct {
 	store   *state.Store
 	folders *FolderBuilder
-	calRepo *repository.CalendarRepo
 }
 
 // Handle processes FolderSync and returns folder hierarchy changes.
@@ -43,67 +43,208 @@ func (h *FolderSyncHandler) Handle(ctx *Context, body []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if req.SyncKey == "0" || req.SyncKey == "" {
-		adds := make([]eas.FolderAdd, 0, len(list))
-		for _, f := range list {
-			adds = append(adds, eas.FolderAdd{
-				ServerID:    f.ServerID,
-				ParentID:    f.ParentID,
-				DisplayName: f.DisplayName,
-				Type:        f.Type,
-			})
-		}
-		newKey := h.store.NextFolderSyncKey(dev)
+	initial := req.SyncKey == "0" || req.SyncKey == ""
+	changes := h.diffHierarchy(dev, list, initial)
+	count := int32(len(changes.Add) + len(changes.Update) + len(changes.Delete))
+	changes.Count = count
+
+	// A response that reports no changes must keep the current key; bumping it
+	// would invalidate the client's state for nothing.
+	if count == 0 && !initial {
 		return wbxml.Marshal(eas.FolderSyncResponse{
 			Status:  eas.StatusSuccess,
-			SyncKey: newKey,
-			Changes: eas.FolderChanges{
-				Count: int32(len(adds)),
-				Add:   adds,
-			},
+			SyncKey: dev.FolderSyncKey,
+			Changes: eas.FolderChanges{Count: 0},
 		})
 	}
 
+	if err := h.saveHierarchy(dev, list); err != nil {
+		return nil, err
+	}
 	return wbxml.Marshal(eas.FolderSyncResponse{
 		Status:  eas.StatusSuccess,
-		SyncKey: dev.FolderSyncKey,
-		Changes: eas.FolderChanges{Count: 0},
+		SyncKey: h.store.NextFolderSyncKey(dev),
+		Changes: changes,
 	})
+}
+
+// hierarchyCollectionID is the synthetic collection under which the last folder
+// list sent to a device is stored. Reusing the folder-state table keeps the
+// snapshot next to the rest of the device's sync state without a new table.
+const hierarchyCollectionID = "__hierarchy__"
+
+// diffHierarchy compares the current folder list against the one the device was
+// last given, so a calendar or address book created after the device was set up
+// still reaches it. Without this, a device that has already synced once keeps
+// its original folder list forever.
+func (h *FolderSyncHandler) diffHierarchy(dev *state.EasDevice, list []FolderEntry, initial bool) eas.FolderChanges {
+	var changes eas.FolderChanges
+
+	previous := map[string]FolderEntry{}
+	if !initial {
+		previous = h.loadHierarchy(dev)
+	}
+
+	current := make(map[string]FolderEntry, len(list))
+	for _, f := range list {
+		current[f.ServerID] = f
+		prev, known := previous[f.ServerID]
+		switch {
+		case !known:
+			changes.Add = append(changes.Add, eas.FolderAdd{
+				ServerID: f.ServerID, ParentID: f.ParentID,
+				DisplayName: f.DisplayName, Type: f.Type,
+			})
+		case prev.DisplayName != f.DisplayName || prev.Type != f.Type || prev.ParentID != f.ParentID:
+			changes.Update = append(changes.Update, eas.FolderUpdate{
+				ServerID: f.ServerID, ParentID: f.ParentID,
+				DisplayName: f.DisplayName, Type: f.Type,
+			})
+		}
+	}
+	for id := range previous {
+		if _, ok := current[id]; !ok {
+			changes.Delete = append(changes.Delete, eas.FolderDelete{ServerID: id})
+		}
+	}
+	return changes
+}
+
+// loadHierarchy returns the folder list last sent to the device.
+func (h *FolderSyncHandler) loadHierarchy(dev *state.EasDevice) map[string]FolderEntry {
+	out := map[string]FolderEntry{}
+	fst, err := h.store.GetFolderState(dev.ID, hierarchyCollectionID)
+	if err != nil || fst.SyncCache == "" {
+		return out
+	}
+	var entries []FolderEntry
+	if err := json.Unmarshal([]byte(fst.SyncCache), &entries); err != nil {
+		return out
+	}
+	for _, f := range entries {
+		out[f.ServerID] = f
+	}
+	return out
+}
+
+// saveHierarchy records the folder list just sent to the device.
+func (h *FolderSyncHandler) saveHierarchy(dev *state.EasDevice, list []FolderEntry) error {
+	fst, err := h.store.GetFolderState(dev.ID, hierarchyCollectionID)
+	if err != nil {
+		return err
+	}
+	encoded, err := json.Marshal(list)
+	if err != nil {
+		return err
+	}
+	fst.SyncCache = string(encoded)
+	return h.store.SaveFolderState(fst)
 }
 
 // FolderEntry describes one folder in the EAS hierarchy returned by FolderSync.
 type FolderEntry struct {
-	ServerID    string // EAS collection ID (e.g. mail/{guid}, vevent/personal).
-	ParentID    string // Parent folder ServerID ("0" for top-level).
-	DisplayName string // Human-readable folder name shown on the device.
-	Type        int32  // MS-ASCMD folder type code (2=inbox, 8=calendar, etc.).
+	ServerID    string `json:"server_id"`    // EAS collection ID (e.g. mail/{guid}, vevent/personal).
+	ParentID    string `json:"parent_id"`    // Parent folder ServerID ("0" for top-level).
+	DisplayName string `json:"display_name"` // Human-readable folder name shown on the device.
+	Type        int32  `json:"type"`         // MS-ASCMD folder type code (2=inbox, 8=calendar, etc.).
 }
 
 // FolderBuilder assembles mail, calendar, contacts, and task folders for FolderSync.
 type FolderBuilder struct {
-	cfg   *config.Config
-	store *state.Store
+	cfg      *config.Config
+	store    *state.Store
+	calRepo  *repository.CalendarRepo
+	bookRepo *repository.AddressBookRepo
 }
 
 // NewFolderBuilder creates a FolderBuilder.
-func NewFolderBuilder(cfg *config.Config, store *state.Store) *FolderBuilder {
-	return &FolderBuilder{cfg: cfg, store: store}
+func NewFolderBuilder(cfg *config.Config, store *state.Store,
+	calRepo *repository.CalendarRepo, bookRepo *repository.AddressBookRepo) *FolderBuilder {
+	return &FolderBuilder{cfg: cfg, store: store, calRepo: calRepo, bookRepo: bookRepo}
 }
 
-// Build returns the full folder list for the authenticated user.
+// MS-ASCMD folder type codes.
+const (
+	folderTypeTasks    = 7
+	folderTypeCalendar = 8
+	folderTypeContacts = 9
+)
+
+// Build returns the full folder list for the authenticated user: every IMAP
+// mailbox, every calendar, every address book, plus the task collection.
+//
+// One DAV collection is one device folder, so a calendar created in Thunderbird
+// shows up on the phone. The default collections keep their historical
+// "personal" IDs — see collections.go.
 func (b *FolderBuilder) Build(ctx *Context) ([]FolderEntry, error) {
 	mailFolders, err := b.mailFolders(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]FolderEntry, 0, len(mailFolders)+3)
+	out := make([]FolderEntry, 0, len(mailFolders)+4)
 	out = append(out, mailFolders...)
-	out = append(out,
-		FolderEntry{ServerID: "vevent/personal", ParentID: "0", DisplayName: "Calendar", Type: 8},
-		FolderEntry{ServerID: "vtodo/personal", ParentID: "0", DisplayName: "Tasks", Type: 7},
-		FolderEntry{ServerID: "vcard/personal", ParentID: "0", DisplayName: "Contacts", Type: 9},
-	)
+	out = append(out, b.calendarFolders(ctx)...)
+	out = append(out, FolderEntry{
+		ServerID: prefixTasks + defaultCollection, ParentID: "0",
+		DisplayName: "Tasks", Type: folderTypeTasks,
+	})
+	out = append(out, b.contactFolders(ctx)...)
 	return out, nil
+}
+
+// calendarFolders maps every calendar of the user to a device folder.
+func (b *FolderBuilder) calendarFolders(ctx *Context) []FolderEntry {
+	if b.calRepo == nil {
+		return nil
+	}
+	if _, err := b.calRepo.EnsureDefault(ctx.UserID); err != nil {
+		return nil
+	}
+	if err := b.calRepo.BackfillURIs(ctx.UserID); err != nil {
+		return nil
+	}
+	cals, err := b.calRepo.List(ctx.UserID)
+	if err != nil {
+		return nil
+	}
+	out := make([]FolderEntry, 0, len(cals))
+	for _, cal := range cals {
+		name := cal.Name
+		if cal.IsDefault {
+			name = "Calendar"
+		}
+		out = append(out, FolderEntry{
+			ServerID: calendarCollectionID(cal), ParentID: "0",
+			DisplayName: name, Type: folderTypeCalendar,
+		})
+	}
+	return out
+}
+
+// contactFolders maps every address book of the user to a device folder.
+func (b *FolderBuilder) contactFolders(ctx *Context) []FolderEntry {
+	if b.bookRepo == nil {
+		return nil
+	}
+	if _, err := b.bookRepo.EnsureDefault(ctx.UserID); err != nil {
+		return nil
+	}
+	books, err := b.bookRepo.List(ctx.UserID)
+	if err != nil {
+		return nil
+	}
+	out := make([]FolderEntry, 0, len(books))
+	for _, book := range books {
+		name := book.DisplayName
+		if book.IsDefault || name == "" {
+			name = "Contacts"
+		}
+		out = append(out, FolderEntry{
+			ServerID: addressBookCollectionID(book), ParentID: "0",
+			DisplayName: name, Type: folderTypeContacts,
+		})
+	}
+	return out
 }
 
 // mailFolders lists IMAP mailboxes and maps each to a mail/{guid} FolderEntry.
