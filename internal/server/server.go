@@ -115,6 +115,27 @@ func Start(cfg *config.Config, db *gorm.DB, embeddedFiles embed.FS) error {
 		}
 	}()
 
+	// ── DAV changelog retention goroutine ─────────────────────────────────────
+	// The RFC 6578 changelog grows with every write. Entries older than the
+	// retention window are dropped and the collection records how far it was
+	// pruned, so a client returning with a stale token is told to resync
+	// instead of silently missing changes.
+	go func() {
+		const retention = 30 * 24 * time.Hour
+		ticker := time.NewTicker(6 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := handler.CleanupChangelog(db, retention); err != nil {
+					slog.Warn("DAV changelog cleanup failed", "error", err)
+				}
+			}
+		}
+	}()
+
 	// ── Embedded SPA filesystem (web/dist) ───────────────────────────────────
 	distFS, err := fs.Sub(embeddedFiles, "web/dist")
 	if err != nil {

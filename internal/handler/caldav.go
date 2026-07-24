@@ -1,21 +1,25 @@
-// Package handler — CalDAV server (RFC 4791) for Apple Calendar, Thunderbird, Evolution.
+// Package handler — CalDAV server (RFC 4791) for Apple Calendar, Thunderbird,
+// Evolution, DAVx⁵ and anything else speaking the standard.
 //
 // Discovery chain used by clients:
-//   1. GET /.well-known/caldav                       → 301 /dav/{user}/
-//   2. PROPFIND /dav/{user}/                         → current-user-principal, calendar-home-set
-//   3. PROPFIND /dav/{user}/calendars/   Depth:1     → calendar list (resourcetype, displayname, ctag)
-//   4. PROPFIND /dav/{user}/calendars/{c}/ Depth:1   → event list (getetag, getcontenttype)
-//   5. REPORT   /dav/{user}/calendars/{c}/           → calendar-query / calendar-multiget
-//   6. GET|PUT|DELETE individual .ics resources
+//   1. GET|PROPFIND /.well-known/caldav             → 301 /dav/{user}/
+//   2. PROPFIND /dav/{user}/                        → current-user-principal, calendar-home-set
+//   3. PROPFIND /dav/{user}/calendars/   Depth:1    → calendar list (resourcetype, ctag, sync-token)
+//   4. REPORT   sync-collection on each calendar    → delta since the client's token
+//   5. GET|PUT|DELETE individual .ics resources     → conditional via ETag
 //
-// Auth: HTTP Basic Auth validated against IMAP.  The CalDAVAuth middleware
-// creates/resolves the model.User record and sets "caldav_user_id" on the context.
+// Resource identity is (calendar, resource name), never the iCalendar UID: a
+// client is free to name a resource anything, and a recurring series with
+// overrides is one resource holding several VEVENTs that share a UID.
+//
+// Auth: HTTP Basic validated against IMAP by the CalDAVAuth middleware, which
+// sets "caldav_user_id" and "caldav_username" on the context.
 package handler
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -23,21 +27,29 @@ import (
 
 	calpkg "go-cubemail/internal/calendar"
 	"go-cubemail/internal/config"
+	"go-cubemail/internal/dav"
 	"go-cubemail/internal/model"
 	"go-cubemail/internal/repository"
 	"github.com/labstack/echo/v5"
 	"gorm.io/gorm"
 )
 
-// CalDAVHandler handles all CalDAV HTTP methods.
+// CalDAVHandler serves the CalDAV portion of the /dav namespace.
 type CalDAVHandler struct {
 	cfg       *config.Config
 	db        *gorm.DB
 	calRepo   *repository.CalendarRepo
 	eventRepo *repository.EventRepo
+	sync      *dav.Store
 }
 
-// ── Auth context helper ───────────────────────────────────────────────────
+// davCapabilities is the DAV compliance header advertised to clients.
+const davCapabilities = "1, 2, 3, access-control, calendar-access, addressbook, extended-mkcol"
+
+// maxResourceSize bounds a single calendar or address object.
+const maxResourceSize = 10 * 1024 * 1024
+
+// ── Auth context helpers ──────────────────────────────────────────────────
 
 func caldavUserID(c *echo.Context) (uint, bool) {
 	v := c.Get("caldav_user_id")
@@ -57,268 +69,317 @@ func caldavUsername(c *echo.Context) string {
 	return s
 }
 
-// ── Namespace constants ───────────────────────────────────────────────────
+// depthOf returns the Depth header, defaulting to 0.
+//
+// RFC 4918 defaults Depth to infinity, but for the collections served here
+// infinity and 1 are equivalent (there is no nesting), and defaulting to 0
+// would break clients that omit the header when listing. Treat anything that
+// is not "0" as "list the children".
+func depthOf(c *echo.Context) string {
+	d := strings.TrimSpace(c.Request().Header.Get("Depth"))
+	if d == "0" {
+		return "0"
+	}
+	return "1"
+}
 
-const (
-	nsDAV    = "DAV:"
-	nsCalDAV = "urn:ietf:params:xml:ns:caldav"
-	nsCS     = "http://calendarserver.org/ns/"
-)
+// ── OPTIONS / well-known ──────────────────────────────────────────────────
 
-// ── OPTIONS ───────────────────────────────────────────────────────────────
-
-// Options handles OPTIONS /* — returns DAV capability headers.
+// Options advertises the DAV capabilities and allowed methods.
 func (h *CalDAVHandler) Options(c *echo.Context) error {
-	c.Response().Header().Set("DAV", "1, 2, calendar-access")
-	c.Response().Header().Set("Allow", "OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, REPORT, MKCALENDAR")
+	c.Response().Header().Set("DAV", davCapabilities)
+	c.Response().Header().Set("Allow",
+		"OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, PROPPATCH, REPORT, MKCALENDAR, MKCOL")
 	c.Response().Header().Set("Content-Length", "0")
 	return c.NoContent(http.StatusOK)
 }
 
-// ── WellKnown ─────────────────────────────────────────────────────────────
-
-// WellKnown handles GET|PROPFIND /.well-known/caldav → redirect to principal URL.
+// WellKnown handles GET|PROPFIND /.well-known/caldav → redirect to the principal.
 func (h *CalDAVHandler) WellKnown(c *echo.Context) error {
 	user := caldavUsername(c)
 	if user == "" {
 		return c.NoContent(http.StatusUnauthorized)
 	}
-	target := fmt.Sprintf("%s/dav/%s/", strings.TrimRight(h.cfg.Server.BaseURL, "/"), user)
-	c.Response().Header().Set("Location", target)
+	c.Response().Header().Set("Location", principalHref(user))
 	return c.NoContent(http.StatusMovedPermanently)
 }
 
-// ── PROPFIND dispatcher ───────────────────────────────────────────────────
+// ── PROPFIND ──────────────────────────────────────────────────────────────
 
-// PropFind dispatches PROPFIND by URL path depth.
-func (h *CalDAVHandler) PropFind(c *echo.Context) error {
-	userID, ok := caldavUserID(c)
-	if !ok {
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	username := caldavUsername(c)
+// propfindPrincipal answers PROPFIND on /dav/ and /dav/{user}/.
+func (h *CalDAVHandler) propfindPrincipal(c *echo.Context, username string, req propfindRequest) error {
+	href := principalHref(username)
+	bag := newPropBag()
+	bag.setRaw(nsDAV, "resourcetype", "<D:collection/><D:principal/>")
+	bag.setText(nsDAV, "displayname", username)
+	bag.setRaw(nsDAV, "principal-URL", hrefElement(href))
+	bag.setRaw(nsDAV, "current-user-principal", hrefElement(href))
+	bag.setRaw(nsDAV, "principal-collection-set", hrefElement("/dav/"))
+	bag.setRaw(nsCalDAV, "calendar-home-set", hrefElement(calendarHomeHref(username)))
+	bag.setRaw(nsCardDAV, "addressbook-home-set", hrefElement(addressBookHomeHref(username)))
+	bag.setRaw(nsCalDAV, "calendar-user-address-set", hrefElement("mailto:"+username))
+	bag.setRaw(nsDAV, "supported-report-set", supportedReportSet(true, true))
+	bag.setRaw(nsDAV, "current-user-privilege-set", privilegeSet())
 
-	path := c.Request().URL.Path
-	depth := c.Request().Header.Get("Depth")
-	if depth == "" {
-		depth = "1"
-	}
-
-	// Determine which resource the PROPFIND targets.
-	calSlug := c.Param("cal")
-	uidParam := strings.TrimSuffix(c.Param("uid"), ".ics")
-
-	switch {
-	case uidParam != "":
-		return h.propfindEvent(c, userID, username, calSlug, uidParam)
-	case calSlug != "":
-		return h.propfindCalendar(c, userID, username, calSlug, depth)
-	case strings.Contains(path, "/calendars"):
-		return h.propfindCalendarHome(c, userID, username, depth)
-	default:
-		return h.propfindPrincipal(c, userID, username)
-	}
+	return writeMultistatus(c, davCapabilities, []responseOut{
+		{Href: href, Propstats: bag.render(req)},
+	}, "")
 }
 
-// ── PROPFIND /dav/{user}/ — principal ────────────────────────────────────
-
-func (h *CalDAVHandler) propfindPrincipal(c *echo.Context, userID uint, username string) error {
-	base := davBase(h.cfg)
-	principalURL := fmt.Sprintf("%s/dav/%s/", base, username)
-	homeURL := fmt.Sprintf("%s/dav/%s/calendars/", base, username)
-
-	resp := multistatus([]propResponse{
-		{
-			Href: principalURL,
-			Props: []propstat{
-				{
-					Status: "HTTP/1.1 200 OK",
-					Props: []xml.TokenReader{
-						xmlProp("D:resourcetype", `<D:collection/><D:principal/>`),
-						xmlProp("D:displayname", username),
-						xmlProp("D:principal-URL", `<D:href>`+principalURL+`</D:href>`),
-						xmlProp("D:current-user-principal", `<D:href>`+principalURL+`</D:href>`),
-						xmlProp("C:calendar-home-set", `<D:href>`+homeURL+`</D:href>`),
-						xmlPropRaw("CR:addressbook-home-set",
-							`<D:href>`+fmt.Sprintf("%s/dav/%s/contacts/", base, username)+`</D:href>`),
-					},
-				},
-			},
-		},
-	})
-	return writePropfind(c, resp)
-}
-
-// ── PROPFIND /dav/{user}/calendars/ — calendar home ──────────────────────
-
-func (h *CalDAVHandler) propfindCalendarHome(c *echo.Context, userID uint, username, depth string) error {
-	base := davBase(h.cfg)
-	homeURL := fmt.Sprintf("%s/dav/%s/calendars/", base, username)
-
+// propfindCalendarHome answers PROPFIND on the calendar-home-set.
+func (h *CalDAVHandler) propfindCalendarHome(c *echo.Context, userID uint, username string, req propfindRequest, depth string) error {
 	if _, err := h.calRepo.EnsureDefault(userID); err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
-
-	responses := []propResponse{
-		{
-			Href: homeURL,
-			Props: []propstat{{
-				Status: "HTTP/1.1 200 OK",
-				Props: []xml.TokenReader{
-					xmlProp("D:resourcetype", `<D:collection/>`),
-					xmlProp("D:displayname", "Calendars"),
-				},
-			}},
-		},
+	if err := h.calRepo.BackfillURIs(userID); err != nil {
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	if depth == "1" {
+	home := newPropBag()
+	home.setRaw(nsDAV, "resourcetype", "<D:collection/>")
+	home.setText(nsDAV, "displayname", "Calendars")
+	home.setRaw(nsDAV, "current-user-principal", hrefElement(principalHref(username)))
+	home.setRaw(nsDAV, "owner", hrefElement(principalHref(username)))
+
+	responses := []responseOut{{Href: calendarHomeHref(username), Propstats: home.render(req)}}
+
+	if depth != "0" {
 		cals, err := h.calRepo.List(userID)
 		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		for _, cal := range cals {
-			calURL := fmt.Sprintf("%s/dav/%s/calendars/%s/", base, username, calDAVSlug(cal.Name))
-			ctag := h.calCTag(userID, cal.ID)
-			responses = append(responses, propResponse{
-				Href: calURL,
-				Props: []propstat{{
-					Status: "HTTP/1.1 200 OK",
-					Props: []xml.TokenReader{
-						xmlProp("D:resourcetype", `<D:collection/><C:calendar/>`),
-						xmlProp("D:displayname", xmlEsc(cal.Name)),
-						xmlPropRaw("CS:getctag", ctag),
-						xmlPropRaw("D:sync-token", ctag),
-						xmlProp("C:supported-calendar-component-set",
-							`<C:comp name="VEVENT"/>`),
-						xmlPropRaw("ICAL:calendar-color", cal.Color),
-					},
-				}},
+		for i := range cals {
+			responses = append(responses, responseOut{
+				Href:      calendarHref(username, cals[i].URI),
+				Propstats: h.calendarPropBag(username, &cals[i]).render(req),
 			})
 		}
 	}
-
-	return writePropfind(c, multistatus(responses))
+	return writeMultistatus(c, davCapabilities, responses, "")
 }
 
-// ── PROPFIND /dav/{user}/calendars/{cal}/ — calendar collection ──────────
+// propfindCalendar answers PROPFIND on one calendar collection.
+func (h *CalDAVHandler) propfindCalendar(c *echo.Context, userID uint, username string, cal *model.Calendar, req propfindRequest, depth string) error {
+	responses := []responseOut{{
+		Href:      calendarHref(username, cal.URI),
+		Propstats: h.calendarPropBag(username, cal).render(req),
+	}}
 
-func (h *CalDAVHandler) propfindCalendar(c *echo.Context, userID uint, username, calSlug, depth string) error {
-	base := davBase(h.cfg)
-	cal, err := h.resolveCalendar(userID, calSlug)
-	if err != nil {
-		return c.NoContent(http.StatusNotFound)
-	}
-	calURL := fmt.Sprintf("%s/dav/%s/calendars/%s/", base, username, calDAVSlug(cal.Name))
-	ctag := h.calCTag(userID, cal.ID)
-
-	responses := []propResponse{
-		{
-			Href: calURL,
-			Props: []propstat{{
-				Status: "HTTP/1.1 200 OK",
-				Props: []xml.TokenReader{
-					xmlProp("D:resourcetype", `<D:collection/><C:calendar/>`),
-					xmlProp("D:displayname", xmlEsc(cal.Name)),
-					xmlPropRaw("CS:getctag", ctag),
-					xmlPropRaw("D:sync-token", ctag),
-					xmlProp("C:supported-calendar-component-set", `<C:comp name="VEVENT"/>`),
-					xmlPropRaw("ICAL:calendar-color", cal.Color),
-				},
-			}},
-		},
-	}
-
-	if depth == "1" {
+	if depth != "0" {
 		events, err := h.eventRepo.ListByCalendar(userID, cal.ID)
 		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		for _, ev := range events {
-			evURL := fmt.Sprintf("%s/dav/%s/calendars/%s/%s.ics",
-				base, username, calDAVSlug(cal.Name), ev.UID)
-			etag := eventETag(ev)
-			responses = append(responses, propResponse{
-				Href: evURL,
-				Props: []propstat{{
-					Status: "HTTP/1.1 200 OK",
-					Props: []xml.TokenReader{
-						xmlPropRaw("D:getetag", `"`+etag+`"`),
-						xmlProp("D:getcontenttype", "text/calendar; charset=utf-8"),
-						xmlProp("D:resourcetype", ""),
-					},
-				}},
+		wantData := req.wantsExplicit(nsCalDAV, "calendar-data")
+		for i := range events {
+			responses = append(responses, responseOut{
+				Href:      calendarObjectHref(username, cal.URI, events[i].ResourceURI),
+				Propstats: eventPropBag(&events[i], wantData).render(req),
 			})
 		}
 	}
-
-	return writePropfind(c, multistatus(responses))
+	return writeMultistatus(c, davCapabilities, responses, "")
 }
 
-// ── PROPFIND on individual event ──────────────────────────────────────────
+// propfindCalendarObject answers PROPFIND on a single .ics resource.
+func (h *CalDAVHandler) propfindCalendarObject(c *echo.Context, username string, cal *model.Calendar, ev *model.Event, req propfindRequest) error {
+	return writeMultistatus(c, davCapabilities, []responseOut{{
+		Href:      calendarObjectHref(username, cal.URI, ev.ResourceURI),
+		Propstats: eventPropBag(ev, req.wantsExplicit(nsCalDAV, "calendar-data")).render(req),
+	}}, "")
+}
 
-func (h *CalDAVHandler) propfindEvent(c *echo.Context, userID uint, username, calSlug, uid string) error {
-	base := davBase(h.cfg)
-	cal, err := h.resolveCalendar(userID, calSlug)
-	if err != nil {
-		return c.NoContent(http.StatusNotFound)
+// calendarPropBag collects the properties of a calendar collection.
+func (h *CalDAVHandler) calendarPropBag(username string, cal *model.Calendar) *propBag {
+	bag := newPropBag()
+	bag.setRaw(nsDAV, "resourcetype", "<D:collection/><C:calendar/>")
+	bag.setText(nsDAV, "displayname", cal.Name)
+	bag.setText(nsCS, "getctag", dav.CTag(cal.SyncToken))
+	bag.setText(nsDAV, "sync-token", dav.SyncToken(cal.SyncToken))
+	bag.setRaw(nsCalDAV, "supported-calendar-component-set",
+		`<C:comp name="VEVENT"/><C:comp name="VTODO"/>`)
+	bag.setRaw(nsCalDAV, "supported-calendar-data",
+		`<C:calendar-data content-type="text/calendar" version="2.0"/>`)
+	bag.setText(nsCalDAV, "calendar-description", cal.Description)
+	if cal.TimeZone != "" {
+		bag.setText(nsCalDAV, "calendar-timezone", cal.TimeZone)
 	}
-	ev, err := h.eventRepo.GetByUID(userID, uid)
-	if err != nil {
-		return c.NoContent(http.StatusNotFound)
+	bag.setText(nsCalDAV, "max-resource-size", strconv.Itoa(maxResourceSize))
+	bag.setText(nsApple, "calendar-color", cal.Color)
+	bag.setText(nsApple, "calendar-order", strconv.Itoa(cal.SortOrder))
+	bag.setRaw(nsDAV, "current-user-principal", hrefElement(principalHref(username)))
+	bag.setRaw(nsDAV, "owner", hrefElement(principalHref(username)))
+	bag.setRaw(nsDAV, "supported-report-set", supportedReportSet(true, false))
+	bag.setRaw(nsDAV, "current-user-privilege-set", privilegeSet())
+	return bag
+}
+
+// eventPropBag collects the properties of a calendar object resource.
+func eventPropBag(ev *model.Event, withData bool) *propBag {
+	ics := eventICS(ev)
+	bag := newPropBag()
+	bag.setText(nsDAV, "getetag", dav.Quote(eventETag(ev)))
+	bag.setText(nsDAV, "getcontenttype", "text/calendar; charset=utf-8; component=vevent")
+	bag.setText(nsDAV, "getcontentlength", strconv.Itoa(len(ics)))
+	bag.setText(nsDAV, "getlastmodified", ev.UpdatedAt.UTC().Format(http.TimeFormat))
+	bag.setRaw(nsDAV, "resourcetype", "")
+	if withData {
+		bag.setText(nsCalDAV, "calendar-data", ics)
 	}
-	evURL := fmt.Sprintf("%s/dav/%s/calendars/%s/%s.ics",
-		base, username, calDAVSlug(cal.Name), ev.UID)
-	etag := eventETag(*ev)
-	resp := multistatus([]propResponse{{
-		Href: evURL,
-		Props: []propstat{{
-			Status: "HTTP/1.1 200 OK",
-			Props: []xml.TokenReader{
-				xmlPropRaw("D:getetag", `"`+etag+`"`),
-				xmlProp("D:getcontenttype", "text/calendar; charset=utf-8"),
-				xmlProp("D:resourcetype", ""),
-			},
-		}},
-	}})
-	return writePropfind(c, resp)
+	return bag
 }
 
 // ── REPORT ────────────────────────────────────────────────────────────────
 
-// Report dispatches CalDAV REPORT (calendar-query, calendar-multiget).
-func (h *CalDAVHandler) Report(c *echo.Context) error {
-	userID, ok := caldavUserID(c)
-	if !ok {
-		return c.NoContent(http.StatusUnauthorized)
+// Report dispatches a CalDAV REPORT on a calendar collection.
+func (h *CalDAVHandler) report(c *echo.Context, userID uint, username string, cal *model.Calendar) error {
+	body, tooLarge := readBody(c, davReportBodyLimit)
+	if tooLarge {
+		return c.NoContent(http.StatusRequestEntityTooLarge)
 	}
-	username := caldavUsername(c)
-	calSlug := c.Param("cal")
-
-	cal, err := h.resolveCalendar(userID, calSlug)
+	name, err := reportName(body)
 	if err != nil {
-		return c.NoContent(http.StatusNotFound)
+		return c.NoContent(http.StatusBadRequest)
 	}
 
-	body, _ := io.ReadAll(io.LimitReader(c.Request().Body, 512*1024))
-	bodyStr := string(body)
-
-	if strings.Contains(bodyStr, "calendar-multiget") {
-		return h.reportMultiget(c, userID, username, cal, bodyStr)
+	switch {
+	case name.Space == nsDAV && name.Local == "sync-collection":
+		return h.reportSyncCollection(c, userID, username, cal, body)
+	case name.Space == nsCalDAV && name.Local == "calendar-multiget":
+		return h.reportMultiget(c, userID, username, cal, body)
+	case name.Space == nsCalDAV && name.Local == "calendar-query":
+		return h.reportCalendarQuery(c, userID, username, cal, body)
+	default:
+		return c.NoContent(http.StatusBadRequest)
 	}
-	return h.reportCalendarQuery(c, userID, username, cal, bodyStr)
 }
 
-// reportCalendarQuery handles REPORT calendar-query (date-range + component filter).
-func (h *CalDAVHandler) reportCalendarQuery(c *echo.Context, userID uint, username string, cal *model.Calendar, body string) error {
-	base := davBase(h.cfg)
+// reportSyncCollection answers the RFC 6578 delta report: what changed since
+// the client's token, including tombstones for deleted resources.
+func (h *CalDAVHandler) reportSyncCollection(c *echo.Context, userID uint, username string, cal *model.Calendar, body []byte) error {
+	var req syncCollectionRequest
+	if err := xml.Unmarshal(body, &req); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	propReq := propfindRequest{Props: namesOf(req.Prop)}
+	if len(propReq.Props) == 0 {
+		propReq.AllProp = true
+	}
 
-	// Parse optional date range from VCALENDAR filter / time-range element.
-	start, end := parseTimeRange(body)
+	since, ok := dav.ParseSyncToken(req.SyncToken)
+	if !ok {
+		return invalidSyncToken(c)
+	}
+
+	var responses []responseOut
+	var newToken uint64
+
+	if since == 0 {
+		// Initial sync: enumerate the collection rather than replaying the
+		// changelog, which may have been pruned or predate these rows.
+		events, err := h.eventRepo.ListByCalendar(userID, cal.ID)
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		newToken, err = h.sync.CurrentRevision(model.CollectionCalendar, cal.ID)
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		if over, resp := limitExceeded(req.Limit, len(events)); over {
+			return resp(c)
+		}
+		wantData := propReq.wantsExplicit(nsCalDAV, "calendar-data")
+		for i := range events {
+			responses = append(responses, responseOut{
+				Href:      calendarObjectHref(username, cal.URI, events[i].ResourceURI),
+				Propstats: eventPropBag(&events[i], wantData).render(propReq),
+			})
+		}
+	} else {
+		changes, current, err := h.sync.ChangesSince(model.CollectionCalendar, cal.ID, since)
+		if errors.Is(err, dav.ErrInvalidSyncToken) {
+			return invalidSyncToken(c)
+		}
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		newToken = current
+		if over, resp := limitExceeded(req.Limit, len(changes)); over {
+			return resp(c)
+		}
+		wantData := propReq.wantsExplicit(nsCalDAV, "calendar-data")
+		for _, ch := range changes {
+			href := calendarObjectHref(username, cal.URI, ch.URI)
+			if ch.Deleted {
+				responses = append(responses, notFoundResponse(href))
+				continue
+			}
+			ev, err := h.eventRepo.GetByResourceURI(userID, cal.ID, ch.URI)
+			if err != nil {
+				responses = append(responses, notFoundResponse(href))
+				continue
+			}
+			responses = append(responses, responseOut{
+				Href:      href,
+				Propstats: eventPropBag(ev, wantData).render(propReq),
+			})
+		}
+	}
+
+	trailer := "<D:sync-token>" + escapeXML(dav.SyncToken(newToken)) + "</D:sync-token>"
+	return writeMultistatus(c, davCapabilities, responses, trailer)
+}
+
+// reportMultiget returns the resources named by the client's href list.
+func (h *CalDAVHandler) reportMultiget(c *echo.Context, userID uint, username string, cal *model.Calendar, body []byte) error {
+	var req multigetRequest
+	if err := xml.Unmarshal(body, &req); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	propReq := propfindRequest{Props: namesOf(req.Prop)}
+	if len(propReq.Props) == 0 {
+		propReq.AllProp = true
+	}
+	wantData := propReq.wantsExplicit(nsCalDAV, "calendar-data")
+
+	responses := make([]responseOut, 0, len(req.Hrefs))
+	for _, href := range req.Hrefs {
+		uri := dav.ResourceURIFromHref(href)
+		if uri == "" {
+			responses = append(responses, notFoundResponse(href))
+			continue
+		}
+		ev, err := h.eventRepo.GetByResourceURI(userID, cal.ID, uri)
+		if err != nil {
+			responses = append(responses, notFoundResponse(href))
+			continue
+		}
+		responses = append(responses, responseOut{
+			Href:      calendarObjectHref(username, cal.URI, ev.ResourceURI),
+			Propstats: eventPropBag(ev, wantData).render(propReq),
+		})
+	}
+	return writeMultistatus(c, davCapabilities, responses, "")
+}
+
+// reportCalendarQuery answers a filtered listing of the collection.
+func (h *CalDAVHandler) reportCalendarQuery(c *echo.Context, userID uint, username string, cal *model.Calendar, body []byte) error {
+	var req calendarQueryRequest
+	if err := xml.Unmarshal(body, &req); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	propReq := propfindRequest{Props: namesOf(req.Prop)}
+	if len(propReq.Props) == 0 {
+		propReq.AllProp = true
+	}
+	wantData := propReq.wantsExplicit(nsCalDAV, "calendar-data")
+
+	comp, start, end := calendarFilter(req.Filter.Comp)
+
 	var events []model.Event
 	var err error
 	if !start.IsZero() && !end.IsZero() {
-		events, err = h.eventRepo.ListByRange(userID, start, end, []uint{cal.ID})
+		events, err = h.eventRepo.ListByCalendarRange(userID, cal.ID, start, end)
 	} else {
 		events, err = h.eventRepo.ListByCalendar(userID, cal.ID)
 	}
@@ -326,167 +387,191 @@ func (h *CalDAVHandler) reportCalendarQuery(c *echo.Context, userID uint, userna
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	wantData := strings.Contains(body, "calendar-data")
-	responses := buildEventResponses(base, username, cal, events, wantData)
-	return writePropfind(c, multistatus(responses))
-}
-
-// reportMultiget handles REPORT calendar-multiget (fetch events by href list).
-func (h *CalDAVHandler) reportMultiget(c *echo.Context, userID uint, username string, cal *model.Calendar, body string) error {
-	base := davBase(h.cfg)
-	hrefs := parseHrefs(body)
-
-	var responses []propResponse
-	for _, href := range hrefs {
-		uid := hrefToUID(href)
-		if uid == "" {
+	responses := make([]responseOut, 0, len(events))
+	for i := range events {
+		if !componentMatches(comp, &events[i]) {
 			continue
 		}
-		ev, err := h.eventRepo.GetByUID(userID, uid)
-		if err != nil {
-			responses = append(responses, propResponse{
-				Href: href,
-				Props: []propstat{{Status: "HTTP/1.1 404 Not Found", Props: nil}},
-			})
-			continue
-		}
-		ics := ev.ICalContent
-		if ics == "" {
-			ics = calpkg.BuildICalContent(ev, ev.Attendees)
-		}
-		evURL := fmt.Sprintf("%s/dav/%s/calendars/%s/%s.ics",
-			base, username, calDAVSlug(cal.Name), ev.UID)
-		etag := eventETag(*ev)
-		responses = append(responses, propResponse{
-			Href: evURL,
-			Props: []propstat{{
-				Status: "HTTP/1.1 200 OK",
-				Props: []xml.TokenReader{
-					xmlPropRaw("D:getetag", `"`+etag+`"`),
-					xmlProp("D:getcontenttype", "text/calendar; charset=utf-8"),
-					xmlPropRaw("C:calendar-data", xmlEsc(ics)),
-				},
-			}},
+		responses = append(responses, responseOut{
+			Href:      calendarObjectHref(username, cal.URI, events[i].ResourceURI),
+			Propstats: eventPropBag(&events[i], wantData).render(propReq),
 		})
 	}
-	return writePropfind(c, multistatus(responses))
+	return writeMultistatus(c, davCapabilities, responses, "")
 }
 
-// ── GET / PUT / DELETE event resources ───────────────────────────────────
+// calendarFilter walks the comp-filter tree, returning the requested component
+// name and the time-range bounds if any.
+func calendarFilter(root compFilterElem) (comp string, start, end time.Time) {
+	// The outer filter is VCALENDAR; the component of interest is one level in.
+	for _, child := range root.Comps {
+		comp = strings.ToUpper(child.Name)
+		if child.TimeRange != nil {
+			start = parseICalUTC(child.TimeRange.Start)
+			end = parseICalUTC(child.TimeRange.End)
+		}
+		for _, grand := range child.Comps {
+			if grand.TimeRange != nil {
+				start = parseICalUTC(grand.TimeRange.Start)
+				end = parseICalUTC(grand.TimeRange.End)
+			}
+		}
+		break
+	}
+	if root.TimeRange != nil && start.IsZero() {
+		start = parseICalUTC(root.TimeRange.Start)
+		end = parseICalUTC(root.TimeRange.End)
+	}
+	return comp, start, end
+}
 
-// GetEvent handles GET /dav/{user}/calendars/{cal}/{uid}.ics.
-func (h *CalDAVHandler) GetEvent(c *echo.Context) error {
-	userID, ok := caldavUserID(c)
-	if !ok {
-		return c.NoContent(http.StatusUnauthorized)
+// componentMatches reports whether an event satisfies a comp-filter name.
+func componentMatches(comp string, ev *model.Event) bool {
+	switch comp {
+	case "", "VCALENDAR":
+		return true
+	case "VTODO":
+		return ev.IsTask
+	case "VEVENT":
+		return !ev.IsTask
+	default:
+		return false
 	}
-	uid := strings.TrimSuffix(c.Param("uid"), ".ics")
-	ev, err := h.eventRepo.GetByUID(userID, uid)
-	if err != nil {
-		return c.NoContent(http.StatusNotFound)
+}
+
+// parseICalUTC parses the iCalendar timestamp forms used in time-range filters.
+func parseICalUTC(v string) time.Time {
+	for _, layout := range []string{"20060102T150405Z", "20060102T150405", "20060102"} {
+		if t, err := time.Parse(layout, v); err == nil {
+			return t.UTC()
+		}
 	}
-	ics := ev.ICalContent
-	if ics == "" {
-		ics = calpkg.BuildICalContent(ev, ev.Attendees)
+	return time.Time{}
+}
+
+// ── GET / PUT / DELETE on calendar objects ────────────────────────────────
+
+// getCalendarObject writes an .ics resource.
+func (h *CalDAVHandler) getCalendarObject(c *echo.Context, ev *model.Event, body bool) error {
+	ics := eventICS(ev)
+	c.Response().Header().Set("ETag", dav.Quote(eventETag(ev)))
+	c.Response().Header().Set("Last-Modified", ev.UpdatedAt.UTC().Format(http.TimeFormat))
+	if !body {
+		c.Response().Header().Set("Content-Length", strconv.Itoa(len(ics)))
+		return c.NoContent(http.StatusOK)
 	}
-	etag := eventETag(*ev)
-	c.Response().Header().Set("ETag", `"`+etag+`"`)
-	c.Response().Header().Set("Content-Type", "text/calendar; charset=utf-8")
 	return c.Blob(http.StatusOK, "text/calendar; charset=utf-8", []byte(ics))
 }
 
-// GetCalendar handles GET /dav/{user}/calendars/{cal}/ — full ICS export fallback.
-func (h *CalDAVHandler) GetCalendar(c *echo.Context) error {
-	userID, ok := caldavUserID(c)
-	if !ok {
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	cal, err := h.resolveCalendar(userID, c.Param("cal"))
-	if err != nil {
-		return c.NoContent(http.StatusNotFound)
-	}
+// getCalendar exports the whole collection as a single .ics document.
+func (h *CalDAVHandler) getCalendar(c *echo.Context, userID uint, cal *model.Calendar) error {
 	events, err := h.eventRepo.ListByCalendar(userID, cal.ID)
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	ics := calpkg.BuildCalendarExport(events)
-	c.Response().Header().Set("Content-Type", "text/calendar; charset=utf-8")
-	return c.Blob(http.StatusOK, "text/calendar; charset=utf-8", []byte(ics))
+	return c.Blob(http.StatusOK, "text/calendar; charset=utf-8",
+		[]byte(calpkg.BuildCalendarExport(events)))
 }
 
-// PutEvent handles PUT /dav/{user}/calendars/{cal}/{uid}.ics — create or update.
-func (h *CalDAVHandler) PutEvent(c *echo.Context) error {
-	userID, ok := caldavUserID(c)
-	if !ok {
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	cal, err := h.resolveCalendar(userID, c.Param("cal"))
-	if err != nil {
-		// fall back to default calendar
-		cal, err = h.calRepo.EnsureDefault(userID)
-		if err != nil {
-			return c.NoContent(http.StatusInternalServerError)
-		}
+// putCalendarObject creates or replaces an .ics resource.
+//
+// The request body is stored verbatim: the parsed fields only feed the index
+// columns. Re-serialising the blob would strip VALARM, VTIMEZONE, X-* and the
+// RECURRENCE-ID overrides that share the master's UID inside one resource.
+func (h *CalDAVHandler) putCalendarObject(c *echo.Context, userID uint, cal *model.Calendar, resource string) error {
+	if ct := c.Request().Header.Get("Content-Type"); ct != "" &&
+		!strings.HasPrefix(strings.ToLower(ct), "text/calendar") {
+		return c.NoContent(http.StatusUnsupportedMediaType)
 	}
 
-	body, _ := io.ReadAll(io.LimitReader(c.Request().Body, 1<<20))
+	body, tooLarge := readBody(c, maxResourceSize)
+	if tooLarge {
+		return writeTooLarge(c, nsCalDAV)
+	}
+	if len(body) == 0 {
+		return c.NoContent(http.StatusBadRequest)
+	}
+
+	existing, err := h.eventRepo.GetByResourceURI(userID, cal.ID, resource)
+	exists := err == nil
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	currentETag := ""
+	if exists {
+		currentETag = eventETag(existing)
+	}
+	if err := dav.CheckPreconditions(c.Request().Header, exists, currentETag); err != nil {
+		return c.NoContent(http.StatusPreconditionFailed)
+	}
+
 	parsed, err := calpkg.ParseICalImport(body)
 	if err != nil || len(parsed) == 0 {
-		return c.NoContent(http.StatusBadRequest)
+		return writeDAVError(c, http.StatusForbidden,
+			`<C:valid-calendar-data xmlns:C="urn:ietf:params:xml:ns:caldav"/>`)
 	}
 	item := parsed[0]
 
-	existing, err := h.eventRepo.GetByUID(userID, item.UID)
-	if err == gorm.ErrRecordNotFound {
+	if !exists {
 		ev := model.Event{
-			CalendarID: cal.ID, UserID: userID, UID: item.UID,
-			Summary: item.Summary, Description: item.Description, Location: item.Location,
-			StartAt: item.StartAt, EndAt: item.EndAt, IsAllDay: item.IsAllDay,
-			Status: item.Status, RRule: item.RRule, Attendees: item.Attendees,
+			CalendarID:  cal.ID,
+			UserID:      userID,
+			UID:         item.UID,
+			ResourceURI: resource,
+			ICalContent: string(body),
+			Attendees:   item.Attendees,
 		}
-		if ev.Status == "" {
-			ev.Status = "CONFIRMED"
-		}
-		ev.ICalContent = calpkg.BuildICalContent(&ev, item.Attendees)
+		applyImportedFields(&ev, item)
 		if err := h.eventRepo.Create(&ev); err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		etag := eventETag(ev)
-		c.Response().Header().Set("ETag", `"`+etag+`"`)
+		c.Response().Header().Set("ETag", dav.Quote(ev.ETag))
 		return c.NoContent(http.StatusCreated)
 	}
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+
+	// A client may not repoint an existing resource at a different UID.
+	if item.UID != "" && existing.UID != "" && item.UID != existing.UID {
+		return writeDAVError(c, http.StatusForbidden,
+			`<C:no-uid-conflict xmlns:C="urn:ietf:params:xml:ns:caldav"/>`)
 	}
-	existing.Summary = item.Summary
-	existing.Description = item.Description
-	existing.Location = item.Location
-	existing.StartAt = item.StartAt
-	existing.EndAt = item.EndAt
-	existing.IsAllDay = item.IsAllDay
-	existing.Status = item.Status
-	existing.RRule = item.RRule
+	existing.ICalContent = string(body)
 	existing.Attendees = item.Attendees
 	existing.Sequence++
-	existing.ICalContent = calpkg.BuildICalContent(existing, item.Attendees)
+	applyImportedFields(existing, item)
 	if err := h.eventRepo.Update(existing); err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	etag := eventETag(*existing)
-	c.Response().Header().Set("ETag", `"`+etag+`"`)
+	c.Response().Header().Set("ETag", dav.Quote(existing.ETag))
 	return c.NoContent(http.StatusNoContent)
 }
 
-// DeleteEvent handles DELETE /dav/{user}/calendars/{cal}/{uid}.ics.
-func (h *CalDAVHandler) DeleteEvent(c *echo.Context) error {
-	userID, ok := caldavUserID(c)
-	if !ok {
-		return c.NoContent(http.StatusUnauthorized)
+// applyImportedFields copies the parsed iCalendar values onto the index columns.
+func applyImportedFields(ev *model.Event, item calpkg.ImportEvent) {
+	if item.UID != "" {
+		ev.UID = item.UID
 	}
-	uid := strings.TrimSuffix(c.Param("uid"), ".ics")
-	ev, err := h.eventRepo.GetByUID(userID, uid)
+	ev.Summary = item.Summary
+	ev.Description = item.Description
+	ev.Location = item.Location
+	ev.StartAt = item.StartAt
+	ev.EndAt = item.EndAt
+	ev.IsAllDay = item.IsAllDay
+	ev.RRule = item.RRule
+	ev.Status = item.Status
+	if ev.Status == "" {
+		ev.Status = "CONFIRMED"
+	}
+}
+
+// deleteCalendarObject removes an .ics resource, honouring If-Match.
+func (h *CalDAVHandler) deleteCalendarObject(c *echo.Context, userID uint, cal *model.Calendar, resource string) error {
+	ev, err := h.eventRepo.GetByResourceURI(userID, cal.ID, resource)
 	if err != nil {
 		return c.NoContent(http.StatusNotFound)
+	}
+	if err := dav.CheckPreconditions(c.Request().Header, true, eventETag(ev)); err != nil {
+		return c.NoContent(http.StatusPreconditionFailed)
 	}
 	if err := h.eventRepo.Delete(userID, ev.ID); err != nil {
 		return c.NoContent(http.StatusInternalServerError)
@@ -494,231 +579,196 @@ func (h *CalDAVHandler) DeleteEvent(c *echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+// ── Collection management ─────────────────────────────────────────────────
 
-func (h *CalDAVHandler) resolveCalendar(userID uint, slug string) (*model.Calendar, error) {
-	cals, err := h.calRepo.List(userID)
-	if err != nil {
-		return nil, err
+// mkCalendar handles MKCALENDAR (and extended MKCOL) for a new collection.
+func (h *CalDAVHandler) mkCalendar(c *echo.Context, userID uint, uri string) error {
+	if _, err := h.calRepo.GetByURI(userID, uri); err == nil {
+		return c.NoContent(http.StatusMethodNotAllowed) // already exists
 	}
-	for _, cal := range cals {
-		if calDAVSlug(cal.Name) == slug {
-			return &cal, nil
+	body, tooLarge := readBody(c, davRequestBodyLimit)
+	if tooLarge {
+		return c.NoContent(http.StatusRequestEntityTooLarge)
+	}
+	patch := parseProppatch(body)
+
+	cal := model.Calendar{
+		UserID:    userID,
+		URI:       uri,
+		Name:      uri,
+		Color:     "#3788d8",
+		IsActive:  true,
+		SyncToken: 1,
+	}
+	for _, p := range patch.Set {
+		applyCalendarProperty(&cal, p)
+	}
+	if err := h.calRepo.Create(&cal); err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	return c.NoContent(http.StatusCreated)
+}
+
+// propPatchCalendar applies a PROPPATCH to a calendar collection.
+func (h *CalDAVHandler) propPatchCalendar(c *echo.Context, username string, cal *model.Calendar) error {
+	body, tooLarge := readBody(c, davRequestBodyLimit)
+	if tooLarge {
+		return c.NoContent(http.StatusRequestEntityTooLarge)
+	}
+	patch := parseProppatch(body)
+
+	var okProps, failProps []string
+	for _, p := range patch.Set {
+		if applyCalendarProperty(cal, p) {
+			okProps = append(okProps, emptyElement(p.Name))
+		} else {
+			failProps = append(failProps, emptyElement(p.Name))
 		}
 	}
-	return nil, gorm.ErrRecordNotFound
-}
-
-// calCTag returns a change token for a calendar collection based on the latest event update.
-func (h *CalDAVHandler) calCTag(userID, calendarID uint) string {
-	events, err := h.eventRepo.ListByCalendar(userID, calendarID)
-	if err != nil || len(events) == 0 {
-		return "0"
+	for _, n := range patch.Remove {
+		// Protected live properties cannot be removed.
+		failProps = append(failProps, emptyElement(n))
 	}
-	var latest int64
-	for _, ev := range events {
-		if t := ev.UpdatedAt.Unix(); t > latest {
-			latest = t
+	if len(okProps) > 0 {
+		if err := h.calRepo.Update(cal); err != nil {
+			return c.NoContent(http.StatusInternalServerError)
 		}
 	}
-	return strconv.FormatInt(latest, 10)
-}
 
-// eventETag produces a stable ETag string for a single event.
-func eventETag(ev model.Event) string {
-	return fmt.Sprintf("%d-%d", ev.Sequence, ev.UpdatedAt.Unix())
-}
-
-func davBase(cfg *config.Config) string {
-	return strings.TrimRight(cfg.Server.BaseURL, "/")
-}
-
-// calDAVSlug converts a calendar name to a URL-safe slug.
-func calDAVSlug(name string) string {
-	s := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
-	var b strings.Builder
-	for _, r := range s {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
-			b.WriteRune(r)
-		}
+	var stats []propstatOut
+	if len(okProps) > 0 {
+		stats = append(stats, propstatOut{Status: statusOK, Body: strings.Join(okProps, "")})
 	}
-	if b.Len() == 0 {
-		return "calendar"
+	if len(failProps) > 0 {
+		stats = append(stats, propstatOut{Status: statusForbidden, Body: strings.Join(failProps, "")})
 	}
-	return b.String()
+	return writeMultistatus(c, davCapabilities, []responseOut{
+		{Href: calendarHref(username, cal.URI), Propstats: stats},
+	}, "")
 }
 
-// xmlEsc escapes XML special characters.
-func xmlEsc(s string) string {
-	s = strings.ReplaceAll(s, "&", "&amp;")
-	s = strings.ReplaceAll(s, "<", "&lt;")
-	s = strings.ReplaceAll(s, ">", "&gt;")
-	return s
+// applyCalendarProperty maps a settable DAV property onto the calendar row.
+func applyCalendarProperty(cal *model.Calendar, p proppatchProp) bool {
+	switch {
+	case p.Name.Space == nsDAV && p.Name.Local == "displayname":
+		cal.Name = p.Value
+	case p.Name.Space == nsApple && p.Name.Local == "calendar-color":
+		cal.Color = normaliseColor(p.Value)
+	case p.Name.Space == nsApple && p.Name.Local == "calendar-order":
+		if n, err := strconv.Atoi(strings.TrimSpace(p.Value)); err == nil {
+			cal.SortOrder = n
+		}
+	case p.Name.Space == nsCalDAV && p.Name.Local == "calendar-description":
+		cal.Description = p.Value
+	case p.Name.Space == nsCalDAV && p.Name.Local == "calendar-timezone":
+		cal.TimeZone = p.Value
+	default:
+		return false
+	}
+	return true
 }
 
-// buildEventResponses creates REPORT/PROPFIND response entries for a slice of events.
-func buildEventResponses(base, username string, cal *model.Calendar, events []model.Event, wantData bool) []propResponse {
-	out := make([]propResponse, 0, len(events))
-	for _, ev := range events {
-		evURL := fmt.Sprintf("%s/dav/%s/calendars/%s/%s.ics",
-			base, username, calDAVSlug(cal.Name), ev.UID)
-		etag := eventETag(ev)
-		props := []xml.TokenReader{
-			xmlPropRaw("D:getetag", `"`+etag+`"`),
-			xmlProp("D:getcontenttype", "text/calendar; charset=utf-8"),
-		}
-		if wantData {
-			ics := ev.ICalContent
-			if ics == "" {
-				ics = calpkg.BuildICalContent(&ev, ev.Attendees)
-			}
-			props = append(props, xmlPropRaw("C:calendar-data", xmlEsc(ics)))
-		}
-		out = append(out, propResponse{
-			Href:  evURL,
-			Props: []propstat{{Status: "HTTP/1.1 200 OK", Props: props}},
-		})
+// normaliseColor trims Apple's optional alpha suffix to a plain #RRGGBB value.
+func normaliseColor(v string) string {
+	v = strings.TrimSpace(v)
+	if len(v) > 9 {
+		v = v[:9]
+	}
+	return v
+}
+
+// deleteCalendar removes a whole calendar collection.
+func (h *CalDAVHandler) deleteCalendar(c *echo.Context, userID uint, cal *model.Calendar) error {
+	if cal.IsDefault {
+		return c.NoContent(http.StatusForbidden)
+	}
+	if err := h.calRepo.Delete(userID, cal.ID); err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+// ── Shared helpers ────────────────────────────────────────────────────────
+
+// eventICS returns the stored blob, falling back to a generated one for rows
+// created before blobs were kept (or by the REST API).
+func eventICS(ev *model.Event) string {
+	if ev.ICalContent != "" {
+		return ev.ICalContent
+	}
+	return calpkg.BuildICalContent(ev, ev.Attendees)
+}
+
+// eventETag returns the stored entity tag, deriving one on the fly when the row
+// predates ETag persistence.
+func eventETag(ev *model.Event) string {
+	if ev.ETag != "" {
+		return ev.ETag
+	}
+	return dav.ComputeETag([]byte(eventICS(ev)))
+}
+
+// namesOf extracts the property names listed in a DAV:prop element.
+func namesOf(p propElement) []xml.Name {
+	out := make([]xml.Name, 0, len(p.Props))
+	for _, e := range p.Props {
+		out = append(out, e.XMLName)
 	}
 	return out
 }
 
-// parseTimeRange extracts start/end from a VCALENDAR time-range XML element.
-func parseTimeRange(body string) (start, end time.Time) {
-	// Look for time-range start="..." end="..."
-	lower := strings.ToLower(body)
-	idx := strings.Index(lower, "time-range")
-	if idx < 0 {
-		return
+// hrefElement wraps a path in a DAV:href element.
+func hrefElement(href string) string {
+	return "<D:href>" + escapeXML(href) + "</D:href>"
+}
+
+// supportedReportSet advertises the REPORTs a resource accepts. Clients use it
+// to decide whether they can rely on sync-collection instead of full listings.
+func supportedReportSet(calendar, principal bool) string {
+	reports := []string{"<D:sync-collection/>", "<D:expand-property/>"}
+	if calendar {
+		reports = append(reports,
+			`<C:calendar-query/>`,
+			`<C:calendar-multiget/>`,
+			`<C:free-busy-query/>`,
+			`<CR:addressbook-query/>`,
+			`<CR:addressbook-multiget/>`)
 	}
-	sub := body[idx : idx+min(200, len(body)-idx)]
-	start = extractAttr(sub, "start")
-	end = extractAttr(sub, "end")
-	return
-}
-
-func extractAttr(s, attr string) time.Time {
-	key := attr + `="`
-	i := strings.Index(strings.ToLower(s), key)
-	if i < 0 {
-		return time.Time{}
+	if principal {
+		reports = append(reports, "<D:principal-property-search/>")
 	}
-	s = s[i+len(key):]
-	j := strings.IndexByte(s, '"')
-	if j < 0 {
-		return time.Time{}
-	}
-	val := s[:j]
-	for _, layout := range []string{"20060102T150405Z", "20060102T150405", "20060102"} {
-		if t, err := time.Parse(layout, val); err == nil {
-			return t.UTC()
-		}
-	}
-	return time.Time{}
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// parseHrefs extracts <D:href>...</D:href> values from a REPORT body.
-func parseHrefs(body string) []string {
-	var hrefs []string
-	for {
-		open := strings.Index(body, "<")
-		if open < 0 {
-			break
-		}
-		rest := body[open:]
-		// match <D:href> or <href> (case-insensitive tag match)
-		var tag, content string
-		for _, t := range []string{"D:href", "href"} {
-			o := "<" + t + ">"
-			c := "</" + t + ">"
-			if i := strings.Index(strings.ToLower(rest), strings.ToLower(o)); i >= 0 {
-				inner := rest[i+len(o):]
-				if j := strings.Index(strings.ToLower(inner), strings.ToLower(c)); j >= 0 {
-					tag = t
-					content = inner[:j]
-					body = inner[j+len(c):]
-					break
-				}
-			}
-		}
-		if tag == "" {
-			break
-		}
-		if content != "" {
-			hrefs = append(hrefs, strings.TrimSpace(content))
-		}
-	}
-	return hrefs
-}
-
-// hrefToUID extracts the event UID from a CalDAV event href.
-// e.g. "/dav/user/calendars/personal/my-uid.ics" → "my-uid"
-func hrefToUID(href string) string {
-	parts := strings.Split(strings.TrimSuffix(href, ".ics"), "/")
-	if len(parts) == 0 {
-		return ""
-	}
-	return parts[len(parts)-1]
-}
-
-// ── XML response builders ─────────────────────────────────────────────────
-
-type propResponse struct {
-	Href  string
-	Props []propstat
-}
-
-type propstat struct {
-	Status string
-	Props  []xml.TokenReader
-}
-
-// xmlProp creates an XML element with escaped text content.
-func xmlProp(name, content string) xml.TokenReader { return rawXML("<" + name + ">" + content + "</" + name + ">") }
-
-// xmlPropRaw creates an XML element with raw (pre-escaped) content.
-func xmlPropRaw(name, content string) xml.TokenReader {
-	return rawXML("<" + name + ">" + content + "</" + name + ">")
-}
-
-type rawXML string
-
-func (r rawXML) Token() (xml.Token, error) { return xml.CharData(r), nil }
-
-// multistatus serialises propResponse slice to a DAV:multistatus XML string.
-func multistatus(responses []propResponse) string {
 	var sb strings.Builder
-	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-	sb.WriteString(`<D:multistatus xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CR="urn:ietf:params:xml:ns:carddav" xmlns:CS="http://calendarserver.org/ns/" xmlns:ICAL="http://apple.com/ns/ical/">`)
-	for _, r := range responses {
-		sb.WriteString(`<D:response>`)
-		sb.WriteString(`<D:href>` + xmlEsc(r.Href) + `</D:href>`)
-		for _, ps := range r.Props {
-			sb.WriteString(`<D:propstat><D:prop>`)
-			for _, p := range ps.Props {
-				if rp, ok := p.(rawXML); ok {
-					sb.WriteString(string(rp))
-				}
-			}
-			sb.WriteString(`</D:prop>`)
-			sb.WriteString(`<D:status>` + ps.Status + `</D:status>`)
-			sb.WriteString(`</D:propstat>`)
-		}
-		sb.WriteString(`</D:response>`)
+	for _, r := range reports {
+		sb.WriteString("<D:supported-report><D:report>" + r + "</D:report></D:supported-report>")
 	}
-	sb.WriteString(`</D:multistatus>`)
 	return sb.String()
 }
 
-// writePropfind writes a 207 Multi-Status XML response.
-func writePropfind(c *echo.Context, body string) error {
-	c.Response().Header().Set("Content-Type", "application/xml; charset=utf-8")
-	c.Response().Header().Set("DAV", "1, 2, calendar-access")
-	return c.Blob(http.StatusMultiStatus, "application/xml; charset=utf-8", []byte(body))
+// privilegeSet reports the privileges the authenticated user holds. Access is
+// all-or-nothing here: a user either owns the collection or cannot see it.
+func privilegeSet() string {
+	return "<D:privilege><D:all/></D:privilege>" +
+		"<D:privilege><D:read/></D:privilege>" +
+		"<D:privilege><D:write/></D:privilege>" +
+		"<D:privilege><D:write-content/></D:privilege>" +
+		"<D:privilege><D:write-properties/></D:privilege>"
+}
+
+// invalidSyncToken tells the client its token is too old to serve a delta from,
+// which is the signal to discard local state and start a full sync.
+func invalidSyncToken(c *echo.Context) error {
+	return writeDAVError(c, http.StatusForbidden, "<D:valid-sync-token/>")
+}
+
+// limitExceeded implements the DAV:limit element of sync-collection: when more
+// results match than the client allowed, the request fails rather than
+// returning a truncated set the client would mistake for the whole delta.
+func limitExceeded(limit *limitElem, count int) (bool, func(*echo.Context) error) {
+	if limit == nil || limit.NResults <= 0 || count <= limit.NResults {
+		return false, nil
+	}
+	return true, func(c *echo.Context) error {
+		return writeDAVError(c, http.StatusInsufficientStorage,
+			fmt.Sprintf("<D:number-of-matches-within-limits>%d</D:number-of-matches-within-limits>", count))
+	}
 }

@@ -1,311 +1,442 @@
 // Package handler — CardDAV server (RFC 6352) for address-book sync.
 //
-// Discovery chain used by clients (Apple Contacts, Thunderbird, etc.):
-//   1. GET /.well-known/carddav                    → 301 /dav/{user}/
-//   2. PROPFIND /dav/{user}/                        → addressbook-home-set
-//   3. PROPFIND /dav/{user}/contacts/   Depth:1     → address-book collection
-//   4. PROPFIND /dav/{user}/contacts/default/ Depth:1 → vCard list with getetag
-//   5. REPORT   /dav/{user}/contacts/default/       → addressbook-query / multiget
-//   6. GET|PUT|DELETE individual .vcf resources
+// Discovery chain used by clients (Apple Contacts, Thunderbird, DAVx⁵…):
+//   1. GET|PROPFIND /.well-known/carddav               → 301 /dav/{user}/
+//   2. PROPFIND /dav/{user}/                            → addressbook-home-set
+//   3. PROPFIND /dav/{user}/contacts/   Depth:1         → address book list
+//   4. REPORT   sync-collection on each address book    → delta since the token
+//   5. GET|PUT|DELETE individual .vcf resources         → conditional via ETag
 //
-// Auth: same CalDAVAuth Basic Auth middleware (sets caldav_user_id/caldav_username).
+// The vCard a client sends is stored byte-for-byte and returned unchanged; the
+// flat Contact columns are only an index. Regenerating cards from those columns
+// is the classic CardDAV data-loss bug — it silently drops addresses, photos,
+// birthdays, extra phone numbers and every X-* extension.
 package handler
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/xml"
-	"fmt"
-	"io"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
-	"time"
 
 	"go-cubemail/internal/config"
+	"go-cubemail/internal/contacts"
+	"go-cubemail/internal/dav"
 	"go-cubemail/internal/model"
 	"go-cubemail/internal/repository"
 	"github.com/labstack/echo/v5"
 	"gorm.io/gorm"
 )
 
-// CardDAVHandler handles all CardDAV HTTP methods.
+// CardDAVHandler serves the CardDAV portion of the /dav namespace.
 type CardDAVHandler struct {
 	cfg         *config.Config
 	db          *gorm.DB
 	contactRepo *repository.ContactRepo
+	bookRepo    *repository.AddressBookRepo
+	sync        *dav.Store
 }
 
-// ── OPTIONS ───────────────────────────────────────────────────────────────
+// ── OPTIONS / well-known ──────────────────────────────────────────────────
 
-// Options returns CardDAV capability headers.
+// Options advertises the DAV capabilities and allowed methods.
 func (h *CardDAVHandler) Options(c *echo.Context) error {
-	c.Response().Header().Set("DAV", "1, 2, addressbook")
-	c.Response().Header().Set("Allow", "OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, REPORT")
+	c.Response().Header().Set("DAV", davCapabilities)
+	c.Response().Header().Set("Allow",
+		"OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, PROPPATCH, REPORT, MKCOL")
+	c.Response().Header().Set("Content-Length", "0")
 	return c.NoContent(http.StatusOK)
 }
 
-// ── Well-known ────────────────────────────────────────────────────────────
-
-// WellKnown handles GET|PROPFIND /.well-known/carddav → redirect to principal.
+// WellKnown handles GET|PROPFIND /.well-known/carddav → redirect to the principal.
 func (h *CardDAVHandler) WellKnown(c *echo.Context) error {
 	user := caldavUsername(c)
 	if user == "" {
 		return c.NoContent(http.StatusUnauthorized)
 	}
-	target := fmt.Sprintf("%s/dav/%s/", strings.TrimRight(h.cfg.Server.BaseURL, "/"), user)
-	c.Response().Header().Set("Location", target)
+	c.Response().Header().Set("Location", principalHref(user))
 	return c.NoContent(http.StatusMovedPermanently)
 }
 
 // ── PROPFIND ──────────────────────────────────────────────────────────────
 
-// PropFind dispatches PROPFIND based on URL depth.
-func (h *CardDAVHandler) PropFind(c *echo.Context) error {
-	userID, ok := caldavUserID(c)
-	if !ok {
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	username := caldavUsername(c)
-	depth := c.Request().Header.Get("Depth")
-	if depth == "" {
-		depth = "1"
-	}
-	abSlug := c.Param("ab")
-	uidParam := strings.TrimSuffix(c.Param("uid"), ".vcf")
-
-	switch {
-	case uidParam != "":
-		return h.propfindContact(c, userID, username, uidParam)
-	case abSlug != "":
-		return h.propfindAddressBook(c, userID, username, abSlug, depth)
-	default:
-		return h.propfindHome(c, userID, username, depth)
-	}
-}
-
-// propfindHome returns the address-book home collection.
-func (h *CardDAVHandler) propfindHome(c *echo.Context, userID uint, username, depth string) error {
-	base := strings.TrimRight(h.cfg.Server.BaseURL, "/")
-	homeURL := fmt.Sprintf("%s/dav/%s/contacts/", base, username)
-
-	responses := []propResponse{
-		{
-			Href: homeURL,
-			Props: []propstat{{
-				Status: "HTTP/1.1 200 OK",
-				Props: []xml.TokenReader{
-					rawXML(`<D:resourcetype><D:collection/></D:resourcetype>`),
-					rawXML(`<D:displayname>Contacts</D:displayname>`),
-					rawXML(`<D:current-user-principal><D:href>` + fmt.Sprintf("%s/dav/%s/", base, username) + `</D:href></D:current-user-principal>`),
-					rawXML(`<CR:addressbook-home-set xmlns:CR="urn:ietf:params:xml:ns:carddav"><D:href>` + homeURL + `</D:href></CR:addressbook-home-set>`),
-				},
-			}},
-		},
+// propfindHome answers PROPFIND on the addressbook-home-set.
+func (h *CardDAVHandler) propfindHome(c *echo.Context, userID uint, username string, req propfindRequest, depth string) error {
+	if _, err := h.bookRepo.EnsureDefault(userID); err != nil {
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	if depth == "1" {
-		abURL := fmt.Sprintf("%s/dav/%s/contacts/default/", base, username)
-		ctag := h.abCTag(userID)
-		responses = append(responses, propResponse{
-			Href: abURL,
-			Props: []propstat{{
-				Status: "HTTP/1.1 200 OK",
-				Props: []xml.TokenReader{
-					rawXML(`<D:resourcetype><D:collection/><CR:addressbook xmlns:CR="urn:ietf:params:xml:ns:carddav"/></D:resourcetype>`),
-					rawXML(`<D:displayname>Default</D:displayname>`),
-					rawXML(`<CS:getctag xmlns:CS="http://calendarserver.org/ns/">` + ctag + `</CS:getctag>`),
-					rawXML(`<D:sync-token>` + ctag + `</D:sync-token>`),
-				},
-			}},
-		})
-	}
+	home := newPropBag()
+	home.setRaw(nsDAV, "resourcetype", "<D:collection/>")
+	home.setText(nsDAV, "displayname", "Contacts")
+	home.setRaw(nsDAV, "current-user-principal", hrefElement(principalHref(username)))
+	home.setRaw(nsDAV, "owner", hrefElement(principalHref(username)))
+	home.setRaw(nsCardDAV, "addressbook-home-set", hrefElement(addressBookHomeHref(username)))
 
-	return writeCardDAVPropfind(c, cdMultistatus(responses))
-}
+	responses := []responseOut{{Href: addressBookHomeHref(username), Propstats: home.render(req)}}
 
-// propfindAddressBook returns the address-book collection with optional vCard listing.
-func (h *CardDAVHandler) propfindAddressBook(c *echo.Context, userID uint, username, abSlug, depth string) error {
-	base := strings.TrimRight(h.cfg.Server.BaseURL, "/")
-	abURL := fmt.Sprintf("%s/dav/%s/contacts/%s/", base, username, abSlug)
-	ctag := h.abCTag(userID)
-
-	responses := []propResponse{
-		{
-			Href: abURL,
-			Props: []propstat{{
-				Status: "HTTP/1.1 200 OK",
-				Props: []xml.TokenReader{
-					rawXML(`<D:resourcetype><D:collection/><CR:addressbook xmlns:CR="urn:ietf:params:xml:ns:carddav"/></D:resourcetype>`),
-					rawXML(`<D:displayname>` + xmlEsc(abSlug) + `</D:displayname>`),
-					rawXML(`<CS:getctag xmlns:CS="http://calendarserver.org/ns/">` + ctag + `</CS:getctag>`),
-					rawXML(`<D:sync-token>` + ctag + `</D:sync-token>`),
-				},
-			}},
-		},
-	}
-
-	if depth == "1" {
-		contacts, err := h.contactRepo.List(userID)
+	if depth != "0" {
+		books, err := h.bookRepo.List(userID)
 		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		for _, ct := range contacts {
-			uid := contactUID(ct)
-			vcfURL := fmt.Sprintf("%s/dav/%s/contacts/%s/%s.vcf", base, username, abSlug, uid)
-			etag := contactETag(ct)
-			responses = append(responses, propResponse{
-				Href: vcfURL,
-				Props: []propstat{{
-					Status: "HTTP/1.1 200 OK",
-					Props: []xml.TokenReader{
-						rawXML(`<D:getetag>"` + etag + `"</D:getetag>`),
-						rawXML(`<D:getcontenttype>text/vcard; charset=utf-8</D:getcontenttype>`),
-						rawXML(`<D:resourcetype/>`),
-					},
-				}},
+		for i := range books {
+			responses = append(responses, responseOut{
+				Href:      addressBookHref(username, books[i].URI),
+				Propstats: h.bookPropBag(username, &books[i]).render(req),
 			})
 		}
 	}
-
-	return writeCardDAVPropfind(c, cdMultistatus(responses))
+	return writeMultistatus(c, davCapabilities, responses, "")
 }
 
-// propfindContact returns properties for a single vCard resource.
-func (h *CardDAVHandler) propfindContact(c *echo.Context, userID uint, username, uid string) error {
-	base := strings.TrimRight(h.cfg.Server.BaseURL, "/")
-	ct, err := h.contactRepo.GetByUID(userID, uid)
-	if err != nil {
-		return c.NoContent(http.StatusNotFound)
+// propfindAddressBook answers PROPFIND on one address book collection.
+func (h *CardDAVHandler) propfindAddressBook(c *echo.Context, userID uint, username string, book *model.AddressBook, req propfindRequest, depth string) error {
+	responses := []responseOut{{
+		Href:      addressBookHref(username, book.URI),
+		Propstats: h.bookPropBag(username, book).render(req),
+	}}
+
+	if depth != "0" {
+		list, err := h.contactRepo.ListByBook(userID, book.ID)
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		wantData := req.wantsExplicit(nsCardDAV, "address-data")
+		for i := range list {
+			responses = append(responses, responseOut{
+				Href:      addressObjectHref(username, book.URI, list[i].ResourceURI),
+				Propstats: contactPropBag(&list[i], wantData).render(req),
+			})
+		}
 	}
-	abSlug := "default"
-	vcfURL := fmt.Sprintf("%s/dav/%s/contacts/%s/%s.vcf", base, username, abSlug, uid)
-	etag := contactETag(*ct)
-	return writeCardDAVPropfind(c, cdMultistatus([]propResponse{{
-		Href: vcfURL,
-		Props: []propstat{{
-			Status: "HTTP/1.1 200 OK",
-			Props: []xml.TokenReader{
-				rawXML(`<D:getetag>"` + etag + `"</D:getetag>`),
-				rawXML(`<D:getcontenttype>text/vcard; charset=utf-8</D:getcontenttype>`),
-				rawXML(`<D:resourcetype/>`),
-			},
-		}},
-	}}))
+	return writeMultistatus(c, davCapabilities, responses, "")
+}
+
+// propfindAddressObject answers PROPFIND on a single .vcf resource.
+func (h *CardDAVHandler) propfindAddressObject(c *echo.Context, username string, book *model.AddressBook, ct *model.Contact, req propfindRequest) error {
+	return writeMultistatus(c, davCapabilities, []responseOut{{
+		Href:      addressObjectHref(username, book.URI, ct.ResourceURI),
+		Propstats: contactPropBag(ct, req.wantsExplicit(nsCardDAV, "address-data")).render(req),
+	}}, "")
+}
+
+// bookPropBag collects the properties of an address book collection.
+func (h *CardDAVHandler) bookPropBag(username string, book *model.AddressBook) *propBag {
+	bag := newPropBag()
+	bag.setRaw(nsDAV, "resourcetype", "<D:collection/><CR:addressbook/>")
+	bag.setText(nsDAV, "displayname", book.DisplayName)
+	bag.setText(nsCS, "getctag", dav.CTag(book.SyncToken))
+	bag.setText(nsDAV, "sync-token", dav.SyncToken(book.SyncToken))
+	bag.setText(nsCardDAV, "addressbook-description", book.Description)
+	// RFC 6352 §6.2.3 names the child element address-data-type, not
+	// address-data — that one is the REPORT payload element. Clients that check
+	// the property strictly ignore it when the name is wrong and may then assume
+	// vCard 3.0 only. (CalDAV is different: RFC 4791 does reuse calendar-data.)
+	bag.setRaw(nsCardDAV, "supported-address-data",
+		`<CR:address-data-type content-type="text/vcard" version="3.0"/>`+
+			`<CR:address-data-type content-type="text/vcard" version="4.0"/>`)
+	bag.setText(nsCardDAV, "max-resource-size", strconv.Itoa(maxResourceSize))
+	bag.setRaw(nsDAV, "current-user-principal", hrefElement(principalHref(username)))
+	bag.setRaw(nsDAV, "owner", hrefElement(principalHref(username)))
+	bag.setRaw(nsDAV, "supported-report-set", supportedReportSet(true, false))
+	bag.setRaw(nsDAV, "current-user-privilege-set", privilegeSet())
+	return bag
+}
+
+// contactPropBag collects the properties of an address object resource.
+func contactPropBag(ct *model.Contact, withData bool) *propBag {
+	card := contactVCard(ct)
+	bag := newPropBag()
+	bag.setText(nsDAV, "getetag", dav.Quote(contactETag(ct)))
+	bag.setText(nsDAV, "getcontenttype", "text/vcard; charset=utf-8")
+	bag.setText(nsDAV, "getcontentlength", strconv.Itoa(len(card)))
+	bag.setText(nsDAV, "getlastmodified", ct.UpdatedAt.UTC().Format(http.TimeFormat))
+	bag.setRaw(nsDAV, "resourcetype", "")
+	if withData {
+		bag.setText(nsCardDAV, "address-data", card)
+	}
+	return bag
 }
 
 // ── REPORT ────────────────────────────────────────────────────────────────
 
-// Report handles addressbook-query and addressbook-multiget REPORT.
-func (h *CardDAVHandler) Report(c *echo.Context) error {
-	userID, ok := caldavUserID(c)
-	if !ok {
-		return c.NoContent(http.StatusUnauthorized)
+// report dispatches a CardDAV REPORT on an address book collection.
+func (h *CardDAVHandler) report(c *echo.Context, userID uint, username string, book *model.AddressBook) error {
+	body, tooLarge := readBody(c, davReportBodyLimit)
+	if tooLarge {
+		return c.NoContent(http.StatusRequestEntityTooLarge)
 	}
-	username := caldavUsername(c)
-	abSlug := c.Param("ab")
-
-	body, _ := io.ReadAll(io.LimitReader(c.Request().Body, 256*1024))
-	bodyStr := string(body)
-
-	if strings.Contains(bodyStr, "addressbook-multiget") {
-		return h.reportMultiget(c, userID, username, abSlug, bodyStr)
-	}
-	return h.reportQuery(c, userID, username, abSlug, bodyStr)
-}
-
-func (h *CardDAVHandler) reportQuery(c *echo.Context, userID uint, username, abSlug, body string) error {
-	base := strings.TrimRight(h.cfg.Server.BaseURL, "/")
-	contacts, err := h.contactRepo.List(userID)
+	name, err := reportName(body)
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
-	wantData := strings.Contains(body, "address-data") || strings.Contains(body, "addressbook-data")
-	responses := buildContactResponses(base, username, abSlug, contacts, wantData)
-	return writeCardDAVPropfind(c, cdMultistatus(responses))
-}
-
-func (h *CardDAVHandler) reportMultiget(c *echo.Context, userID uint, username, abSlug, body string) error {
-	base := strings.TrimRight(h.cfg.Server.BaseURL, "/")
-	hrefs := parseHrefs(body)
-	var responses []propResponse
-	for _, href := range hrefs {
-		uid := hrefToUID(href)
-		uid = strings.TrimSuffix(uid, ".vcf")
-		if uid == "" {
-			continue
-		}
-		ct, err := h.contactRepo.GetByUID(userID, uid)
-		if err != nil {
-			responses = append(responses, propResponse{
-				Href:  href,
-				Props: []propstat{{Status: "HTTP/1.1 404 Not Found"}},
-			})
-			continue
-		}
-		vcf := buildVCard(*ct)
-		vcfURL := fmt.Sprintf("%s/dav/%s/contacts/%s/%s.vcf", base, username, abSlug, uid)
-		etag := contactETag(*ct)
-		responses = append(responses, propResponse{
-			Href: vcfURL,
-			Props: []propstat{{
-				Status: "HTTP/1.1 200 OK",
-				Props: []xml.TokenReader{
-					rawXML(`<D:getetag>"` + etag + `"</D:getetag>`),
-					rawXML(`<CR:address-data xmlns:CR="urn:ietf:params:xml:ns:carddav">` + xmlEsc(vcf) + `</CR:address-data>`),
-				},
-			}},
-		})
-	}
-	return writeCardDAVPropfind(c, cdMultistatus(responses))
-}
-
-// ── GET / PUT / DELETE ────────────────────────────────────────────────────
-
-// GetContact handles GET /dav/{user}/contacts/{ab}/{uid}.vcf.
-func (h *CardDAVHandler) GetContact(c *echo.Context) error {
-	userID, ok := caldavUserID(c)
-	if !ok {
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	uid := strings.TrimSuffix(c.Param("uid"), ".vcf")
-	ct, err := h.contactRepo.GetByUID(userID, uid)
-	if err != nil {
-		return c.NoContent(http.StatusNotFound)
-	}
-	vcf := buildVCard(*ct)
-	etag := contactETag(*ct)
-	c.Response().Header().Set("ETag", `"`+etag+`"`)
-	c.Response().Header().Set("Content-Type", "text/vcard; charset=utf-8")
-	return c.Blob(http.StatusOK, "text/vcard; charset=utf-8", []byte(vcf))
-}
-
-// PutContact handles PUT /dav/{user}/contacts/{ab}/{uid}.vcf — create or update.
-func (h *CardDAVHandler) PutContact(c *echo.Context) error {
-	userID, ok := caldavUserID(c)
-	if !ok {
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	uid := strings.TrimSuffix(c.Param("uid"), ".vcf")
-
-	body, _ := io.ReadAll(io.LimitReader(c.Request().Body, 256*1024))
-	parsed := parseVCardSimple(string(body))
-	if parsed == nil {
 		return c.NoContent(http.StatusBadRequest)
 	}
-	parsed.UID = uid
 
-	existing, err := h.contactRepo.GetByUID(userID, uid)
-	if err == gorm.ErrRecordNotFound {
-		parsed.UserID = userID
-		if err := h.contactRepo.Create(parsed); err != nil {
+	switch {
+	case name.Space == nsDAV && name.Local == "sync-collection":
+		return h.reportSyncCollection(c, userID, username, book, body)
+	case name.Space == nsCardDAV && name.Local == "addressbook-multiget":
+		return h.reportMultiget(c, userID, username, book, body)
+	case name.Space == nsCardDAV && name.Local == "addressbook-query":
+		return h.reportQuery(c, userID, username, book, body)
+	default:
+		return c.NoContent(http.StatusBadRequest)
+	}
+}
+
+// reportSyncCollection answers the RFC 6578 delta report for an address book.
+func (h *CardDAVHandler) reportSyncCollection(c *echo.Context, userID uint, username string, book *model.AddressBook, body []byte) error {
+	var req syncCollectionRequest
+	if err := xml.Unmarshal(body, &req); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	propReq := propfindRequest{Props: namesOf(req.Prop)}
+	if len(propReq.Props) == 0 {
+		propReq.AllProp = true
+	}
+
+	since, ok := dav.ParseSyncToken(req.SyncToken)
+	if !ok {
+		return invalidSyncToken(c)
+	}
+
+	var responses []responseOut
+	var newToken uint64
+	wantData := propReq.wantsExplicit(nsCardDAV, "address-data")
+
+	if since == 0 {
+		list, err := h.contactRepo.ListByBook(userID, book.ID)
+		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
-		c.Response().Header().Set("ETag", `"`+contactETag(*parsed)+`"`)
-		return c.NoContent(http.StatusCreated)
+		newToken, err = h.sync.CurrentRevision(model.CollectionAddressBook, book.ID)
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		if over, resp := limitExceeded(req.Limit, len(list)); over {
+			return resp(c)
+		}
+		for i := range list {
+			responses = append(responses, responseOut{
+				Href:      addressObjectHref(username, book.URI, list[i].ResourceURI),
+				Propstats: contactPropBag(&list[i], wantData).render(propReq),
+			})
+		}
+	} else {
+		changes, current, err := h.sync.ChangesSince(model.CollectionAddressBook, book.ID, since)
+		if errors.Is(err, dav.ErrInvalidSyncToken) {
+			return invalidSyncToken(c)
+		}
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		newToken = current
+		if over, resp := limitExceeded(req.Limit, len(changes)); over {
+			return resp(c)
+		}
+		for _, ch := range changes {
+			href := addressObjectHref(username, book.URI, ch.URI)
+			if ch.Deleted {
+				responses = append(responses, notFoundResponse(href))
+				continue
+			}
+			ct, err := h.contactRepo.GetByResourceURI(userID, book.ID, ch.URI)
+			if err != nil {
+				responses = append(responses, notFoundResponse(href))
+				continue
+			}
+			responses = append(responses, responseOut{
+				Href:      href,
+				Propstats: contactPropBag(ct, wantData).render(propReq),
+			})
+		}
 	}
+
+	trailer := "<D:sync-token>" + escapeXML(dav.SyncToken(newToken)) + "</D:sync-token>"
+	return writeMultistatus(c, davCapabilities, responses, trailer)
+}
+
+// reportMultiget returns the address objects named by the client's href list.
+func (h *CardDAVHandler) reportMultiget(c *echo.Context, userID uint, username string, book *model.AddressBook, body []byte) error {
+	var req multigetRequest
+	if err := xml.Unmarshal(body, &req); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	propReq := propfindRequest{Props: namesOf(req.Prop)}
+	if len(propReq.Props) == 0 {
+		propReq.AllProp = true
+	}
+	wantData := propReq.wantsExplicit(nsCardDAV, "address-data")
+
+	responses := make([]responseOut, 0, len(req.Hrefs))
+	for _, href := range req.Hrefs {
+		uri := dav.ResourceURIFromHref(href)
+		if uri == "" {
+			responses = append(responses, notFoundResponse(href))
+			continue
+		}
+		ct, err := h.contactRepo.GetByResourceURI(userID, book.ID, uri)
+		if err != nil {
+			responses = append(responses, notFoundResponse(href))
+			continue
+		}
+		responses = append(responses, responseOut{
+			Href:      addressObjectHref(username, book.URI, ct.ResourceURI),
+			Propstats: contactPropBag(ct, wantData).render(propReq),
+		})
+	}
+	return writeMultistatus(c, davCapabilities, responses, "")
+}
+
+// reportQuery answers an addressbook-query, applying the prop-filter text
+// matches the client asked for.
+func (h *CardDAVHandler) reportQuery(c *echo.Context, userID uint, username string, book *model.AddressBook, body []byte) error {
+	var req addressbookQueryRequest
+	if err := xml.Unmarshal(body, &req); err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	propReq := propfindRequest{Props: namesOf(req.Prop)}
+	if len(propReq.Props) == 0 {
+		propReq.AllProp = true
+	}
+	wantData := propReq.wantsExplicit(nsCardDAV, "address-data")
+
+	list, err := h.contactRepo.ListByBook(userID, book.ID)
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	anyOf := strings.EqualFold(strings.TrimSpace(req.Filter.Test), "anyof")
+	responses := make([]responseOut, 0, len(list))
+	for i := range list {
+		if !contactMatchesFilter(&list[i], req, anyOf) {
+			continue
+		}
+		responses = append(responses, responseOut{
+			Href:      addressObjectHref(username, book.URI, list[i].ResourceURI),
+			Propstats: contactPropBag(&list[i], wantData).render(propReq),
+		})
+		if req.Limit != nil && req.Limit.NResults > 0 && len(responses) >= req.Limit.NResults {
+			break
+		}
+	}
+	return writeMultistatus(c, davCapabilities, responses, "")
+}
+
+// contactMatchesFilter evaluates the prop-filter text matches of a query.
+// An empty filter matches everything, which is what a plain listing sends.
+func contactMatchesFilter(ct *model.Contact, req addressbookQueryRequest, anyOf bool) bool {
+	if len(req.Filter.Props) == 0 {
+		return true
+	}
+	matchedAny := false
+	for _, f := range req.Filter.Props {
+		needle := strings.TrimSpace(f.TextMatch)
+		if needle == "" {
+			continue
+		}
+		hay := contactField(ct, strings.ToUpper(f.Name))
+		hit := strings.Contains(strings.ToLower(hay), strings.ToLower(needle))
+		if hit {
+			matchedAny = true
+		} else if !anyOf {
+			return false
+		}
+	}
+	if anyOf {
+		return matchedAny
+	}
+	return true
+}
+
+// contactField maps a vCard property name onto the indexed column that mirrors it.
+func contactField(ct *model.Contact, name string) string {
+	switch name {
+	case "FN", "N":
+		return contacts.DisplayName(*ct)
+	case "EMAIL":
+		return ct.Email
+	case "TEL":
+		return ct.Phone
+	case "ORG":
+		return ct.Company
+	case "TITLE":
+		return ct.Title
+	case "NOTE":
+		return ct.Notes
+	case "UID":
+		return ct.UID
+	default:
+		// Unknown property: fall back to the raw card so the filter still works.
+		return ct.VCardContent
+	}
+}
+
+// ── GET / PUT / DELETE on address objects ─────────────────────────────────
+
+// getAddressObject writes a .vcf resource.
+func (h *CardDAVHandler) getAddressObject(c *echo.Context, ct *model.Contact, body bool) error {
+	card := contactVCard(ct)
+	c.Response().Header().Set("ETag", dav.Quote(contactETag(ct)))
+	c.Response().Header().Set("Last-Modified", ct.UpdatedAt.UTC().Format(http.TimeFormat))
+	if !body {
+		c.Response().Header().Set("Content-Length", strconv.Itoa(len(card)))
+		return c.NoContent(http.StatusOK)
+	}
+	return c.Blob(http.StatusOK, "text/vcard; charset=utf-8", []byte(card))
+}
+
+// putAddressObject creates or replaces a .vcf resource, storing the card exactly
+// as the client sent it.
+func (h *CardDAVHandler) putAddressObject(c *echo.Context, userID uint, book *model.AddressBook, resource string) error {
+	if ct := c.Request().Header.Get("Content-Type"); ct != "" &&
+		!strings.HasPrefix(strings.ToLower(ct), "text/vcard") &&
+		!strings.HasPrefix(strings.ToLower(ct), "text/x-vcard") {
+		return c.NoContent(http.StatusUnsupportedMediaType)
+	}
+
+	body, tooLarge := readBody(c, maxResourceSize)
+	if tooLarge {
+		return writeTooLarge(c, nsCardDAV)
+	}
+	if len(body) == 0 {
+		return c.NoContent(http.StatusBadRequest)
+	}
+
+	existing, err := h.contactRepo.GetByResourceURI(userID, book.ID, resource)
+	exists := err == nil
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	currentETag := ""
+	if exists {
+		currentETag = contactETag(existing)
+	}
+	if err := dav.CheckPreconditions(c.Request().Header, exists, currentETag); err != nil {
+		return c.NoContent(http.StatusPreconditionFailed)
+	}
+
+	parsed, err := contacts.Parse(string(body))
+	if err != nil {
+		return writeDAVError(c, http.StatusForbidden,
+			`<CR:valid-address-data xmlns:CR="urn:ietf:params:xml:ns:carddav"/>`)
+	}
+
+	if !exists {
+		ct := *parsed
+		ct.UserID = userID
+		ct.AddressBookID = book.ID
+		ct.ResourceURI = resource
+		ct.VCardContent = string(body)
+		if err := h.contactRepo.SaveRaw(&ct); err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		c.Response().Header().Set("ETag", dav.Quote(ct.ETag))
+		return c.NoContent(http.StatusCreated)
+	}
+
 	existing.FirstName = parsed.FirstName
 	existing.LastName = parsed.LastName
 	existing.Email = parsed.Email
@@ -313,23 +444,25 @@ func (h *CardDAVHandler) PutContact(c *echo.Context) error {
 	existing.Company = parsed.Company
 	existing.Title = parsed.Title
 	existing.Notes = parsed.Notes
-	if err := h.contactRepo.Update(existing); err != nil {
+	if parsed.UID != "" {
+		existing.UID = parsed.UID
+	}
+	existing.VCardContent = string(body)
+	if err := h.contactRepo.SaveRaw(existing); err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	c.Response().Header().Set("ETag", `"`+contactETag(*existing)+`"`)
+	c.Response().Header().Set("ETag", dav.Quote(existing.ETag))
 	return c.NoContent(http.StatusNoContent)
 }
 
-// DeleteContact handles DELETE /dav/{user}/contacts/{ab}/{uid}.vcf.
-func (h *CardDAVHandler) DeleteContact(c *echo.Context) error {
-	userID, ok := caldavUserID(c)
-	if !ok {
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	uid := strings.TrimSuffix(c.Param("uid"), ".vcf")
-	ct, err := h.contactRepo.GetByUID(userID, uid)
+// deleteAddressObject removes a .vcf resource, honouring If-Match.
+func (h *CardDAVHandler) deleteAddressObject(c *echo.Context, userID uint, book *model.AddressBook, resource string) error {
+	ct, err := h.contactRepo.GetByResourceURI(userID, book.ID, resource)
 	if err != nil {
 		return c.NoContent(http.StatusNotFound)
+	}
+	if err := dav.CheckPreconditions(c.Request().Header, true, contactETag(ct)); err != nil {
+		return c.NoContent(http.StatusPreconditionFailed)
 	}
 	if err := h.contactRepo.Delete(userID, ct.ID); err != nil {
 		return c.NoContent(http.StatusInternalServerError)
@@ -337,195 +470,110 @@ func (h *CardDAVHandler) DeleteContact(c *echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// ── vCard helpers ─────────────────────────────────────────────────────────
+// ── Collection management ─────────────────────────────────────────────────
 
-// buildVCard serialises a Contact to a vCard 3.0 string.
-func buildVCard(c model.Contact) string {
-	uid := contactUID(c)
-	var sb strings.Builder
-	sb.WriteString("BEGIN:VCARD\r\nVERSION:3.0\r\n")
-	sb.WriteString("UID:" + uid + "\r\n")
-	sb.WriteString("FN:" + vcfEsc(strings.TrimSpace(c.FirstName+" "+c.LastName)) + "\r\n")
-	sb.WriteString("N:" + vcfEsc(c.LastName) + ";" + vcfEsc(c.FirstName) + ";;;\r\n")
-	if c.Email != "" {
-		sb.WriteString("EMAIL;TYPE=INTERNET:" + vcfEsc(c.Email) + "\r\n")
+// mkAddressBook handles MKCOL for a new address book collection.
+func (h *CardDAVHandler) mkAddressBook(c *echo.Context, userID uint, uri string) error {
+	if _, err := h.bookRepo.GetByURI(userID, uri); err == nil {
+		return c.NoContent(http.StatusMethodNotAllowed)
 	}
-	if c.Phone != "" {
-		sb.WriteString("TEL;TYPE=CELL:" + vcfEsc(c.Phone) + "\r\n")
+	body, tooLarge := readBody(c, davRequestBodyLimit)
+	if tooLarge {
+		return c.NoContent(http.StatusRequestEntityTooLarge)
 	}
-	if c.Company != "" {
-		sb.WriteString("ORG:" + vcfEsc(c.Company) + "\r\n")
+	patch := parseProppatch(body)
+
+	book := model.AddressBook{
+		UserID:      userID,
+		URI:         uri,
+		DisplayName: uri,
+		SyncToken:   1,
 	}
-	if c.Title != "" {
-		sb.WriteString("TITLE:" + vcfEsc(c.Title) + "\r\n")
+	for _, p := range patch.Set {
+		applyBookProperty(&book, p)
 	}
-	if c.Notes != "" {
-		sb.WriteString("NOTE:" + vcfEsc(c.Notes) + "\r\n")
+	if err := h.bookRepo.Create(&book); err != nil {
+		return c.NoContent(http.StatusInternalServerError)
 	}
-	sb.WriteString("REV:" + c.UpdatedAt.UTC().Format("20060102T150405Z") + "\r\n")
-	sb.WriteString("END:VCARD\r\n")
-	return sb.String()
+	return c.NoContent(http.StatusCreated)
 }
 
-// parseVCardSimple parses a minimal vCard 3.0/4.0 into a Contact struct.
-func parseVCardSimple(raw string) *model.Contact {
-	lines := strings.Split(strings.ReplaceAll(raw, "\r\n", "\n"), "\n")
-	c := &model.Contact{}
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "BEGIN:") || strings.HasPrefix(strings.ToUpper(line), "END:") {
-			continue
-		}
-		prop, val, ok := strings.Cut(line, ":")
-		if !ok {
-			continue
-		}
-		propUpper := strings.ToUpper(strings.SplitN(prop, ";", 2)[0])
-		val = vcfUnesc(strings.TrimSpace(val))
-		switch propUpper {
-		case "FN":
-			// FN is handled below via N
-		case "N":
-			parts := strings.SplitN(val, ";", 5)
-			if len(parts) >= 1 {
-				c.LastName = parts[0]
-			}
-			if len(parts) >= 2 {
-				c.FirstName = parts[1]
-			}
-			if c.FirstName == "" && c.LastName == "" {
-				// Use FN as full name
-				c.FirstName = val
-			}
-		case "EMAIL":
-			if c.Email == "" {
-				c.Email = val
-			}
-		case "TEL":
-			c.Phone = val
-		case "ORG":
-			c.Company = strings.SplitN(val, ";", 2)[0]
-		case "TITLE":
-			c.Title = val
-		case "NOTE":
-			c.Notes = val
-		case "UID":
-			c.UID = val
+// propPatchAddressBook applies a PROPPATCH to an address book collection.
+func (h *CardDAVHandler) propPatchAddressBook(c *echo.Context, username string, book *model.AddressBook) error {
+	body, tooLarge := readBody(c, davRequestBodyLimit)
+	if tooLarge {
+		return c.NoContent(http.StatusRequestEntityTooLarge)
+	}
+	patch := parseProppatch(body)
+
+	var okProps, failProps []string
+	for _, p := range patch.Set {
+		if applyBookProperty(book, p) {
+			okProps = append(okProps, emptyElement(p.Name))
+		} else {
+			failProps = append(failProps, emptyElement(p.Name))
 		}
 	}
-	if c.Email == "" && c.FirstName == "" && c.LastName == "" {
-		return nil
+	for _, n := range patch.Remove {
+		failProps = append(failProps, emptyElement(n))
 	}
-	return c
-}
-
-func vcfEsc(s string) string {
-	s = strings.ReplaceAll(s, `\`, `\\`)
-	s = strings.ReplaceAll(s, ",", `\,`)
-	s = strings.ReplaceAll(s, ";", `\;`)
-	s = strings.ReplaceAll(s, "\n", `\n`)
-	return s
-}
-
-func vcfUnesc(s string) string {
-	s = strings.ReplaceAll(s, `\n`, "\n")
-	s = strings.ReplaceAll(s, `\N`, "\n")
-	s = strings.ReplaceAll(s, `\;`, ";")
-	s = strings.ReplaceAll(s, `\,`, ",")
-	s = strings.ReplaceAll(s, `\\`, `\`)
-	return s
-}
-
-// contactUID returns a stable UID for a contact (stored UID or generated from ID).
-func contactUID(c model.Contact) string {
-	if c.UID != "" {
-		return c.UID
-	}
-	return fmt.Sprintf("contact-%d@go-cubemail", c.ID)
-}
-
-// contactETag produces a stable ETag for a contact.
-func contactETag(c model.Contact) string {
-	return fmt.Sprintf("%d", c.UpdatedAt.Unix())
-}
-
-// newContactUID generates a random UID for a new contact.
-func newContactUID() string {
-	b := make([]byte, 12)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b) + "@go-cubemail"
-}
-
-// abCTag returns a change token for the address book based on latest contact update.
-func (h *CardDAVHandler) abCTag(userID uint) string {
-	contacts, err := h.contactRepo.List(userID)
-	if err != nil || len(contacts) == 0 {
-		return "0"
-	}
-	var latest int64
-	for _, c := range contacts {
-		if t := c.UpdatedAt.Unix(); t > latest {
-			latest = t
+	if len(okProps) > 0 {
+		if err := h.bookRepo.Update(book); err != nil {
+			return c.NoContent(http.StatusInternalServerError)
 		}
 	}
-	return fmt.Sprintf("%d", latest)
-}
 
-func buildContactResponses(base, username, abSlug string, contacts []model.Contact, wantData bool) []propResponse {
-	out := make([]propResponse, 0, len(contacts))
-	for _, ct := range contacts {
-		uid := contactUID(ct)
-		vcfURL := fmt.Sprintf("%s/dav/%s/contacts/%s/%s.vcf", base, username, abSlug, uid)
-		etag := contactETag(ct)
-		props := []xml.TokenReader{
-			rawXML(`<D:getetag>"` + etag + `"</D:getetag>`),
-			rawXML(`<D:getcontenttype>text/vcard; charset=utf-8</D:getcontenttype>`),
-		}
-		if wantData {
-			vcf := buildVCard(ct)
-			props = append(props, rawXML(`<CR:address-data xmlns:CR="urn:ietf:params:xml:ns:carddav">`+xmlEsc(vcf)+`</CR:address-data>`))
-		}
-		out = append(out, propResponse{
-			Href:  vcfURL,
-			Props: []propstat{{Status: "HTTP/1.1 200 OK", Props: props}},
-		})
+	var stats []propstatOut
+	if len(okProps) > 0 {
+		stats = append(stats, propstatOut{Status: statusOK, Body: strings.Join(okProps, "")})
 	}
-	return out
-}
-
-// ── XML helpers (CardDAV-specific) ────────────────────────────────────────
-
-// cdMultistatus produces a CardDAV multistatus XML string.
-func cdMultistatus(responses []propResponse) string {
-	var sb strings.Builder
-	sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-	sb.WriteString(`<D:multistatus xmlns:D="DAV:" xmlns:CR="urn:ietf:params:xml:ns:carddav" xmlns:CS="http://calendarserver.org/ns/">`)
-	for _, r := range responses {
-		sb.WriteString(`<D:response>`)
-		sb.WriteString(`<D:href>` + xmlEsc(r.Href) + `</D:href>`)
-		for _, ps := range r.Props {
-			sb.WriteString(`<D:propstat><D:prop>`)
-			for _, p := range ps.Props {
-				if rp, ok := p.(rawXML); ok {
-					sb.WriteString(string(rp))
-				}
-			}
-			sb.WriteString(`</D:prop>`)
-			sb.WriteString(`<D:status>` + ps.Status + `</D:status>`)
-			sb.WriteString(`</D:propstat>`)
-		}
-		sb.WriteString(`</D:response>`)
+	if len(failProps) > 0 {
+		stats = append(stats, propstatOut{Status: statusForbidden, Body: strings.Join(failProps, "")})
 	}
-	sb.WriteString(`</D:multistatus>`)
-	return sb.String()
+	return writeMultistatus(c, davCapabilities, []responseOut{
+		{Href: addressBookHref(username, book.URI), Propstats: stats},
+	}, "")
 }
 
-func writeCardDAVPropfind(c *echo.Context, body string) error {
-	c.Response().Header().Set("Content-Type", "application/xml; charset=utf-8")
-	c.Response().Header().Set("DAV", "1, 2, addressbook")
-	return c.Blob(http.StatusMultiStatus, "application/xml; charset=utf-8", []byte(body))
+// applyBookProperty maps a settable DAV property onto the address book row.
+func applyBookProperty(book *model.AddressBook, p proppatchProp) bool {
+	switch {
+	case p.Name.Space == nsDAV && p.Name.Local == "displayname":
+		book.DisplayName = p.Value
+	case p.Name.Space == nsCardDAV && p.Name.Local == "addressbook-description":
+		book.Description = p.Value
+	default:
+		return false
+	}
+	return true
 }
 
-// ensure newContactUID and time are used
-var _ = newContactUID
-var _ = time.Now
+// deleteAddressBook removes a whole address book collection.
+func (h *CardDAVHandler) deleteAddressBook(c *echo.Context, userID uint, book *model.AddressBook) error {
+	if book.IsDefault {
+		return c.NoContent(http.StatusForbidden)
+	}
+	if err := h.bookRepo.Delete(userID, book.ID); err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+// ── Shared helpers ────────────────────────────────────────────────────────
+
+// contactVCard returns the stored card, generating one only for rows created
+// before blobs were kept.
+func contactVCard(ct *model.Contact) string {
+	if ct.VCardContent != "" {
+		return ct.VCardContent
+	}
+	return contacts.Build(*ct)
+}
+
+// contactETag returns the stored entity tag, deriving one when absent.
+func contactETag(ct *model.Contact) string {
+	if ct.ETag != "" {
+		return ct.ETag
+	}
+	return dav.ComputeETag([]byte(contactVCard(ct)))
+}

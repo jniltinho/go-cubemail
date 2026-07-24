@@ -18,6 +18,12 @@ import (
 	"embed"
 	_ "go-cubemail/docs"
 
+	// Embed the IANA time zone database (~450 KB). iCalendar events carry a
+	// TZID and the binary is shipped standalone, so it cannot rely on
+	// /usr/share/zoneinfo being present — it is absent in scratch and
+	// distroless containers, and on stripped-down hosts.
+	_ "time/tzdata"
+
 	"go-cubemail/cmd"
 )
 

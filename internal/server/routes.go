@@ -116,50 +116,33 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 
 }
 
+// davMethods are the HTTP methods the /dav subtree answers. WebDAV extends the
+// standard set, and Echo only dispatches methods it was told about, so each one
+// is registered explicitly against the same catch-all handler.
+var davMethods = []string{
+	http.MethodOptions, http.MethodGet, http.MethodHead, http.MethodPut, http.MethodDelete,
+	"PROPFIND", "PROPPATCH", "REPORT", "MKCALENDAR", "MKCOL",
+}
+
 func registerCalDAVRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, db *gorm.DB) {
 	caldavAuth := appMiddleware.CalDAVAuth(cfg, db)
 
-	// /.well-known/caldav and /.well-known/carddav → principal discovery redirect.
+	// /.well-known/caldav and /.well-known/carddav → principal discovery redirect
+	// (RFC 6764). Clients hit these before they know any other URL.
 	e.GET("/.well-known/caldav", h.CalDAV.WellKnown, caldavAuth)
 	e.Add("PROPFIND", "/.well-known/caldav", h.CalDAV.WellKnown, caldavAuth)
 	e.GET("/.well-known/carddav", h.CardDAV.WellKnown, caldavAuth)
 	e.Add("PROPFIND", "/.well-known/carddav", h.CardDAV.WellKnown, caldavAuth)
 
+	// The whole /dav subtree goes to one handler, which parses the path itself.
+	// Enumerating routes per method and per depth is how trailing-slash and
+	// method-not-allowed bugs creep in; a single entry point cannot drift.
 	dav := e.Group("/dav", caldavAuth)
-
-	// CardDAV OPTIONS must be registered before the CalDAV wildcard so the
-	// specific /:user/contacts/* path wins over OPTIONS /*.
-	dav.OPTIONS("/:user/contacts/", h.CardDAV.Options)
-	dav.OPTIONS("/:user/contacts/:ab/", h.CardDAV.Options)
-	dav.OPTIONS("/:user/contacts/:ab/:uid", h.CardDAV.Options)
-	dav.OPTIONS("/*", h.CalDAV.Options)
-
-	// Principal
-	dav.Add("PROPFIND", "/", h.CalDAV.PropFind)
-	dav.Add("PROPFIND", "/:user/", h.CalDAV.PropFind)
-
-	// Calendar home + collections
-	dav.Add("PROPFIND", "/:user/calendars/", h.CalDAV.PropFind)
-	dav.Add("PROPFIND", "/:user/calendars/:cal/", h.CalDAV.PropFind)
-	dav.Add("PROPFIND", "/:user/calendars/:cal/:uid", h.CalDAV.PropFind)
-
-	// REPORT (calendar-query, calendar-multiget)
-	dav.Add("REPORT", "/:user/calendars/:cal/", h.CalDAV.Report)
-
-	// CardDAV — contacts
-	dav.Add("PROPFIND", "/:user/contacts/", h.CardDAV.PropFind)
-	dav.Add("PROPFIND", "/:user/contacts/:ab/", h.CardDAV.PropFind)
-	dav.Add("PROPFIND", "/:user/contacts/:ab/:uid", h.CardDAV.PropFind)
-	dav.Add("REPORT", "/:user/contacts/:ab/", h.CardDAV.Report)
-	dav.GET("/:user/contacts/:ab/:uid", h.CardDAV.GetContact)
-	dav.PUT("/:user/contacts/:ab/:uid", h.CardDAV.PutContact)
-	dav.DELETE("/:user/contacts/:ab/:uid", h.CardDAV.DeleteContact)
-
-	// Event resources
-	dav.GET("/:user/calendars/:cal/", h.CalDAV.GetCalendar)
-	dav.GET("/:user/calendars/:cal/:uid", h.CalDAV.GetEvent)
-	dav.PUT("/:user/calendars/:cal/:uid", h.CalDAV.PutEvent)
-	dav.DELETE("/:user/calendars/:cal/:uid", h.CalDAV.DeleteEvent)
+	for _, m := range davMethods {
+		dav.Add(m, "", h.DAV.Handle)
+		dav.Add(m, "/", h.DAV.Handle)
+		dav.Add(m, "/*", h.DAV.Handle)
+	}
 }
 
 func registerRoutes(e *echo.Echo, cfg *config.Config, h *handler.Handlers, db *gorm.DB, distFS fs.FS) {

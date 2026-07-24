@@ -31,9 +31,23 @@ func (r *CalendarRepo) Get(userID, id uint) (*model.Calendar, error) {
 	return &cal, err
 }
 
-// Create inserts a new calendar record.
+// Create inserts a new calendar record, assigning the stable DAV URI that
+// client bookmarks and sync state are keyed on.
 func (r *CalendarRepo) Create(cal *model.Calendar) error {
+	if cal.SyncToken == 0 {
+		cal.SyncToken = 1
+	}
+	if cal.URI == "" {
+		cal.URI = freeCollectionURI(r.db, &model.Calendar{}, cal.UserID, Slugify(cal.Name, "calendar"))
+	}
 	return r.db.Create(cal).Error
+}
+
+// GetByURI resolves a calendar from its DAV path segment.
+func (r *CalendarRepo) GetByURI(userID uint, uri string) (*model.Calendar, error) {
+	var cal model.Calendar
+	err := r.db.Where("user_id = ? AND uri = ?", userID, uri).First(&cal).Error
+	return &cal, err
 }
 
 // Update persists changes to an existing calendar.
@@ -41,7 +55,8 @@ func (r *CalendarRepo) Update(cal *model.Calendar) error {
 	return r.db.Save(cal).Error
 }
 
-// Delete removes a calendar and all its events for the given user.
+// Delete removes a calendar and all its events for the given user, together
+// with the changelog rows that referenced it.
 func (r *CalendarRepo) Delete(userID, id uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("calendar_id = ? AND user_id = ?", id, userID).
@@ -55,7 +70,10 @@ func (r *CalendarRepo) Delete(userID, id uint) error {
 		if res.RowsAffected == 0 {
 			return gorm.ErrRecordNotFound
 		}
-		return nil
+		// The collection itself is gone, so its per-object changelog is dead
+		// weight; clients notice the removal from the calendar-home-set listing.
+		return tx.Where("collection_kind = ? AND collection_id = ?",
+			model.CollectionCalendar, id).Delete(&model.DAVChange{}).Error
 	})
 }
 
@@ -77,11 +95,38 @@ func (r *CalendarRepo) EnsureDefault(userID uint) (*model.Calendar, error) {
 		IsDefault:         true,
 		IsActive:          true,
 		IncludeInFreeBusy: true,
+		URI:               "default",
+		SyncToken:         1,
 	}
-	if err := r.db.Create(&cal).Error; err != nil {
+	if err := r.Create(&cal); err != nil {
 		return nil, err
 	}
 	return &cal, nil
+}
+
+// BackfillURIs assigns a stable DAV URI and initial sync token to calendars
+// created before CalDAV collections were persisted. Safe to call repeatedly.
+func (r *CalendarRepo) BackfillURIs(userID uint) error {
+	var cals []model.Calendar
+	if err := r.db.Where("user_id = ? AND (uri IS NULL OR uri = '')", userID).
+		Find(&cals).Error; err != nil {
+		return err
+	}
+	for i := range cals {
+		uri := "default"
+		if !cals[i].IsDefault {
+			uri = freeCollectionURI(r.db, &model.Calendar{}, userID, Slugify(cals[i].Name, "calendar"))
+		}
+		updates := map[string]any{"uri": uri}
+		if cals[i].SyncToken == 0 {
+			updates["sync_token"] = 1
+		}
+		if err := r.db.Model(&model.Calendar{}).Where("id = ?", cals[i].ID).
+			Updates(updates).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // SetActive updates the is_active flag for the given calendar IDs.

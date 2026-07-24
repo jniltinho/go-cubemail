@@ -25,6 +25,16 @@ var migrateCmd = &cobra.Command{
 		}
 
 		fmt.Println("Running migrations...")
+
+		// The DAV tables must exist, and the DAV columns must be populated,
+		// before AutoMigrate tries to build the unique indexes over them.
+		if err := db.AutoMigrate(&model.AddressBook{}, &model.DAVChange{}); err != nil {
+			return fmt.Errorf("dav table migration failed: %w", err)
+		}
+		if err := database.PrepareDAVSchema(db); err != nil {
+			return fmt.Errorf("dav schema preparation failed: %w", err)
+		}
+
 		err = db.AutoMigrate(
 			&model.User{},
 			&model.Identity{},
@@ -39,12 +49,18 @@ var migrateCmd = &cobra.Command{
 			&model.Event{},           // IsTask
 			&model.EventAttendee{},
 			&model.PushSubscription{},   // web push subscriptions
+			&model.AddressBook{},        // CardDAV collections
+			&model.DAVChange{},          // RFC 6578 changelog
 			&state.EasDevice{},
 			&state.EasFolderState{},
 			&state.ImapFolderMapping{},
 		)
 		if err != nil {
 			return fmt.Errorf("migration failed: %w", err)
+		}
+
+		if err := database.FinishDAVMigration(db); err != nil {
+			return fmt.Errorf("dav backfill failed: %w", err)
 		}
 
 		fmt.Println("Migrations completed.")

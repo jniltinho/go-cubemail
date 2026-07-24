@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"go-cubemail/internal/config"
+	"go-cubemail/internal/contacts"
 	"go-cubemail/internal/model"
 	"go-cubemail/internal/repository"
 	"go-cubemail/internal/session"
@@ -93,12 +95,12 @@ func (h *ContactsHandler) Index(c *echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "user lookup failed"})
 	}
-	contacts, err := h.repo.List(userID)
+	list, err := h.repo.List(userID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
-	out := make([]contactResponse, len(contacts))
-	for i, ct := range contacts {
+	out := make([]contactResponse, len(list))
+	for i, ct := range list {
 		out[i] = toResponse(ct)
 	}
 	return c.JSON(http.StatusOK, out)
@@ -203,6 +205,9 @@ func (h *ContactsHandler) Delete(c *echo.Context) error {
 	}
 	id, _ := strconv.Atoi(c.Param("id"))
 	if err := h.repo.Delete(userID, uint(id)); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": "not found"})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
@@ -222,7 +227,7 @@ func (h *ContactsHandler) Export(c *echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "user lookup failed"})
 	}
-	contacts, err := h.repo.List(userID)
+	list, err := h.repo.List(userID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -230,7 +235,7 @@ func (h *ContactsHandler) Export(c *echo.Context) error {
 	var buf bytes.Buffer
 	w := csv.NewWriter(&buf)
 	_ = w.Write([]string{"First Name", "Last Name", "Email", "Title", "Company", "Phone", "Notes"})
-	for _, ct := range contacts {
+	for _, ct := range list {
 		_ = w.Write([]string{ct.FirstName, ct.LastName, ct.Email, ct.Title, ct.Company, ct.Phone, ct.Notes})
 	}
 	w.Flush()
@@ -275,25 +280,25 @@ func (h *ContactsHandler) Import(c *echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to read file"})
 	}
 
-	var contacts []model.Contact
+	var parsed []model.Contact
 	name := strings.ToLower(file.Filename)
 	if strings.HasSuffix(name, ".vcf") || strings.HasSuffix(name, ".vcard") {
-		contacts, err = parseVCard(content, userID)
+		parsed, err = parseVCard(content, userID)
 	} else {
-		contacts, err = parseCSV(content, userID)
+		parsed, err = parseCSV(content, userID)
 	}
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
 	imported := 0
-	for i := range contacts {
-		if err := h.repo.Create(&contacts[i]); err == nil {
+	for i := range parsed {
+		if err := h.repo.Create(&parsed[i]); err == nil {
 			imported++
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{"imported": imported, "total": len(contacts)})
+	return c.JSON(http.StatusOK, map[string]any{"imported": imported, "total": len(parsed)})
 }
 
 // parseCSV handles Gmail-style and Outlook-style CSV exports.
@@ -323,7 +328,7 @@ func parseCSV(content []byte, userID uint) ([]model.Contact, error) {
 		return ""
 	}
 
-	var contacts []model.Contact
+	var list []model.Contact
 	for _, row := range records[1:] {
 		email := col(row, "email", "e-mail address", "email address", "e-mail 1 - value")
 		if email == "" {
@@ -334,7 +339,7 @@ func parseCSV(content []byte, userID uint) ([]model.Contact, error) {
 		if first == "" && last == "" {
 			first, last = splitName(col(row, "name", "full name"))
 		}
-		contacts = append(contacts, model.Contact{
+		list = append(list, model.Contact{
 			UserID:    userID,
 			FirstName: first,
 			LastName:  last,
@@ -345,78 +350,54 @@ func parseCSV(content []byte, userID uint) ([]model.Contact, error) {
 			Notes:     col(row, "notes", "note", "description"),
 		})
 	}
-	return contacts, nil
+	return list, nil
 }
 
 // parseVCard handles single and multi-contact .vcf files (vCard 2.1, 3.0, 4.0).
+//
+// Each card is kept as its own blob so an imported contact carries everything
+// the source file held — addresses, photos, birthdays, extra numbers — even
+// though only the indexed fields are shown in the UI. Parsing itself is
+// delegated to internal/contacts, which is the same code path CardDAV PUTs use.
 func parseVCard(content []byte, userID uint) ([]model.Contact, error) {
-	lines := strings.Split(strings.ReplaceAll(string(content), "\r\n", "\n"), "\n")
+	var out []model.Contact
+	for _, block := range splitVCards(string(content)) {
+		parsed, err := contacts.Parse(block)
+		if err != nil {
+			continue
+		}
+		parsed.UserID = userID
+		parsed.VCardContent = block
+		out = append(out, *parsed)
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("no vCard entries found in file")
+	}
+	return out, nil
+}
 
-	// Unfold continuation lines (RFC 2425)
-	var unfolded []string
-	for _, line := range lines {
-		if len(line) > 0 && (line[0] == ' ' || line[0] == '\t') && len(unfolded) > 0 {
-			unfolded[len(unfolded)-1] += line[1:]
-		} else {
-			unfolded = append(unfolded, line)
+// splitVCards separates a multi-card .vcf file into individual documents,
+// preserving each card's own line endings.
+func splitVCards(content string) []string {
+	var cards []string
+	var current []string
+	inCard := false
+	for _, line := range strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n") {
+		trimmed := strings.ToUpper(strings.TrimSpace(line))
+		switch {
+		case trimmed == "BEGIN:VCARD":
+			inCard = true
+			current = []string{"BEGIN:VCARD"}
+		case trimmed == "END:VCARD":
+			if inCard {
+				current = append(current, "END:VCARD")
+				cards = append(cards, strings.Join(current, "\r\n")+"\r\n")
+			}
+			inCard = false
+			current = nil
+		case inCard:
+			current = append(current, strings.TrimRight(line, "\r"))
 		}
 	}
-
-	var contacts []model.Contact
-	var cur *model.Contact
-	for _, line := range unfolded {
-		line = strings.TrimRight(line, "\r")
-		up := strings.ToUpper(line)
-
-		if up == "BEGIN:VCARD" {
-			cur = &model.Contact{UserID: userID}
-			continue
-		}
-		if up == "END:VCARD" {
-			if cur != nil && cur.Email != "" {
-				contacts = append(contacts, *cur)
-			}
-			cur = nil
-			continue
-		}
-		if cur == nil {
-			continue
-		}
-
-		propRaw, val, ok := strings.Cut(line, ":")
-		if !ok {
-			continue
-		}
-		// Strip parameters (e.g. EMAIL;TYPE=INTERNET → EMAIL)
-		prop := strings.ToUpper(strings.SplitN(propRaw, ";", 2)[0])
-
-		switch prop {
-		case "FN":
-			cur.FirstName, cur.LastName = splitName(val)
-		case "N":
-			// N:LastName;FirstName;Additional;Prefix;Suffix
-			parts := strings.SplitN(val, ";", 5)
-			if len(parts) >= 1 {
-				cur.LastName = parts[0]
-			}
-			if len(parts) >= 2 {
-				cur.FirstName = parts[1]
-			}
-		case "EMAIL":
-			if cur.Email == "" {
-				cur.Email = strings.TrimSpace(val)
-			}
-		case "TITLE":
-			cur.Title = val
-		case "ORG":
-			cur.Company = strings.SplitN(val, ";", 2)[0]
-		case "TEL":
-			if cur.Phone == "" {
-				cur.Phone = val
-			}
-		case "NOTE":
-			cur.Notes = val
-		}
-	}
-	return contacts, nil
+	return cards
 }

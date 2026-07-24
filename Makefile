@@ -16,7 +16,8 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 LDFLAGS    := -trimpath -ldflags "-s -w -X $(PREFIX).Version=$(VERSION) -X $(PREFIX).BuildDate=$(BUILD_TIME) -X $(PREFIX).GitCommit=$(GIT_COMMIT)"
 
 .PHONY: all build build-prod run clean frontend frontend-dev dev \
-        migrate tidy deps install-upx certs swagger help
+        migrate tidy deps deps-frontend install-upx certs swagger \
+        test test-race test-integration help
 
 ## Default: build frontend + go binary
 all: clean frontend build
@@ -42,6 +43,22 @@ dev:
 build:
 	@echo "Building Go application..."
 	CGO_ENABLED=1 go build -o $(BIN) $(LDFLAGS) .
+
+## Run the unit test suite.
+## Scoped to ./internal/... because the root package embeds web/dist, which does
+## not exist until `make frontend` has run. No network or mail server needed:
+## the tests use in-memory SQLite and go-imap's in-memory IMAP server.
+test:
+	@echo "Running tests..."
+	go test ./internal/...
+
+## Same, with the race detector.
+test-race:
+	go test -race ./internal/...
+
+## ActiveSync tests against a live server (needs EAS_INTEGRATION_* env vars).
+test-integration:
+	go test -tags integration -count=1 ./internal/activesync/...
 
 ## Full production build: frontend + Go + UPX compression
 build-prod: clean frontend

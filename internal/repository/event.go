@@ -4,6 +4,7 @@ import (
 	"time"
 
 	calpkg "go-cubemail/internal/calendar"
+	"go-cubemail/internal/dav"
 	"go-cubemail/internal/model"
 	"gorm.io/gorm"
 )
@@ -91,6 +92,25 @@ func (r *EventRepo) ListByRange(userID uint, start, end time.Time, calendarIDs [
 	return all, nil
 }
 
+// ListByCalendarRange returns the stored rows of a calendar that may overlap a
+// time window, without expanding recurrences.
+//
+// CalDAV clients expand RRULEs themselves, so a calendar-query must return the
+// master object once — expanding here would emit the same href N times in a
+// single multistatus. Recurring masters starting before the window are always
+// included because their occurrences can reach into it; the extra rows are a
+// harmless superset, and the client applies the exact filter.
+func (r *EventRepo) ListByCalendarRange(userID, calendarID uint, start, end time.Time) ([]model.Event, error) {
+	var events []model.Event
+	err := r.db.Preload("Attendees").
+		Where("user_id = ? AND calendar_id = ?", userID, calendarID).
+		Where("(r_rule != '' AND r_rule IS NOT NULL AND start_at < ?) OR (start_at < ? AND end_at > ?)",
+			end, end, start).
+		Order("start_at").
+		Find(&events).Error
+	return events, err
+}
+
 // ListByCalendar returns all events in a calendar for export.
 func (r *EventRepo) ListByCalendar(userID, calendarID uint) ([]model.Event, error) {
 	var events []model.Event
@@ -120,11 +140,56 @@ func (r *EventRepo) GetByUID(userID uint, uid string) (*model.Event, error) {
 	return &event, err
 }
 
-// Create inserts a new event and its attendees in a transaction.
+// GetByResourceURI retrieves an event by its DAV resource name within a
+// calendar. This is the identity CalDAV clients address, and it is deliberately
+// separate from the iCalendar UID.
+func (r *EventRepo) GetByResourceURI(userID, calendarID uint, uri string) (*model.Event, error) {
+	var event model.Event
+	err := r.db.Preload("Attendees").
+		Where("user_id = ? AND calendar_id = ? AND resource_uri = ?", userID, calendarID, uri).
+		First(&event).Error
+	return &event, err
+}
+
+// ListSince returns the events of a calendar whose last write is newer than the
+// given revision, used to answer sync-collection REPORTs.
+func (r *EventRepo) ListSince(userID, calendarID uint, since uint64) ([]model.Event, error) {
+	var events []model.Event
+	err := r.db.Preload("Attendees").
+		Where("user_id = ? AND calendar_id = ? AND sync_revision > ?", userID, calendarID, since).
+		Order("sync_revision").
+		Find(&events).Error
+	return events, err
+}
+
+// prepareDAVFields fills the resource identity of an event before it is written:
+// a resource name, the iCalendar blob and the ETag derived from it.
+func prepareDAVFields(event *model.Event) {
+	if event.UID == "" {
+		event.UID = calpkg.NewUID("")
+	}
+	if event.ResourceURI == "" {
+		event.ResourceURI = dav.NewResourceURI(".ics")
+	}
+	if event.ICalContent == "" {
+		event.ICalContent = calpkg.BuildICalContent(event, event.Attendees)
+	}
+	event.ETag = dav.ComputeETag([]byte(event.ICalContent))
+}
+
+// Create inserts a new event and its attendees in a transaction, recording the
+// change so CalDAV clients see it on their next sync.
 func (r *EventRepo) Create(event *model.Event) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		attendees := event.Attendees
+		prepareDAVFields(event)
 		event.Attendees = nil
+		rev, err := dav.RecordIfExists(tx, model.CollectionCalendar,
+			event.CalendarID, event.ResourceURI, false)
+		if err != nil {
+			return err
+		}
+		event.SyncRevision = rev
 		if err := tx.Create(event).Error; err != nil {
 			return err
 		}
@@ -145,9 +210,19 @@ func (r *EventRepo) Create(event *model.Event) error {
 	})
 }
 
-// Update replaces an event and its attendees in a transaction.
+// Update replaces an event and its attendees in a transaction, advancing the
+// collection revision so the change reaches DAV clients.
 func (r *EventRepo) Update(event *model.Event) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		prepareDAVFields(event)
+		rev, err := dav.RecordIfExists(tx, model.CollectionCalendar,
+			event.CalendarID, event.ResourceURI, false)
+		if err != nil {
+			return err
+		}
+		if rev > 0 {
+			event.SyncRevision = rev
+		}
 		if err := tx.Save(event).Error; err != nil {
 			return err
 		}
@@ -181,14 +256,27 @@ func (r *EventRepo) ListTasks(userID uint) ([]model.Event, error) {
 	return tasks, err
 }
 
-// Delete removes an event by ID scoped to the given user.
+// Delete removes an event by ID scoped to the given user and records a
+// tombstone in the changelog.
+//
+// The row is loaded first because the tombstone needs the resource name: a bulk
+// DELETE would leave clients unable to learn that the object is gone, which is
+// exactly the failure the changelog exists to prevent.
 func (r *EventRepo) Delete(userID, id uint) error {
-	res := r.db.Where("id = ? AND user_id = ?", id, userID).Delete(&model.Event{})
-	if res.Error != nil {
-		return res.Error
-	}
-	if res.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var event model.Event
+		if err := tx.Where("id = ? AND user_id = ?", id, userID).First(&event).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("event_id = ?", event.ID).
+			Delete(&model.EventAttendee{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&model.Event{}, event.ID).Error; err != nil {
+			return err
+		}
+		_, err := dav.RecordIfExists(tx, model.CollectionCalendar,
+			event.CalendarID, event.ResourceURI, true)
+		return err
+	})
 }

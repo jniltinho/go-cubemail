@@ -16,4 +16,19 @@ type Calendar struct {
 	SortOrder         int       `gorm:"default:0"`
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
+
+	// ── CalDAV collection fields ──────────────────────────────────────────
+	// URI is the stable path segment used in DAV URLs
+	// (/dav/{user}/calendars/{uri}/). It is assigned once at creation and never
+	// derived from Name, so renaming a calendar neither invalidates every client
+	// URL nor collides when two calendars slugify to the same name.
+	URI         string `gorm:"size:255;index"`
+	Description string `gorm:"type:text"`
+	TimeZone    string `gorm:"type:text"` // serialised VTIMEZONE (CALDAV:calendar-timezone)
+
+	// SyncToken is the collection's current revision; PrunedRevision is the
+	// oldest revision still present in the DAVChange changelog. A client
+	// presenting a token below PrunedRevision must restart with a full sync.
+	SyncToken      uint64 `gorm:"not null;default:1"`
+	PrunedRevision uint64 `gorm:"not null;default:0"`
 }
