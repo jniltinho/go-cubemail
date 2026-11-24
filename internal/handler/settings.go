@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"go-cubemail/internal/config"
 	"go-cubemail/internal/model"
 	"go-cubemail/internal/repository"
+	"go-cubemail/internal/theme"
 	"github.com/labstack/echo/v5"
 	"gorm.io/gorm"
 )
@@ -29,6 +31,8 @@ type settingsRequest struct {
 	SignaturePos *string `json:"signature_pos"`
 	OOFEnabled   *bool   `json:"oof_enabled"`
 	OOFMessage   *string `json:"oof_message"`
+	// Theme is a registered theme id, or "" to follow the server default.
+	Theme *string `json:"theme"`
 }
 
 // settingsResponse is the JSON shape returned by GET /api/v1/settings.
@@ -40,6 +44,26 @@ type settingsResponse struct {
 	SignaturePos string `json:"signature_pos"`
 	OOFEnabled   bool   `json:"oof_enabled"`
 	OOFMessage   string `json:"oof_message"`
+	// Theme is a registered theme id, or "" when the user follows the server default.
+	Theme string `json:"theme"`
+}
+
+func toSettingsResponse(s *model.UserSettings) settingsResponse {
+	// A stored id that is no longer registered reads as "follow the server default".
+	themeID := s.Theme
+	if !theme.Valid(themeID) {
+		themeID = ""
+	}
+	return settingsResponse{
+		RowsPerPage:  s.RowsPerPage,
+		Timezone:     s.Timezone,
+		ComposeHTML:  s.ComposeHTML,
+		DateFormat:   s.DateFormat,
+		SignaturePos: s.SignaturePos,
+		OOFEnabled:   s.OOFEnabled,
+		OOFMessage:   s.OOFMessage,
+		Theme:        themeID,
+	}
 }
 
 // identityRequest is the JSON body for POST/PUT identity endpoints.
@@ -90,30 +114,30 @@ func (h *SettingsHandler) GetSettings(c *echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
-	return c.JSON(http.StatusOK, settingsResponse{
-		RowsPerPage:  s.RowsPerPage,
-		Timezone:     s.Timezone,
-		ComposeHTML:  s.ComposeHTML,
-		DateFormat:   s.DateFormat,
-		SignaturePos: s.SignaturePos,
-		OOFEnabled:   s.OOFEnabled,
-		OOFMessage:   s.OOFMessage,
-	})
+	return c.JSON(http.StatusOK, toSettingsResponse(s))
 }
 
 // SaveSettings godoc
 // @Summary      Save user preferences
-// @Description  Updates the logged-in user's settings. Only provided fields are changed.
+// @Description  Updates the logged-in user's settings. Only provided fields are changed. `theme` must be a registered theme id (see GET /themes) or an empty string to follow the server default.
 // @Tags         settings
 // @Accept       json
 // @Produce      json
 // @Param        body  body      settingsRequest   true  "Settings fields to update"
 // @Success      200  {object}  settingsResponse  "updated settings"
-// @Failure      400  {object}  map[string]string "invalid body"
+// @Failure      400  {object}  map[string]string "invalid body or unknown theme"
 // @Failure      500  {object}  map[string]string "database error"
 // @Security     CookieAuth
 // @Router       /settings [put]
 func (h *SettingsHandler) SaveSettings(c *echo.Context) error {
+	// Bind and validate before touching the database: loading the settings creates the row.
+	var req settingsRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid body"})
+	}
+	if req.Theme != nil && *req.Theme != "" && !theme.Valid(*req.Theme) {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("unknown theme %q", *req.Theme)})
+	}
 	userID, err := getUserID(c, h.db)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "user lookup failed"})
@@ -121,10 +145,6 @@ func (h *SettingsHandler) SaveSettings(c *echo.Context) error {
 	s, err := h.settingsRepo.Get(userID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
-	}
-	var req settingsRequest
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid body"})
 	}
 	if req.RowsPerPage != nil && *req.RowsPerPage > 0 {
 		s.RowsPerPage = *req.RowsPerPage
@@ -147,18 +167,13 @@ func (h *SettingsHandler) SaveSettings(c *echo.Context) error {
 	if req.OOFMessage != nil {
 		s.OOFMessage = *req.OOFMessage
 	}
+	if req.Theme != nil {
+		s.Theme = *req.Theme
+	}
 	if err := h.settingsRepo.Save(s); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
-	return c.JSON(http.StatusOK, settingsResponse{
-		RowsPerPage:  s.RowsPerPage,
-		Timezone:     s.Timezone,
-		ComposeHTML:  s.ComposeHTML,
-		DateFormat:   s.DateFormat,
-		SignaturePos: s.SignaturePos,
-		OOFEnabled:   s.OOFEnabled,
-		OOFMessage:   s.OOFMessage,
-	})
+	return c.JSON(http.StatusOK, toSettingsResponse(s))
 }
 
 // ListIdentities godoc

@@ -2,7 +2,12 @@
 // that populates them from Viper (config.toml + GORC_* environment variables).
 package config
 
-import "github.com/spf13/viper"
+import (
+	"log/slog"
+
+	"github.com/spf13/viper"
+	"go-cubemail/internal/theme"
+)
 
 // Config is the root configuration object passed throughout the application.
 type Config struct {
@@ -100,6 +105,22 @@ type UploadConfig struct {
 	TempDir   string `mapstructure:"temp_dir"`
 }
 
+// resolveTheme returns the configured default theme, or the registry's first
+// entry when the value is not a registered id. An unset value falls back
+// silently; any other unknown value is reported, and the server still starts.
+func resolveTheme(id string) string {
+	t, ok := theme.ByID(id)
+	if !ok && id != "" {
+		valid := make([]string, 0, len(theme.List()))
+		for _, v := range theme.List() {
+			valid = append(valid, v.ID)
+		}
+		slog.Warn("Unknown ui.theme, falling back to the default theme",
+			"value", id, "fallback", t.ID, "valid", valid)
+	}
+	return t.ID
+}
+
 // Load reads all configuration keys from Viper and returns a populated Config.
 // Call this after Viper has been initialised (e.g., inside a cobra RunE function).
 func Load() *Config {
@@ -133,7 +154,7 @@ func Load() *Config {
 	cfg.Session.Secure = viper.GetBool("session.secure")
 	cfg.Session.HTTPOnly = viper.GetBool("session.http_only")
 
-	cfg.UI.Theme = viper.GetString("ui.theme")
+	cfg.UI.Theme = resolveTheme(viper.GetString("ui.theme"))
 	cfg.UI.RowsPerPage = viper.GetInt("ui.rows_per_page")
 	cfg.UI.Timezone = viper.GetString("ui.timezone")
 	cfg.UI.DateFormat = viper.GetString("ui.date_format")

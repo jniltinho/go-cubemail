@@ -12,4 +12,8 @@ type UserSettings struct {
 	OOFEnabled     bool   `gorm:"default:false"`
 	OOFMessage     string `gorm:"type:text"`
 	OOFMessageHTML string `gorm:"type:text"`
+	// Theme is a registered theme id, or empty to follow the server default.
+	// It must not carry a `default:` tag: the settings upsert is a Create, and
+	// GORM replaces a zero value with the tagged default, so it could never be cleared.
+	Theme string
 }

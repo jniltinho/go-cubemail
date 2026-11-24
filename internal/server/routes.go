@@ -23,6 +23,9 @@ func registerAPIRoutes(g *echo.Group, h *handler.Handlers, authMiddleware, authR
 		return c.JSON(http.StatusOK, map[string]string{"version": AppVersion})
 	})
 
+	// Public: theme registry and server default (the login screen needs it before any session exists)
+	g.GET("/themes", h.Themes.List)
+
 	// Public auth endpoints
 	auth := g.Group("/auth")
 	auth.POST("/login", h.Auth.DoLogin, authRateLimit)

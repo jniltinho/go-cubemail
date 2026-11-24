@@ -12,7 +12,9 @@ func SecurityHeaders() echo.MiddlewareFunc {
 			h.Set("X-Content-Type-Options", "nosniff")
 			h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 			h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-			// style-src 'unsafe-inline' required for runtime CSS injection (Tailwind vars, accent picker)
+			// style-src 'unsafe-inline' is required for inline styles: the message iframe (srcdoc inherits this
+			// policy) carries a <style> block and the email's own style="" attributes, the composer writes
+			// style="" for text color, font and alignment, and the SPA templates use style attributes
 			// img-src https: allows external images in emails and the composer (newsletters, avatars, CDN assets)
 			// img-src data:/blob:/cid: covers inline attachments and base64-encoded email images
 			h.Set("Content-Security-Policy",

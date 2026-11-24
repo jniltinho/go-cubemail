@@ -3150,7 +3150,7 @@ const docTemplate = `{
                         "CookieAuth": []
                     }
                 ],
-                "description": "Updates the logged-in user's settings. Only provided fields are changed.",
+                "description": "Updates the logged-in user's settings. Only provided fields are changed. ` + "`" + `theme` + "`" + ` must be a registered theme id (see GET /themes) or an empty string to follow the server default.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3180,7 +3180,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "invalid body",
+                        "description": "invalid body or unknown theme",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -3195,6 +3195,26 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/themes": {
+            "get": {
+                "description": "Returns every registered theme in display order and the server's default theme id. Public: the login screen needs it before a session exists.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "themes"
+                ],
+                "summary": "List UI themes",
+                "responses": {
+                    "200": {
+                        "description": "Server default theme and the theme registry",
+                        "schema": {
+                            "$ref": "#/definitions/handler.themesResponse"
                         }
                     }
                 }
@@ -3572,6 +3592,10 @@ const docTemplate = `{
                 "signature_pos": {
                     "type": "string"
                 },
+                "theme": {
+                    "description": "Theme is a registered theme id, or \"\" to follow the server default.",
+                    "type": "string"
+                },
                 "timezone": {
                     "type": "string"
                 }
@@ -3596,6 +3620,10 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "signature_pos": {
+                    "type": "string"
+                },
+                "theme": {
+                    "description": "Theme is a registered theme id, or \"\" when the user follows the server default.",
                     "type": "string"
                 },
                 "timezone": {
@@ -3699,6 +3727,21 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.themesResponse": {
+            "type": "object",
+            "properties": {
+                "default": {
+                    "description": "Default is the server's default theme id (config key ui.theme).",
+                    "type": "string"
+                },
+                "themes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/theme.Theme"
+                    }
+                }
+            }
+        },
         "imap.MailboxInfo": {
             "type": "object",
             "properties": {
@@ -3750,6 +3793,21 @@ const docTemplate = `{
                 "unseen": {
                     "type": "integer",
                     "format": "int32"
+                }
+            }
+        },
+        "theme.Theme": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "scheme": {
+                    "description": "\"light\" | \"dark\"",
+                    "type": "string"
                 }
             }
         }

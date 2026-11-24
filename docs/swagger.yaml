@@ -242,6 +242,9 @@ definitions:
         type: integer
       signature_pos:
         type: string
+      theme:
+        description: Theme is a registered theme id, or "" to follow the server default.
+        type: string
       timezone:
         type: string
     type: object
@@ -258,6 +261,10 @@ definitions:
       rows_per_page:
         type: integer
       signature_pos:
+        type: string
+      theme:
+        description: Theme is a registered theme id, or "" when the user follows the
+          server default.
         type: string
       timezone:
         type: string
@@ -324,6 +331,16 @@ definitions:
       url:
         type: string
     type: object
+  handler.themesResponse:
+    properties:
+      default:
+        description: Default is the server's default theme id (config key ui.theme).
+        type: string
+      themes:
+        items:
+          $ref: '#/definitions/theme.Theme'
+        type: array
+    type: object
   imap.MailboxInfo:
     properties:
       delim:
@@ -362,6 +379,16 @@ definitions:
       unseen:
         format: int32
         type: integer
+    type: object
+  theme.Theme:
+    properties:
+      id:
+        type: string
+      label:
+        type: string
+      scheme:
+        description: '"light" | "dark"'
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -2417,7 +2444,8 @@ paths:
       consumes:
       - application/json
       description: Updates the logged-in user's settings. Only provided fields are
-        changed.
+        changed. `theme` must be a registered theme id (see GET /themes) or an empty
+        string to follow the server default.
       parameters:
       - description: Settings fields to update
         in: body
@@ -2433,7 +2461,7 @@ paths:
           schema:
             $ref: '#/definitions/handler.settingsResponse'
         "400":
-          description: invalid body
+          description: invalid body or unknown theme
           schema:
             additionalProperties:
               type: string
@@ -2449,6 +2477,20 @@ paths:
       summary: Save user preferences
       tags:
       - settings
+  /themes:
+    get:
+      description: 'Returns every registered theme in display order and the server''s
+        default theme id. Public: the login screen needs it before a session exists.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Server default theme and the theme registry
+          schema:
+            $ref: '#/definitions/handler.themesResponse'
+      summary: List UI themes
+      tags:
+      - themes
 schemes:
 - http
 - https

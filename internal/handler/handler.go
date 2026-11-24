@@ -20,6 +20,7 @@ type Handlers struct {
 	CalendarSubscription *CalendarSubscriptionHandler
 	Event               *EventHandler
 	Settings            *SettingsHandler
+	Themes              *ThemesHandler
 	Search              *SearchHandler
 	CalDAV              *CalDAVHandler
 	CardDAV             *CardDAVHandler
@@ -59,6 +60,7 @@ func New(cfg *config.Config, db *gorm.DB) *Handlers {
 			settingsRepo: repository.NewSettingsRepo(db),
 			identityRepo: repository.NewIdentityRepo(db),
 		},
+		Themes:   &ThemesHandler{cfg: cfg},
 		Search:   &SearchHandler{cfg: cfg},
 		CalDAV:   caldav,
 		CardDAV:  carddav,
