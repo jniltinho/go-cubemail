@@ -15,7 +15,7 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
 LDFLAGS    := -trimpath -ldflags "-s -w -X $(PREFIX).Version=$(VERSION) -X $(PREFIX).BuildDate=$(BUILD_TIME) -X $(PREFIX).GitCommit=$(GIT_COMMIT)"
 
-.PHONY: all build build-prod run clean frontend frontend-dev dev \
+.PHONY: all build build-prod run clean frontend frontend-dev frontend-check dev \
         migrate tidy deps deps-frontend install-upx certs swagger \
         test test-race test-integration help
 
@@ -31,6 +31,10 @@ frontend:
 frontend-dev:
 	@echo "Starting Vite dev server on :5173 (proxy → :8080)..."
 	cd frontend && npm run dev
+
+## Format, lint and type-check the frontend (Vite+: vp check, then vue-tsc for the .vue files)
+frontend-check:
+	cd frontend && npm run check
 
 ## Development mode helper: starts Vite on :5173 (proxies /api to backend :8080).
 ## Start the Go backend separately in another terminal: go run . serve [--debug]
@@ -125,6 +129,7 @@ help:
 	@echo "  all              - Clean, build frontend + Go binary"
 	@echo "  frontend         - Build Vue 3 SPA to web/dist/"
 	@echo "  frontend-dev     - Start Vite dev server (:5173)"
+	@echo "  frontend-check   - Format, lint and type-check the frontend"
 	@echo "  dev              - Start Vite dev server (:5173) + backend hint"
 	@echo "  build            - Build Go binary (requires web/dist/)"
 	@echo "  build-prod       - Full prod build with UPX compression"

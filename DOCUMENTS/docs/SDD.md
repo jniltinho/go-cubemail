@@ -50,7 +50,7 @@ There is no email session database — all message reading/writing occurs in rea
 |---|---|---|
 | Framework | Vue 3 (Composition API) | ^3.5 |
 | Language | TypeScript | ^6.0 |
-| Build tool | Vite | ^8.0 |
+| Toolchain (dev, build, lint, format) | Vite+ (`vite-plus`, `vp` CLI; bundles Vite 8) | 1.8 |
 | State management | Pinia | ^3.0 |
 | CSS framework | Tailwind CSS v4 (Vite plugin) | ^4.3 |
 | HTTP client | Axios | ^1.16 |
@@ -605,12 +605,15 @@ go build -o bin/go-cubemail .     # compiles Go + embedded web/dist
 ```bash
 cd frontend
 npm install                       # install deps (once)
-npm run build                     # vite build → ../web/dist
-npm run dev                       # vite dev server with HMR + proxy to :8080
+npm run build                     # vp build → ../web/dist
+npm run dev                       # vp dev: dev server with HMR + proxy to :8080
+npm run check                     # vp check (format, lint, .ts types) + vue-tsc (.vue types)
+npm run fmt                       # vp fmt: format the sources
 ```
 
-**Vite config** (`frontend/vite.config.ts`):
+**Vite+ config** (`frontend/vite.config.ts`, the single file for build, dev server, formatter and linter):
 - Plugins: `@vitejs/plugin-vue`, `@tailwindcss/vite`
+- `fmt` (Oxfmt: single quotes, no semicolons) and `lint` (Oxlint, type-aware) blocks
 - Dev proxy: `/api` → `http://localhost:8080`
 - Build output: `../web/dist` (picked up by `//go:embed`)
 
@@ -621,6 +624,7 @@ build       # go build (no CSS step needed — Vite handles it)
 build-prod  # go build + UPX compress
 run         # ./bin/go-cubemail serve
 frontend    # cd frontend && npm run build
+frontend-check  # cd frontend && npm run check
 dev         # runs both Go (watch) and Vite dev server
 migrate     # ./bin/go-cubemail migrate
 clean       # remove binary
@@ -815,13 +819,14 @@ golang.org/x/time                    (rate limiting)
     "postcss": "^8.5.15",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
-    "vite": "^8.0.12",
+    "vite": "npm:@voidzero-dev/vite-plus-core@8.3.8001",
+    "vite-plus": "1.8.0",
     "vue-tsc": "^3.3.1"
   }
 }
 ```
 
-**No Node.js server at runtime** — Vite is a build-time tool only. The compiled `web/dist` is embedded in the Go binary and served by Echo.
+**No Node.js server at runtime** — Vite+ is a build-time tool only (`vite` is aliased to the Vite+ core through `overrides`). The compiled `web/dist` is embedded in the Go binary and served by Echo.
 
 ---
 

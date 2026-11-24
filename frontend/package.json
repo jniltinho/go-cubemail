@@ -1,24 +1,20 @@
 {
   "name": "frontend",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vp dev",
+    "build": "vp build",
+    "check": "vp check && vue-tsc --noEmit",
+    "fmt": "vp fmt",
     "type-check": "vue-tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vp preview"
   },
   "dependencies": {
     "@lucide/vue": "^1.16.0",
-    "axios": "file:./vendor/axios-1.16.1.tgz",
-    "pinia": "^3.0.4",
-"@tiptap/vue-3": "^2.11.5",
     "@tiptap/core": "^2.11.5",
-    "@tiptap/pm": "^2.11.5",
-    "@tiptap/starter-kit": "^2.11.5",
     "@tiptap/extension-color": "^2.11.5",
-    "@tiptap/extension-text-style": "^2.11.5",
     "@tiptap/extension-highlight": "^2.11.5",
     "@tiptap/extension-image": "^2.11.5",
     "@tiptap/extension-link": "^2.11.5",
@@ -28,8 +24,14 @@
     "@tiptap/extension-table-header": "^2.11.5",
     "@tiptap/extension-table-row": "^2.11.5",
     "@tiptap/extension-text-align": "^2.11.5",
-    "@tiptap/extension-underline": "^2.11.5",
+    "@tiptap/extension-text-style": "^2.11.5",
     "@tiptap/extension-typography": "^2.11.5",
+    "@tiptap/extension-underline": "^2.11.5",
+    "@tiptap/pm": "^2.11.5",
+    "@tiptap/starter-kit": "^2.11.5",
+    "@tiptap/vue-3": "^2.11.5",
+    "axios": "file:./vendor/axios-1.16.1.tgz",
+    "pinia": "^3.0.4",
     "vue": "^3.5.34"
   },
   "devDependencies": {
@@ -39,7 +41,11 @@
     "postcss": "^8.5.15",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
-    "vite": "^8.0.12",
+    "vite": "npm:@voidzero-dev/vite-plus-core@8.3.8001",
+    "vite-plus": "1.8.0",
     "vue-tsc": "^3.3.1"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@8.3.8001"
   }
 }

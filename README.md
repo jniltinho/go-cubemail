@@ -113,7 +113,7 @@ More screenshots in [DOCUMENTS/screenshots](DOCUMENTS/screenshots).
 
 **Backend**: Go 1.26, Echo v5, GORM, Cobra, Viper, Swaggo (OpenAPI)
 
-**Frontend (embedded)**: Vue 3 + TypeScript + Vite, Pinia, Tailwind CSS v4, TipTap (rich text), Lucide icons
+**Frontend (embedded)**: Vue 3 + TypeScript + Vite+ (`vp`), Pinia, Tailwind CSS v4, TipTap (rich text), Lucide icons
 
 **Email & Sync**:
 - IMAP: `emersion/go-imap/v2`

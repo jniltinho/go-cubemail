@@ -6,7 +6,7 @@ A modern, responsive webmail interface built as the frontend for **go-cubemail-v
 
 ## 🚀 Key Features
 
-- **⚡ Blazing Fast Build**: Powered by Vite and Rolldown/ESbuild for instant Hot Module Replacement (HMR).
+- **⚡ Blazing Fast Build**: Powered by [Vite+](https://viteplus.dev) (`vp`): one toolchain for the dev server with HMR, the Rolldown build, the formatter (Oxfmt) and the linter (Oxlint).
 - **🔒 Strict Type Safety**: Fully written in TypeScript with comprehensive interface modeling for all mail entities, contacts, and state.
 - **📦 Clean State Management**: Pinia stores with a deliberately split mail module (`stores/mail/`) to keep the main store readable while isolating API, folder, composer, mail, and contact actions.
 - **💡 Keyboard Shortcuts**: Vim-style navigation (`j`/`k`), compose (`c`), reply (`r`), archive (`e`), delete (`#` or `Delete`). Implemented globally in `App.vue`.
@@ -42,7 +42,7 @@ This enables rich IDE tooltips, precise autocomplete, and reliable auto-typing. 
 /**
  * Builds a month-view grid array containing exactly 42 calendar day cells (CalCell),
  * incorporating dimmed trailing and leading days from adjacent months.
- * 
+ *
  * @param events - Map of scheduled events, keyed by day of the month numbers.
  * @returns Array with 42 CalCell instances representing the month's layout.
  */
@@ -98,27 +98,35 @@ frontend/
 Ensure you have [Node.js](https://nodejs.org/) installed, then navigate into the `frontend/` directory to run:
 
 ### 📦 Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 🏎️ Spin Up Local Dev Server
+
 ```bash
 npm run dev
 ```
+
 > [!NOTE]
 > The development server uses Vite proxies configured in `vite.config.ts` to redirect backend API calls seamlessly.
 
-### 🧪 Perform Strict Type Checking
+### 🧪 Format, Lint and Type-Check
+
 ```bash
-npm run type-check
+npm run check
 ```
-> Runs `vue-tsc` in non-emitting mode to double-check structural safety across all Vue SFCs and TypeScript modules.
+
+> Runs `vp check` (format check, lint and type-check of the `.ts` files) and then `vue-tsc` for the Vue SFCs.
+> `npm run fmt` formats the sources; `npx vp check --fix` also applies the lint autofixes.
 
 ### 🏗️ Build Production Assets
+
 ```bash
 npm run build
 ```
+
 > Compiles, minifies, and bundles assets into the backend target folder (`../web/dist/`) for seamless static delivery.
 
 ---
@@ -126,10 +134,11 @@ npm run build
 ## 💻 Recommended IDE Setup
 
 For the absolute best developer experience, we strongly recommend:
-* **IDE**: [VS Code](https://code.visualstudio.com/)
-* **Extensions**:
-  * [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (Volar) for rich component syntax support.
-  * [TypeScript Vue Plugin](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) for enhanced auto-imports.
+
+- **IDE**: [VS Code](https://code.visualstudio.com/)
+- **Extensions**:
+  - [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (Volar) for rich component syntax support.
+  - [TypeScript Vue Plugin](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) for enhanced auto-imports.
 
 ---
 
