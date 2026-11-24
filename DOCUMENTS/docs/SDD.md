@@ -105,7 +105,7 @@ secure    = false
 http_only = true
 
 [ui]
-theme           = "larry"     # default theme: larry | outlook | outlook-dark | apple-mail | apple-mail-dark | breeze | breeze-dark | graphite | high-contrast
+theme           = "larry"     # default theme: larry | outlook | outlook-dark | apple-mail | apple-mail-dark | breeze | breeze-dark | graphite | high-contrast | windows-xp
 rows_per_page   = 50
 timezone        = "America/Sao_Paulo"
 date_format     = "02/01/2006"
@@ -179,7 +179,8 @@ go-cubemail-vue/
 │   ├── database/
 │   │   └── database.go       # Centralized DB connection + GORM query logger (sqlite, mariadb, mysql, postgres)
 │   ├── theme/
-│   │   └── theme.go          # Theme registry (id, label, scheme): the single list
+│   │   ├── theme.go          # Theme lookup and validation
+│   │   └── registry_gen.go   # The list of themes, generated from frontend/src/themes
 │   └── session/
 │       └── imap_session.go   # Wrapper: credentials + in-memory IMAP conn + cleanup goroutine
 ├── frontend/                 # Vue 3 SPA source (not served directly)
@@ -191,8 +192,9 @@ go-cubemail-vue/
 │       ├── main.ts
 │       ├── App.vue           # Root: layout, SSE, keyboard shortcuts
 │       ├── types.ts          # TypeScript interfaces
-│       ├── style.css         # Tailwind import + the role-token contract (Larry's values)
-│       ├── themes/           # one file per theme family: role values only + contrast.json
+│       ├── style.css         # Entry: Tailwind + the files of styles/
+│       ├── styles/           # contract.css (role tokens, Larry's values), base.css, components/*.css
+│       ├── themes/           # one file per theme (role values only) + contrast.json; loaded automatically
 │       ├── env.d.ts
 │       ├── components/       # 16 Vue SFC components
 │       ├── stores/           # Pinia stores
@@ -562,8 +564,8 @@ interface DialogState {
 
 ### 9.5 Design System and Themes (`style.css`, `themes/`)
 
-Every color, corner radius, shadow and font of the interface is a named **role** declared once in `style.css`
-(`@theme static` plus one `:root` rule). The contract's values are the Larry theme, the default:
+Every color, corner radius, shadow and font of the interface is a named **role** declared once in
+`styles/contract.css` (`@theme static` plus one `:root` rule). The contract's values are the Larry theme, the default:
 
 ```css
 @theme static {
@@ -579,9 +581,10 @@ Every color, corner radius, shadow and font of the interface is a named **role**
 
 Components use roles only (`bg-surface`, `text-fg-muted`, `rounded-control`, `var(--color-…)`); literal colors and
 palette utilities fail the theme tests. A theme is one file under `frontend/src/themes/` with nothing but
-`:root[data-theme='<id>'] { --role: value }` rules, selected by the `data-theme` attribute of `<html>`. Nine themes
-ship: `larry`, `outlook`, `outlook-dark`, `apple-mail`, `apple-mail-dark`, `breeze`, `breeze-dark`, `graphite` and
-`high-contrast`. Each user chooses one in Settings → Appearance (`UserSettings.Theme`); `ui.theme` is the default.
+`:root[data-theme='<id>'] { --role: value }` rules, selected by the `data-theme` attribute of `<html>`. Ten themes
+ship, all at WCAG AAA contrast: `larry`, `outlook`, `outlook-dark`, `apple-mail`, `apple-mail-dark`, `breeze`,
+`breeze-dark`, `graphite`, `high-contrast` and `windows-xp`. A new one is created with `npm run theme:new`; the
+server's list is generated from the theme files. Wide viewports (QHD, 4K) scale the whole interface up. Each user chooses one in Settings → Appearance (`UserSettings.Theme`); `ui.theme` is the default.
 
 Message content (HTML mail and the composer's document) is drawn on the paper roles, which stay light in every
 theme. The contract, the role list, how to add a theme and the contrast tests are in [THEMES.md](THEMES.md).
@@ -674,7 +677,8 @@ clean       # remove binary
 - [x] Calendar view (monthly grid with mock events)
 - [x] View raw email source + download as .eml
 - [x] Keyboard shortcuts (j/k/r/e/#/c + Delete)
-- [x] Themes: nine selectable per user (Larry, Outlook, Apple Mail, Breeze, Graphite, High contrast), with WCAG contrast tests
+- [x] Themes: ten selectable per user (Larry, Outlook, Apple Mail, Breeze, Graphite, High contrast, Windows XP), all WCAG AAA, with contrast tests
+- [x] Large screens: the interface scales up on QHD and 4K viewports
 - [x] Toast notifications + modal dialogs
 - [x] Folder create / rename / delete
 - [x] 10-minute background polling for new mail with audio notification (see 5.4)

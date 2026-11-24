@@ -148,6 +148,25 @@
 - [x] 8.3 Update `config.toml.example` (valid `ui.theme` ids), the feature list in `README.md` and the migrate step
       in the upgrade notes.
 
+## 9. Follow-up: modular themes, AAA everywhere, Windows XP, large screens
+
+- [x] 9.1 Split `style.css` into `styles/contract.css`, `styles/base.css` and one file per component group; load
+      every file of `src/themes/` from `main.ts` instead of listing them.
+- [x] 9.2 One theme per file with its identity as roles (`--theme-label`, `--theme-scheme`, `--theme-order`);
+      `scripts/themes.mjs` generates `internal/theme/registry_gen.go` (`npm run themes`, `make themes`) and creates
+      a theme from the contract or from another theme (`npm run theme:new`); the tests fail when the registry is
+      out of date.
+- [x] 9.3 Hold every theme to WCAG AAA: the matrix has no `aaa` list or `aaaOnly` recipe any more; Larry and the
+      eight other themes were moved in lightness where they fell short, with the original value noted.
+- [x] 9.4 Add gradient-fill and relief roles (`--bg-*`, `--shadow-action*`, `--shadow-field`, `--shadow-tab-on`)
+      with `none` or today's value as defaults, and a test for the stops of gradient fills.
+- [x] 9.5 Add the `windows-xp` theme.
+- [x] 9.6 Scale the interface on viewports from 2400 px (1.25) and 3200 px (1.6); viewport-unit sizes divide by
+      `--ui-zoom`.
+- [x] 9.7 Verify on the test mailbox: Windows XP and the AAA themes looked at; layout measured at 1366, 1920, 2560
+      and 3840 px (no overflow, composer inside the viewport); rendered contrast audited at 4.5:1 on eleven screens
+      in the ten themes (only icons sit between 3:1 and 4.5:1, which is their level).
+
 ## Verification notes
 
 Two environments were used on localhost: a seeded in-memory IMAP mailbox with an SMTP sink (driven with

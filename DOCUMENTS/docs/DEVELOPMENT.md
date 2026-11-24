@@ -127,6 +127,7 @@ make migrate
 | `make frontend`    | Build Vue frontend into `web/dist/`              |
 | `make frontend-dev`| Start Vite dev server (port 5173)                |
 | `make dev`         | Start Vite dev server (port 5173) + backend hint |
+| `make themes`     | Regenerate the theme registry after adding or renaming a theme |
 | `make test-frontend` | Run the frontend unit tests (theme files, color lint, WCAG contrast) |
 | `make frontend-check` | Format, lint and type-check the frontend (`vp check` + `vue-tsc`) |
 | `make build`       | Build Go binary                                  |

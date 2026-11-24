@@ -38,7 +38,9 @@ that names the file, the pattern and the reason.
 - **THEN** the theme tests fail and name the entry
 
 ### Requirement: Theme file format
-A theme SHALL be defined only by rules of the form `:root[data-theme='<id>']` that declare roles of the contract.
+A theme SHALL be one file holding one rule of the form `:root[data-theme='<id>']` that declares roles of the
+contract, including its identity (label, scheme, position), and the file SHALL be named after the id. Theme files
+SHALL be picked up from their folder without being listed anywhere.
 A theme file SHALL NOT contain any other selector, any property that is not a role, or a role the contract does not
 declare.
 
@@ -53,6 +55,28 @@ declare.
 #### Scenario: Wrong kind of value
 - **WHEN** a theme gives a gradient to a color role or a color to a radius role
 - **THEN** the theme tests fail and name the role and the theme
+
+#### Scenario: Add a theme
+- **WHEN** a developer runs the new-theme command with an id, a label and a scheme
+- **THEN** a complete theme file is created, the registry is regenerated, the theme tests pass, and after a build the
+  theme appears in the Appearance list with no other file edited
+
+#### Scenario: Registry out of date
+- **WHEN** a theme file's id, label, scheme or position changes and the registry is not regenerated
+- **THEN** the theme tests fail and say which command to run
+
+### Requirement: Large screens
+The interface SHALL scale up as a whole on viewports wider than Full HD: by 1.25 from 2400 px and by 1.6 from
+3200 px, without overflowing the viewport.
+
+#### Scenario: QHD and 4K
+- **WHEN** the viewport is 2560 px or 3840 px wide
+- **THEN** the interface is drawn at 1.25 or 1.6 times its size, fills the viewport exactly, and dialogs and the
+  composer stay inside it
+
+#### Scenario: Full HD and below
+- **WHEN** the viewport is 1920 px wide or narrower
+- **THEN** the interface is drawn at its natural size
 
 ### Requirement: Theme applied to the whole document
 The active theme SHALL be set as the `data-theme` attribute of the root element, and the root's `color-scheme` SHALL

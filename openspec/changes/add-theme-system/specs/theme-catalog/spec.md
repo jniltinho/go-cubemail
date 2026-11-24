@@ -10,7 +10,8 @@ contrast level; adding or changing a shipped theme is a change to this capabilit
 ### Requirement: Theme registry
 The system SHALL keep one ordered registry of themes, each with an id, a label and a scheme (`light` or `dark`).
 The registry SHALL contain, in this order: `larry`, `outlook`, `outlook-dark`, `apple-mail`, `apple-mail-dark`,
-`breeze`, `breeze-dark`, `graphite`, `high-contrast`.
+`breeze`, `breeze-dark`, `graphite`, `high-contrast`, `windows-xp`. The registry SHALL be generated from the theme
+files, each of which declares its own label, scheme and position.
 
 #### Scenario: Registry and stylesheet agree
 - **WHEN** the theme tests compare the registry with the theme files
@@ -121,8 +122,30 @@ It SHALL meet the enhanced contrast level: 7:1 for normal text, 4.5:1 for large 
 - **WHEN** the contrast test runs for `high-contrast`
 - **THEN** every normal-text pairing reaches 7:1, every large-text pairing 4.5:1 and every component pairing 3:1
 
+### Requirement: Windows XP theme
+The registry SHALL include `windows-xp` ("Windows XP", light), after ad-manager's "Classic blue (XP)": the Luna blue
+title-bar gradient on the app bar and dialog title bars, a Start-green primary action, XP push buttons with a raised
+bevel, list-view pane headers, the task-pane blue folder list, sunken fields and the Tahoma font stack.
+
+#### Scenario: Choose Windows XP
+- **WHEN** the user chooses "Windows XP"
+- **THEN** the header is the blue gradient with white text, the "New Message" button is green with a bevel, the
+  other toolbar buttons are light push buttons with a navy frame, and the selected message is blue with white text
+
+#### Scenario: Text over a gradient
+- **WHEN** the contrast test reads a gradient fill of the theme
+- **THEN** every stop between 20% and 80% of its height keeps the text drawn over it at 7:1
+
+### Requirement: Every shipped theme meets enhanced contrast
+Every theme of the registry SHALL meet WCAG AAA in each listed pairing: 7:1 for normal text, 4.5:1 for large text
+and 3:1 for interface components, including the outlines of fields and of secondary buttons and the star.
+
+#### Scenario: A reference color falls short
+- **WHEN** a theme's reference color does not reach the level in a pairing
+- **THEN** the theme uses a value moved in lightness only, and the theme file notes the original value
+
 ### Requirement: No third-party brand assets
-Themes inspired by other products SHALL use only colors and system font stacks. They SHALL NOT add that product's
+Themes inspired by other products (Outlook, Apple Mail, Windows XP) SHALL use only colors and system font stacks. They SHALL NOT add that product's
 logo, icons, bundled fonts or name anywhere except the theme's label.
 
 #### Scenario: Brand mark is unchanged
