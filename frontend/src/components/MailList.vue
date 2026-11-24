@@ -103,7 +103,7 @@ function onDragStart(event: DragEvent, message: MailMessage) {
 
         <!-- Flags -->
         <div class="flex flex-col items-end gap-1 mt-0.5" style="grid-column: 3; grid-row: 2/4">
-          <Icon v-if="m.starred" name="star" :size="12" class="text-star" style="fill: currentColor" />
+          <Icon v-if="m.starred" name="star" :size="12" class="star" />
           <Icon v-if="m.attachments?.length" name="paperclip" :size="12" class="flag" />
         </div>
       </div>

@@ -128,13 +128,13 @@
       reading pane (HTML, plain text, attachments, calendar invitation), composer with the toolbar's menus and the
       HTML-source mode, contacts with its modal, calendar with the event editor, settings (three tabs),
       confirm/prompt dialogs, each toast kind, the folder context menu and drag-over state, the source viewer.
-- [ ] 7.2 In every dark theme look for leftovers of a light assumption: white boxes, dark icons on dark, native
+- [x] 7.2 In every dark theme look for leftovers of a light assumption: white boxes, dark icons on dark, native
       controls and scrollbars that stayed light.
-- [ ] 7.3 Walk each screen with the keyboard in `larry` and `high-contrast`: every control shows the focus
+- [x] 7.3 Walk each screen with the keyboard in `larry` and `high-contrast`: every control shows the focus
       indicator; a mouse click leaves none.
-- [ ] 7.4 Send a reply from a dark theme to the test mailbox and confirm the received HTML has the usual quote
+- [x] 7.4 Send a reply from a dark theme to the test mailbox and confirm the received HTML has the usual quote
       colors and no custom property.
-- [ ] 7.5 Check reload in a dark theme (no light first frame), sign-out and sign-in, a second browser profile, and
+- [x] 7.5 Check reload in a dark theme (no light first frame), sign-out and sign-in, a second browser profile, and
       storage blocked.
 - [x] 7.6 Check `ui.theme = "outlook"` with a fresh user and with a user who already chose a theme.
 
@@ -150,21 +150,29 @@
 
 ## Verification notes
 
-What was checked while implementing, and what is still open in the unticked tasks:
+Everything below ran on localhost against a seeded in-memory IMAP mailbox and an SMTP sink, driven with
+agent-browser, not against a real mailbox. That is why 1.2 and 7.1 stay open.
 
-- **1.2 / 2.8** The computed-style dumps were taken on localhost against a seeded in-memory IMAP mailbox, not the
-  real one, on: login, mail list with an HTML, a plain-text and an attachment message open, composer (rich text),
-  contacts, calendar and both settings tabs. Not dumped: the loading screen, the composer's HTML-source mode, a
-  calendar with an event, a confirm dialog, a toast and the folder context menu. The only differences from the
-  pre-change build are the ones listed under "Changes to the Larry look" in `DOCUMENTS/docs/THEMES.md`.
-- **7.1 / 7.2** An in-page audit measured the rendered contrast of every text and icon on seven screens (mail with
-  a message open, contacts, calendar, the three settings tabs, composer) in each of the nine themes; it found the
-  active folder's icon (fixed) and the star in the light themes (the documented `aaaOnly` exception). The mail view
-  was looked at in Outlook, Outlook dark, Apple Mail, Apple Mail dark and High contrast, the composer in Graphite
-  and the login screen in Outlook dark. Not walked by hand: dialogs, toasts, the folder context menu and its
-  drag-over state, the source viewer, a calendar invitation, the event editor, and hover states.
-- **7.3** Keyboard focus was checked on the header and the toolbar in High contrast (3 px yellow ring, drawn inside
-  the control on the header; none after a mouse click). Larry and the other screens were not walked.
-- **7.4** Not done: the test setup had no SMTP server. The unit test covers that the quote markup holds no role.
-- **7.5** Checked: reload in a dark theme starts dark, sign-out keeps the theme, sign-in applies the user's saved
-  theme over the cached one. Not checked: a second browser profile and blocked storage.
+- **1.2 / 2.8** Computed-style dumps were compared between the pre-change build and this one on: login, mail list
+  with an HTML, a plain-text and an attachment message open, composer (rich text), contacts, calendar and both
+  settings tabs. Not dumped: the loading screen, the composer's HTML-source mode, a calendar with an event, a
+  confirm dialog, a toast and the folder context menu. The only differences are the ones listed under "Changes to
+  the Larry look" in `DOCUMENTS/docs/THEMES.md`.
+- **7.1** Still open: no screen was walked by hand theme by theme against the real mailbox, and these states were
+  not reached at all: a calendar invitation, the drag-over state of a folder, multi-select and hover states.
+- **7.2** An in-page audit measured the rendered contrast of every text and icon, and looked for light boxes left
+  in dark themes, in each of the nine themes on: mail list (with unread and starred rows), a message with
+  attachments, the source viewer, the four toast kinds, the folder context menu, confirm and prompt dialogs, the
+  composer in rich-text and HTML-source mode, the contact modal, the event editor, the identity editor, contacts,
+  calendar and the three settings tabs. It found the active folder's icon and the star on the selected message
+  (invisible in High contrast); both are fixed, the second with the new `--color-on-selection-star` role. What is
+  left is the star on an unselected row in the light themes, the documented `aaaOnly` exception.
+- **7.3** Tab was pressed through the mail, settings and calendar views in Larry and the mail and contacts views in
+  High contrast: every control showed the ring, and a mouse click left none. The search box draws its ring around
+  the box (it was hidden behind its fields at first; fixed). The composer was not walked.
+- **7.4** A reply written in Graphite was sent through the SMTP sink: the HTML that left has no custom property and
+  no theme color. The editor drops the inline styles of the quote markup, so the quote carries no color at all.
+- **7.5** Reload in a dark theme starts dark; sign-out keeps the theme; a fresh browser profile shows the server
+  default at the login screen and the user's saved theme after sign-in; with storage made to throw, choosing a
+  theme still applies and saves it. A failed save restores the previous theme, the mark and the cache, and shows
+  the error.

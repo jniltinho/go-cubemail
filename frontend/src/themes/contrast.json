@@ -32,6 +32,7 @@
     { "id": "unread-mark/surface", "fg": "unread-mark", "bg": ["surface"], "size": "normal" },
     { "id": "unread-mark/row-hover", "fg": "unread-mark", "bg": ["row-hover"], "size": "normal" },
     { "id": "star/surface", "fg": "star", "bg": ["surface"], "size": "ui", "aaaOnly": true },
+    { "id": "star/selection", "fg": "on-selection-star", "bg": ["selection"], "size": "ui", "aaaOnly": true },
 
     { "id": "field-text/field", "fg": "on-field", "bg": ["field"], "size": "normal" },
     { "id": "field-line/surface", "fg": "field-line", "bg": ["surface"], "size": "ui", "aaaOnly": true },

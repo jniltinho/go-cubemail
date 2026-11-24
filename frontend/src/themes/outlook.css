@@ -36,6 +36,7 @@
   --color-on-selection: #242424;
   --color-on-selection-muted: #424242;
   --color-on-selection-subtle: #575757;
+  --color-on-selection-star: #eaa300;
   --color-selection-mark: #0f6cbd;
   --color-selection-line: #b4d6fa;
 
@@ -162,6 +163,7 @@
   --color-on-selection: #ffffff;
   --color-on-selection-muted: #d6e8fa;
   --color-on-selection-subtle: #d6e8fa;
+  --color-on-selection-star: #f2c661;
   --color-selection-mark: #479ef5;
   --color-selection-line: #115ea3;
 

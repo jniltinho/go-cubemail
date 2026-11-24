@@ -40,6 +40,7 @@
   --color-on-selection: #1a1f2a;
   --color-on-selection-muted: #555e6d; /* AA on the selection, was #5a6473 */
   --color-on-selection-subtle: #555e6d; /* AA on the selection, was #8a93a1 */
+  --color-on-selection-star: #e0a40c;
   --color-selection-mark: #1b3a6b;
   --color-selection-line: #546b90;
 
@@ -332,6 +333,10 @@ textarea {
   .mail-row .flag {
     color: var(--color-fg-subtle);
   }
+  .mail-row .star {
+    color: var(--color-star);
+    fill: currentColor;
+  }
   .mail-row.unread .from,
   .mail-row.unread .subject {
     color: var(--color-unread);
@@ -358,6 +363,9 @@ textarea {
   .mail-row.selected .snippet,
   .mail-row.selected .flag {
     color: var(--color-on-selection-subtle);
+  }
+  .mail-row.selected .star {
+    color: var(--color-on-selection-star);
   }
 
   .checkbox {
@@ -795,6 +803,7 @@ textarea {
 .rte-content textarea:focus-visible {
   box-shadow: none;
 }
+/* drawn outside the box: its fields cover an inset ring */
 .search-box:focus-within {
-  box-shadow: var(--shadow-focus-header);
+  box-shadow: 0 0 0 2px var(--color-tab-mark);
 }

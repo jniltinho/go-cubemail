@@ -39,6 +39,7 @@
   --color-on-selection: #ffffff;
   --color-on-selection-muted: #ffffff;
   --color-on-selection-subtle: #ffffff;
+  --color-on-selection-star: #ffffff;
   --color-selection-mark: #0064e1;
   --color-selection-line: #0064e1;
 
@@ -167,6 +168,7 @@
   --color-on-selection: #ffffff;
   --color-on-selection-muted: #ffffff;
   --color-on-selection-subtle: #ffffff;
+  --color-on-selection-star: #ffffff;
   --color-selection-mark: #0058d0;
   --color-selection-line: #0058d0;
 

@@ -43,7 +43,7 @@ the markup are the same.
 |---|---|
 | Text | `fg`, `fg-strong`, `fg-muted`, `fg-subtle`, `heading`, `link`, `link-hover` |
 | Page and surfaces | `page`, `backdrop` (login), `surface`, `surface-2`, `surface-3`, `line`, `line-soft`, `popup-line`, `row-hover`, `overlay`, `scroll-thumb` |
-| Selection (the selected message) | `selection`, `on-selection`, `on-selection-muted`, `on-selection-subtle`, `selection-mark`, `selection-line` |
+| Selection (the selected message) | `selection`, `on-selection`, `on-selection-muted`, `on-selection-subtle`, `on-selection-star`, `selection-mark`, `selection-line` |
 | Fields and focus | `field`, `on-field`, `field-line`, `field-focus`, `focus` |
 | Primary action | `action`, `action-hover`, `action-line`, `on-action` |
 | Secondary action | `action-2`, `action-2-hover`, `action-2-line`, `action-2-hover-line`, `on-action-2` |
