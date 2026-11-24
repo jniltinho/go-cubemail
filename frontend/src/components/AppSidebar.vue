@@ -40,13 +40,13 @@ const quotaPercent = computed(() => {
 </script>
 
 <template>
-  <aside class="bg-white border-r border-line flex flex-col min-h-0">
+  <aside class="bg-sidebar border-r border-line flex flex-col min-h-0">
     <!-- Header -->
-    <div class="h-10 px-3 flex items-center justify-between bg-panel-2 border-b border-line flex-shrink-0">
-      <span class="text-[11px] uppercase tracking-wider text-ink-sub font-bold">Folders</span>
+    <div class="h-10 px-3 flex items-center justify-between bg-surface-2 border-b border-line flex-shrink-0">
+      <span class="text-[11px] uppercase tracking-wider text-fg-muted font-bold">Folders</span>
       <button
         type="button"
-        class="bg-white border border-line h-[22px] px-2 text-[11.5px] text-ink hover:bg-accent-soft inline-flex items-center gap-1"
+        class="rounded-control bg-action-2 border border-action-2-line h-[22px] px-2 text-[11.5px] text-on-action-2 hover:bg-action-2-hover inline-flex items-center gap-1"
         @click="mail.onFolderMenu('new', null)"
       >
         <Icon name="folder-plus" :size="12" /> New Folder
@@ -69,10 +69,10 @@ const quotaPercent = computed(() => {
     <!-- Quota -->
     <div
       v-if="auth.currentUser.quotaTotalBytes > 0"
-      class="px-3.5 py-2.5 text-[11px] text-ink-mute border-t border-line-soft flex-shrink-0"
+      class="px-3.5 py-2.5 text-[11px] text-fg-subtle border-t border-line-soft flex-shrink-0"
     >
       Quota
-      <b class="text-ink-sub">{{ quotaUsedLabel }} / {{ quotaTotalLabel }}</b>
+      <b class="text-fg-muted">{{ quotaUsedLabel }} / {{ quotaTotalLabel }}</b>
       <div class="h-1.5 bg-line-soft mt-1 border border-line">
         <div class="h-full bg-accent" :style="{ width: quotaPercent + '%' }"></div>
       </div>

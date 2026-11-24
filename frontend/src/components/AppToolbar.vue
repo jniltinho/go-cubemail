@@ -66,7 +66,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
 </script>
 
 <template>
-  <div class="h-9 bg-panel-2 border-b border-line flex items-center px-2 gap-1 flex-shrink-0">
+  <div class="h-9 bg-surface-2 border-b border-line flex items-center px-2 gap-1 flex-shrink-0">
     <button class="tbtn tbtn-primary" type="button" @click="mail.compose()">
       <Icon name="pencil-line" :size="14" /> New Message
     </button>
@@ -116,23 +116,23 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
       </button>
       <div
         v-if="moveOpen"
-        class="absolute left-0 top-full mt-0.5 z-50 min-w-[160px] bg-white border border-line shadow-md py-1"
+        class="absolute left-0 top-full mt-0.5 z-50 min-w-[160px] bg-surface border border-line sh-menu rounded-surface py-1"
       >
         <button
           v-for="f in moveFolders"
           :key="f.id"
-          class="w-full text-left px-3 py-1.5 text-[12.5px] text-ink hover:bg-accent hover:text-white flex items-center gap-2"
+          class="w-full text-left px-3 py-1.5 text-[12.5px] text-fg hover:bg-action hover:text-on-action flex items-center gap-2"
           @click="pickFolder(f.id)"
         >
           <Icon name="folder" :size="13" />
           {{ f.label }}
         </button>
-        <div v-if="!moveFolders.length" class="px-3 py-1.5 text-[12px] text-ink-sub">No folders</div>
+        <div v-if="!moveFolders.length" class="px-3 py-1.5 text-[12px] text-fg-muted">No folders</div>
       </div>
     </div>
 
     <div class="flex-1"></div>
-    <span class="text-[12px] text-ink-sub px-1.5">
+    <span class="text-[12px] text-fg-muted px-1.5">
       {{ mail.visibleMails.length }} items · {{ mail.counts.inboxUnread }} unread
     </span>
   </div>

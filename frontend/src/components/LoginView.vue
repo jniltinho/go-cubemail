@@ -26,29 +26,23 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div
-    class="min-h-full flex flex-col items-center pt-[100px] px-6 pb-10"
-    style="
-      background-color: #c9cdd3;
-      background-image:
-        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 3px),
-        repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px);
-    "
-  >
+  <div class="login-page min-h-full flex flex-col items-center pt-[100px] px-6 pb-10">
     <form
-      class="w-full max-w-[620px] bg-accent border border-[#0B1F40] text-white login-shadow"
+      class="w-full max-w-[620px] bg-header-brand border border-header-line text-on-header login-shadow rounded-surface overflow-hidden"
       @submit.prevent="onSubmit"
       novalidate
     >
       <!-- Card header -->
-      <div class="flex items-center gap-3 px-5 py-3.5 bg-accent-bar border-b border-[#2A4978]">
-        <div class="w-7 h-7 bg-[#66A0FF] text-accent-bar grid place-items-center font-mono font-extrabold text-[13px]">
+      <div class="flex items-center gap-3 px-5 py-3.5 bg-header border-b border-header-line">
+        <div class="w-7 h-7 bg-tab-mark text-header grid place-items-center font-mono font-extrabold text-[13px]">
           W
         </div>
         <div class="text-[17px] font-bold tracking-tight">
-          <b>Web</b>mail<span v-if="auth.appVersion" class="ml-1.5 text-[11px] font-normal text-[#BFD0EA] font-mono">{{
-            auth.appVersion
-          }}</span>
+          <b>Web</b>mail<span
+            v-if="auth.appVersion"
+            class="ml-1.5 text-[11px] font-normal text-on-header-muted font-mono"
+            >{{ auth.appVersion }}</span
+          >
         </div>
       </div>
 
@@ -57,15 +51,15 @@ async function onSubmit() {
         <!-- Error banner -->
         <div
           v-if="auth.loginErr"
-          class="flex items-start gap-2 px-2.5 py-1.5 border border-[#ff8a8a] bg-[#2A1F2F] text-[#FFD9D9] text-[12px] leading-snug"
+          class="flex items-start gap-2 px-2.5 py-1.5 border border-on-header-err bg-header text-on-header rounded-control text-[12px] leading-snug"
         >
-          <Icon name="alert-triangle" :size="14" class="text-[#ff8a8a] mt-0.5 flex-shrink-0" />
+          <Icon name="alert-triangle" :size="14" class="text-on-header-err mt-0.5 flex-shrink-0" />
           <span>{{ auth.loginErr }}</span>
         </div>
 
         <!-- Username -->
         <div class="grid items-center gap-3.5" style="grid-template-columns: 110px 1fr">
-          <label for="lgn-u" class="text-[12.5px] text-[#BFD0EA] tracking-tight">Username</label>
+          <label for="lgn-u" class="text-[12.5px] text-on-header-muted tracking-tight">Username</label>
           <input
             id="lgn-u"
             type="email"
@@ -83,7 +77,7 @@ async function onSubmit() {
 
         <!-- Password -->
         <div class="grid items-center gap-3.5" style="grid-template-columns: 110px 1fr">
-          <label for="lgn-p" class="text-[12.5px] text-[#BFD0EA] tracking-tight">Password</label>
+          <label for="lgn-p" class="text-[12.5px] text-on-header-muted tracking-tight">Password</label>
           <input
             id="lgn-p"
             type="password"
@@ -102,13 +96,18 @@ async function onSubmit() {
         <div class="flex justify-center mt-4">
           <button
             type="submit"
-            class="w-[140px] h-[28px] bg-[#F5F7FA] border border-[#0B1F40] text-ink text-[12.5px] font-semibold cursor-pointer inline-flex items-center justify-center gap-2 hover:bg-white hover:border-accent-2 disabled:text-ink-mute disabled:cursor-wait"
+            class="w-[140px] h-[28px] bg-surface-2 border border-header-line rounded-control text-fg text-[12.5px] font-semibold cursor-pointer inline-flex items-center justify-center gap-2 hover:bg-surface hover:border-action-2-hover-line disabled:text-fg-subtle disabled:cursor-wait"
             :disabled="auth.loginBusy"
           >
             <template v-if="auth.loginBusy">
-              <svg class="w-3 h-3 animate-spin" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="20" cy="20" r="16" stroke="#14305A" stroke-width="6" stroke-opacity="0.25" />
-                <path d="M20 4 A16 16 0 0 1 36 20" stroke="#14305A" stroke-width="6" stroke-linecap="round" />
+              <svg
+                class="w-3 h-3 animate-spin text-accent-strong"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="20" cy="20" r="16" stroke="currentColor" stroke-width="6" stroke-opacity="0.25" />
+                <path d="M20 4 A16 16 0 0 1 36 20" stroke="currentColor" stroke-width="6" stroke-linecap="round" />
               </svg>
               Signing in…
             </template>

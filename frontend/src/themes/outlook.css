@@ -1,0 +1,260 @@
+/*
+ * "Outlook" themes, inspired by Outlook on the web (no affiliation): Fluent 2 neutrals and the brand blue ramp
+ * (colorBrandBackground #0F6CBD, hover #115EA3, pressed #0F548C; dark foreground #479EF5), 4 px corners on controls
+ * and surfaces, the "Segoe UI" stack. Only role values of the contract in ../style.css.
+ * Changed for contrast: light faint text is colorNeutralForeground3 #616161 (foreground4 #707070 is 4.5:1 only on
+ * white); dark danger text is #F1707B (Fluent's #DC626D is 4.3:1 on the surface); the dark unread mark is #62ABF5
+ * (#479EF5 is 3.9:1 on a hovered row).
+ */
+
+/* Outlook (light): page #F5F5F5, surfaces #FFFFFF, brand #0F6CBD */
+:root[data-theme='outlook'] {
+  /* text */
+  --color-fg: #242424;
+  --color-fg-strong: #242424;
+  --color-fg-muted: #424242;
+  --color-fg-subtle: #616161;
+  --color-heading: #242424;
+  --color-link: #0f6cbd;
+  --color-link-hover: #0f548c;
+
+  /* page and surfaces */
+  --color-page: #f5f5f5;
+  --color-backdrop: #e0e0e0;
+  --color-surface: #ffffff;
+  --color-surface-2: #fafafa;
+  --color-surface-3: #f5f5f5;
+  --color-line: #d1d1d1;
+  --color-line-soft: #e0e0e0;
+  --color-popup-line: #d1d1d1;
+  --color-row-hover: #f5f5f5;
+  --color-overlay: rgba(0, 0, 0, 0.4);
+  --color-scroll-thumb: #c7c7c7;
+
+  /* selection (the selected message) */
+  --color-selection: #ebf3fc;
+  --color-on-selection: #242424;
+  --color-on-selection-muted: #424242;
+  --color-on-selection-subtle: #575757;
+  --color-selection-mark: #0f6cbd;
+  --color-selection-line: #b4d6fa;
+
+  /* fields and keyboard focus */
+  --color-field: #ffffff;
+  --color-on-field: #242424;
+  --color-field-line: #d1d1d1;
+  --color-field-focus: #0f6cbd;
+  --color-focus: #0f6cbd;
+
+  /* primary action */
+  --color-action: #0f6cbd;
+  --color-action-hover: #115ea3;
+  --color-action-line: #0f6cbd;
+  --color-on-action: #ffffff;
+
+  /* secondary action */
+  --color-action-2: #ffffff;
+  --color-action-2-hover: #f5f5f5;
+  --color-action-2-line: #d1d1d1;
+  --color-action-2-hover-line: #c7c7c7;
+  --color-on-action-2: #242424;
+
+  /* danger and status */
+  --color-danger: #c50f1f;
+  --color-on-danger: #ffffff;
+  --color-ok: #107c10;
+  --color-err: #c50f1f;
+  --color-warn: #bc4b09;
+  --color-err-soft: #fdf3f4;
+  --color-on-err-soft: #b10e1c;
+  --color-err-line: #eeacb2;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #0f6cbd;
+  --color-header-brand: #0f548c;
+  --color-on-header: #ffffff;
+  --color-on-header-muted: #ebf3fc;
+  --color-on-header-err: #ffc7cc;
+  --color-header-line: #0f548c;
+  --color-header-control-line: #b4d6fa;
+  --color-header-hover: #115ea3;
+  --color-tab-on: #0f548c;
+  --color-on-tab-on: #ffffff;
+  --color-tab-mark: #ffffff;
+
+  /* sidebar */
+  --color-sidebar: #fafafa;
+  --color-on-sidebar: #242424;
+  --color-sidebar-hover: #f0f0f0;
+  --color-sidebar-active: #ebf3fc;
+  --color-on-sidebar-active: #0f548c;
+  --color-count: #616161;
+
+  /* mail list */
+  --color-unread: #242424;
+  --color-unread-mark: #0f6cbd;
+  --color-star: #eaa300;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #0f6cbd;
+  --color-accent-strong: #0f548c;
+  --color-accent-soft: #ebf3fc;
+  --color-on-accent: #ffffff;
+
+  /* raw source viewer */
+  --color-code: #1f1f1f;
+  --color-on-code: #d6d6d6;
+  --color-on-code-muted: #adadad;
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #6d7787;
+  --color-paper-link: #2a5599;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+  --radius-control: 4px;
+  --radius-surface: 4px;
+  --radius-row: 0px;
+
+  /* type */
+  --font-sans:
+    'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+
+  /* depth and the selected row's shape */
+  --shadow-menu: 0 0 2px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.14);
+  --shadow-dialog: 0 0 8px rgba(0, 0, 0, 0.12), 0 32px 64px rgba(0, 0, 0, 0.14);
+  --shadow-toast: 0 0 2px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.14);
+  --shadow-card: 0 0 2px rgba(0, 0, 0, 0.12), 0 14px 28px rgba(0, 0, 0, 0.14);
+  --shadow-focus: 0 0 0 2px var(--color-focus);
+  --bg-backdrop: none;
+}
+
+/* Outlook (dark): page #1F1F1F, surfaces #292929, brand foreground #479EF5 */
+:root[data-theme='outlook-dark'] {
+  /* text */
+  --color-fg: #ffffff;
+  --color-fg-strong: #ffffff;
+  --color-fg-muted: #d6d6d6;
+  --color-fg-subtle: #adadad;
+  --color-heading: #ffffff;
+  --color-link: #479ef5;
+  --color-link-hover: #62abf5;
+
+  /* page and surfaces */
+  --color-page: #1f1f1f;
+  --color-backdrop: #141414;
+  --color-surface: #292929;
+  --color-surface-2: #2e2e2e;
+  --color-surface-3: #242424;
+  --color-line: #525252;
+  --color-line-soft: #3d3d3d;
+  --color-popup-line: #666666;
+  --color-row-hover: #383838;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-scroll-thumb: #666666;
+
+  /* selection (the selected message) */
+  --color-selection: #0e4775;
+  --color-on-selection: #ffffff;
+  --color-on-selection-muted: #d6e8fa;
+  --color-on-selection-subtle: #d6e8fa;
+  --color-selection-mark: #479ef5;
+  --color-selection-line: #115ea3;
+
+  /* fields and keyboard focus */
+  --color-field: #1f1f1f;
+  --color-on-field: #ffffff;
+  --color-field-line: #666666;
+  --color-field-focus: #479ef5;
+  --color-focus: #479ef5;
+
+  /* primary action */
+  --color-action: #115ea3;
+  --color-action-hover: #0f6cbd;
+  --color-action-line: #115ea3;
+  --color-on-action: #ffffff;
+
+  /* secondary action */
+  --color-action-2: #2e2e2e;
+  --color-action-2-hover: #3d3d3d;
+  --color-action-2-line: #666666;
+  --color-action-2-hover-line: #858585;
+  --color-on-action-2: #ffffff;
+
+  /* danger and status */
+  --color-danger: #f1707b;
+  --color-on-danger: #1f1f1f;
+  --color-ok: #54b054;
+  --color-err: #f1707b;
+  --color-warn: #faa06b;
+  --color-err-soft: #3b1a1d;
+  --color-on-err-soft: #f1bbbc;
+  --color-err-line: #6e2b30;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #141414;
+  --color-header-brand: #0a0a0a;
+  --color-on-header: #ffffff;
+  --color-on-header-muted: #d6d6d6;
+  --color-on-header-err: #f1707b;
+  --color-header-line: #000000;
+  --color-header-control-line: #666666;
+  --color-header-hover: #292929;
+  --color-tab-on: #292929;
+  --color-on-tab-on: #ffffff;
+  --color-tab-mark: #479ef5;
+
+  /* sidebar */
+  --color-sidebar: #1f1f1f;
+  --color-on-sidebar: #ffffff;
+  --color-sidebar-hover: #333333;
+  --color-sidebar-active: #3d3d3d;
+  --color-on-sidebar-active: #ffffff;
+  --color-count: #adadad;
+
+  /* mail list */
+  --color-unread: #ffffff;
+  --color-unread-mark: #62abf5;
+  --color-star: #f2c661;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #479ef5;
+  --color-accent-strong: #62abf5;
+  --color-accent-soft: #1f3347;
+  --color-on-accent: #0a0a0a;
+
+  /* raw source viewer */
+  --color-code: #0a0a0a;
+  --color-on-code: #d6d6d6;
+  --color-on-code-muted: #999999;
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #6d7787;
+  --color-paper-link: #2a5599;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+  --radius-control: 4px;
+  --radius-surface: 4px;
+  --radius-row: 0px;
+
+  /* type */
+  --font-sans:
+    'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+
+  /* depth and the selected row's shape */
+  --shadow-menu: 0 0 2px rgba(0, 0, 0, 0.24), 0 4px 8px rgba(0, 0, 0, 0.28);
+  --shadow-dialog: 0 0 8px rgba(0, 0, 0, 0.24), 0 32px 64px rgba(0, 0, 0, 0.28);
+  --shadow-toast: 0 0 2px rgba(0, 0, 0, 0.24), 0 8px 16px rgba(0, 0, 0, 0.28);
+  --shadow-card: 0 0 2px rgba(0, 0, 0, 0.24), 0 14px 28px rgba(0, 0, 0, 0.28);
+  --shadow-focus: 0 0 0 2px var(--color-focus);
+  --bg-backdrop: none;
+}

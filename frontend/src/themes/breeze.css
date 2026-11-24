@@ -1,0 +1,252 @@
+/*
+ * "Breeze" themes: KDE Breeze (breeze v5.27.11, colors/BreezeLight.colors and BreezeDark.colors), ported from
+ * ad-manager's frontend/src/themes/breeze.css (jniltinho/ad-manager, commit dcad381). Square corners, as there.
+ * Only role values of the contract in ../style.css.
+ * Changed for contrast (as upstream): light links, marks and the primary action are #1F6FA3, since the Breeze
+ * selection blue #3DAEE9 is 2.4:1 on white; #3DAEE9 stays the selection fill, with dark text. Changed here: dark
+ * danger text is #F28A93 (upstream #ED6A76 is 4.0:1 on a button).
+ */
+
+/* Breeze (light): Window #EFF0F1, View #FFFFFF, Selection #3DAEE9 */
+:root[data-theme='breeze'] {
+  /* text */
+  --color-fg: #232629;
+  --color-fg-strong: #232629;
+  --color-fg-muted: #5f6b77;
+  --color-fg-subtle: #5f6b77;
+  --color-heading: #232629;
+  --color-link: #1f6fa3;
+  --color-link-hover: #185a85;
+
+  /* page and surfaces */
+  --color-page: #eff0f1;
+  --color-backdrop: #dee0e2;
+  --color-surface: #ffffff;
+  --color-surface-2: #fcfcfc;
+  --color-surface-3: #f7f8f8;
+  --color-line: #bdc3c7;
+  --color-line-soft: #e3e5e7;
+  --color-popup-line: #8c949c;
+  --color-row-hover: #e3f2fb;
+  --color-overlay: rgba(35, 38, 41, 0.4);
+  --color-scroll-thumb: #bdc3c7;
+
+  /* selection (the selected message) */
+  --color-selection: #3daee9;
+  --color-on-selection: #232629;
+  --color-on-selection-muted: #232629;
+  --color-on-selection-subtle: #232629;
+  --color-selection-mark: #1f6fa3;
+  --color-selection-line: #1f6fa3;
+
+  /* fields and keyboard focus */
+  --color-field: #ffffff;
+  --color-on-field: #232629;
+  --color-field-line: #8c949c;
+  --color-field-focus: #1f6fa3;
+  --color-focus: #1f6fa3;
+
+  /* primary action */
+  --color-action: #1f6fa3;
+  --color-action-hover: #164e72;
+  --color-action-line: #164e72;
+  --color-on-action: #ffffff;
+
+  /* secondary action */
+  --color-action-2: #fcfcfc;
+  --color-action-2-hover: #e3f2fb;
+  --color-action-2-line: #8c949c;
+  --color-action-2-hover-line: #1f6fa3;
+  --color-on-action-2: #232629;
+
+  /* danger and status */
+  --color-danger: #c4303e;
+  --color-on-danger: #ffffff;
+  --color-ok: #19703e;
+  --color-err: #c4303e;
+  --color-warn: #9c4800;
+  --color-err-soft: #f8e6e8;
+  --color-on-err-soft: #93242f;
+  --color-err-line: #e3a8ae;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #dee0e2;
+  --color-header-brand: #d3d6d9;
+  --color-on-header: #232629;
+  --color-on-header-muted: #4f5963;
+  --color-on-header-err: #a1202c;
+  --color-header-line: #bdc3c7;
+  --color-header-control-line: #8c949c;
+  --color-header-hover: #cdd1d4;
+  --color-tab-on: #ffffff;
+  --color-on-tab-on: #232629;
+  --color-tab-mark: #1f6fa3;
+
+  /* sidebar */
+  --color-sidebar: #fcfcfc;
+  --color-on-sidebar: #232629;
+  --color-sidebar-hover: #e3f2fb;
+  --color-sidebar-active: #3daee9;
+  --color-on-sidebar-active: #232629;
+  --color-count: #5f6b77;
+
+  /* mail list */
+  --color-unread: #232629;
+  --color-unread-mark: #1f6fa3;
+  --color-star: #c88a00;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #1f6fa3;
+  --color-accent-strong: #164e72;
+  --color-accent-soft: #e3f2fb;
+  --color-on-accent: #ffffff;
+
+  /* raw source viewer */
+  --color-code: #232629;
+  --color-on-code: #fcfcfc;
+  --color-on-code-muted: #a1a9b1;
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #6d7787;
+  --color-paper-link: #2a5599;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+
+  /* type */
+  --font-sans: 'Noto Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+  /* depth and the selected row's shape */
+  --shadow-focus: 0 0 0 2px var(--color-focus);
+  --bg-backdrop: none;
+  --shadow-menu: 0 3px 10px rgba(35, 38, 41, 0.25);
+  --shadow-dialog: 0 8px 28px rgba(35, 38, 41, 0.35);
+  --shadow-toast: 0 4px 14px rgba(35, 38, 41, 0.25);
+  --shadow-card: 0 6px 24px rgba(35, 38, 41, 0.3);
+}
+
+/* Breeze (dark): Window #2A2E32, View #1B1E20, Selection #3DAEE9 */
+:root[data-theme='breeze-dark'] {
+  /* text */
+  --color-fg: #fcfcfc;
+  --color-fg-strong: #ffffff;
+  --color-fg-muted: #a1a9b1;
+  --color-fg-subtle: #a1a9b1;
+  --color-heading: #ffffff;
+  --color-link: #3daee9;
+  --color-link-hover: #63bdec;
+
+  /* page and surfaces */
+  --color-page: #2a2e32;
+  --color-backdrop: #1b1e20;
+  --color-surface: #1b1e20;
+  --color-surface-2: #232629;
+  --color-surface-3: #272b2f;
+  --color-line: #4d5257;
+  --color-line-soft: #31363b;
+  --color-popup-line: #7a8086;
+  --color-row-hover: #272b2f;
+  --color-overlay: rgba(0, 0, 0, 0.55);
+  --color-scroll-thumb: #4d5257;
+
+  /* selection (the selected message) */
+  --color-selection: #3daee9;
+  --color-on-selection: #1b1e20;
+  --color-on-selection-muted: #1b1e20;
+  --color-on-selection-subtle: #1b1e20;
+  --color-selection-mark: #fcfcfc;
+  --color-selection-line: #63bdec;
+
+  /* fields and keyboard focus */
+  --color-field: #1b1e20;
+  --color-on-field: #fcfcfc;
+  --color-field-line: #7a8086;
+  --color-field-focus: #3daee9;
+  --color-focus: #3daee9;
+
+  /* primary action */
+  --color-action: #3daee9;
+  --color-action-hover: #58b9ec;
+  --color-action-line: #3daee9;
+  --color-on-action: #1b1e20;
+
+  /* secondary action */
+  --color-action-2: #31363b;
+  --color-action-2-hover: #4e5256;
+  --color-action-2-line: #7a8086;
+  --color-action-2-hover-line: #3daee9;
+  --color-on-action-2: #fcfcfc;
+
+  /* danger and status */
+  --color-danger: #f28a93;
+  --color-on-danger: #1b1e20;
+  --color-ok: #27ae60;
+  --color-err: #f28a93;
+  --color-warn: #f67400;
+  --color-err-soft: #3d2a2e;
+  --color-on-err-soft: #f5adb4;
+  --color-err-line: #6b3a41;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #31363b;
+  --color-header-brand: #2a2e33;
+  --color-on-header: #fcfcfc;
+  --color-on-header-muted: #a1a9b1;
+  --color-on-header-err: #f28a93;
+  --color-header-line: #1b1e20;
+  --color-header-control-line: #7a8086;
+  --color-header-hover: #3b4045;
+  --color-tab-on: #1b1e20;
+  --color-on-tab-on: #fcfcfc;
+  --color-tab-mark: #3daee9;
+
+  /* sidebar */
+  --color-sidebar: #232629;
+  --color-on-sidebar: #fcfcfc;
+  --color-sidebar-hover: #2e3338;
+  --color-sidebar-active: #3daee9;
+  --color-on-sidebar-active: #1b1e20;
+  --color-count: #a1a9b1;
+
+  /* mail list */
+  --color-unread: #ffffff;
+  --color-unread-mark: #3daee9;
+  --color-star: #f6c544;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #3daee9;
+  --color-accent-strong: #63bdec;
+  --color-accent-soft: #1f3a4a;
+  --color-on-accent: #1b1e20;
+
+  /* raw source viewer */
+  --color-code: #141618;
+  --color-on-code: #fcfcfc;
+  --color-on-code-muted: #a1a9b1;
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #6d7787;
+  --color-paper-link: #2a5599;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+
+  /* type */
+  --font-sans: 'Noto Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+  /* depth and the selected row's shape */
+  --shadow-focus: 0 0 0 2px var(--color-focus);
+  --bg-backdrop: none;
+  --shadow-menu: 0 3px 10px rgba(0, 0, 0, 0.5);
+  --shadow-dialog: 0 8px 28px rgba(0, 0, 0, 0.6);
+  --shadow-toast: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 6px 24px rgba(0, 0, 0, 0.55);
+}

@@ -95,9 +95,9 @@ onBeforeUnmount(() => {
   <LoginView v-if="!auth.isAuthenticated" />
 
   <!-- Loading screen -->
-  <div v-else-if="mail.loading" class="flex flex-col h-full items-center justify-center bg-gray-50 gap-3">
+  <div v-else-if="mail.loading" class="flex flex-col h-full items-center justify-center bg-page gap-3">
     <SpinnerIcon />
-    <span class="text-sm text-gray-500">Loading mailbox…</span>
+    <span class="text-sm text-fg-muted">Loading mailbox…</span>
   </div>
 
   <!-- Main app -->
@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
     <AppToolbar />
 
     <!-- 3-column layout -->
-    <div class="grid flex-1 bg-app-bg min-h-0" style="grid-template-columns: 220px 380px 1fr">
+    <div class="grid flex-1 bg-page min-h-0" style="grid-template-columns: 220px 380px 1fr">
       <AppSidebar
         v-if="mail.view === 'mail' || mail.view === 'contacts' || mail.view === 'calendar' || mail.view === 'settings'"
       />
@@ -117,7 +117,7 @@ onBeforeUnmount(() => {
       </template>
       <ContactsPane v-else-if="mail.view === 'contacts'" style="grid-column: 2/4" />
       <template v-else-if="mail.view === 'calendar'">
-        <div class="border-r border-line overflow-y-auto bg-panel-1 text-sm">
+        <div class="border-r border-line overflow-y-auto bg-sidebar text-sm">
           <CalendarSidebar />
         </div>
         <CalendarPane />

@@ -27,6 +27,8 @@ export default defineConfig({
     outDir: '../web/dist',
     emptyOutDir: true,
   },
+  // unit tests (vp test): they read source files only, no browser and no backend
+  test: { environment: 'node', include: ['tests/unit/**/*.test.mjs'] },
   // the style the code base already had: single quotes, no semicolons
   fmt: { singleQuote: true, semi: false, printWidth: 120 },
   lint: {

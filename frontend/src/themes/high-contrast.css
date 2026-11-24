@@ -1,0 +1,130 @@
+/*
+ * "High contrast" theme (dark): an accessibility theme for maximum legibility, ported from ad-manager's
+ * frontend/src/themes/high-contrast.css (jniltinho/ad-manager, commit dcad381). Black surfaces, white text, yellow
+ * #FFFF00 as the only accent (actions, links, the selected message with black text, the current tab), states
+ * ok #5CFF5C, error #FFA3A3, warning #FFC04D; no shadows for depth and a solid 3 px focus ring. Held to WCAG AAA:
+ * normal text 7:1, large text 4.5:1, components 3:1 (the aaa list of contrast.json). The message paper stays white
+ * with black text. Only role values of the contract in ../style.css.
+ */
+
+/* High contrast: #000000 / #FFFFFF, accent #FFFF00 */
+:root[data-theme='high-contrast'] {
+  /* text */
+  --color-fg: #ffffff;
+  --color-fg-strong: #ffffff;
+  --color-fg-muted: #e6e6e6;
+  --color-fg-subtle: #e6e6e6;
+  --color-heading: #ffffff;
+  --color-link: #ffff00;
+  --color-link-hover: #ffff99;
+
+  /* page and surfaces */
+  --color-page: #000000;
+  --color-backdrop: #000000;
+  --color-surface: #000000;
+  --color-surface-2: #000000;
+  --color-surface-3: #1a1a1a;
+  --color-line: #bfbfbf;
+  --color-line-soft: #808080;
+  --color-popup-line: #ffffff;
+  --color-row-hover: #262626;
+  --color-overlay: rgba(0, 0, 0, 0.75);
+  --color-scroll-thumb: #bfbfbf;
+
+  /* selection (the selected message) */
+  --color-selection: #ffff00;
+  --color-on-selection: #000000;
+  --color-on-selection-muted: #000000;
+  --color-on-selection-subtle: #000000;
+  --color-selection-mark: #000000;
+  --color-selection-line: #ffffff;
+
+  /* fields and keyboard focus */
+  --color-field: #000000;
+  --color-on-field: #ffffff;
+  --color-field-line: #ffffff;
+  --color-field-focus: #ffff00;
+  --color-focus: #ffff00;
+
+  /* primary action */
+  --color-action: #ffff00;
+  --color-action-hover: #ffff99;
+  --color-action-line: #ffff00;
+  --color-on-action: #000000;
+
+  /* secondary action */
+  --color-action-2: #000000;
+  --color-action-2-hover: #262626;
+  --color-action-2-line: #ffffff;
+  --color-action-2-hover-line: #ffff00;
+  --color-on-action-2: #ffffff;
+
+  /* danger and status */
+  --color-danger: #ff8a8a;
+  --color-on-danger: #000000;
+  --color-ok: #5cff5c;
+  --color-err: #ffa3a3;
+  --color-warn: #ffc04d;
+  --color-err-soft: #2a0000;
+  --color-on-err-soft: #ffb3b3;
+  --color-err-line: #ffa3a3;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #000000;
+  --color-header-brand: #000000;
+  --color-on-header: #ffffff;
+  --color-on-header-muted: #ffffff;
+  --color-on-header-err: #ffa3a3;
+  --color-header-line: #ffffff;
+  --color-header-control-line: #ffffff;
+  --color-header-hover: #262626;
+  --color-tab-on: #000000;
+  --color-on-tab-on: #ffff00;
+  --color-tab-mark: #ffff00;
+
+  /* sidebar */
+  --color-sidebar: #000000;
+  --color-on-sidebar: #ffffff;
+  --color-sidebar-hover: #262626;
+  --color-sidebar-active: #ffff00;
+  --color-on-sidebar-active: #000000;
+  --color-count: #e6e6e6;
+
+  /* mail list */
+  --color-unread: #ffffff;
+  --color-unread-mark: #ffff00;
+  --color-star: #ffff00;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #ffff00;
+  --color-accent-strong: #ffff99;
+  --color-accent-soft: #262626;
+  --color-on-accent: #000000;
+
+  /* raw source viewer */
+  --color-code: #000000;
+  --color-on-code: #ffffff;
+  --color-on-code-muted: #e6e6e6;
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f2f2f2;
+  --color-on-paper: #000000;
+  --color-paper-muted: #333333;
+  --color-paper-subtle: #4d4d4d;
+  --color-paper-link: #0000cc;
+  --color-paper-line: #000000;
+
+  /* shape */
+
+  /* type */
+
+  /* depth and the selected row's shape */
+  --shadow-menu: none;
+  --shadow-dialog: none;
+  --shadow-toast: none;
+  --shadow-card: none;
+  --shadow-focus: 0 0 0 3px #ffff00;
+  --shadow-focus-header: inset 0 0 0 3px #ffff00;
+  --bg-backdrop: none;
+}

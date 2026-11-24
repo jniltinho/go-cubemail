@@ -99,12 +99,12 @@ async function remove() {
       :aria-label="isEdit() ? 'Edit Contact' : 'New Contact'"
     >
       <!-- Header -->
-      <div class="bg-accent-bar text-white py-2 px-3 flex items-center gap-2 text-[13px] font-semibold">
+      <div class="on-header bg-header text-on-header py-2 px-3 flex items-center gap-2 text-[13px] font-semibold">
         <Icon :name="isEdit() ? 'user-pen' : 'user-plus'" :size="14" />
         <span>{{ isEdit() ? 'Edit Contact' : 'New Contact' }}</span>
         <button
           type="button"
-          class="ml-auto flex-shrink-0 cursor-pointer w-[22px] h-[22px] grid place-items-center bg-transparent border border-[#4A6FA0] text-white hover:bg-[#2A4978]"
+          class="ml-auto flex-shrink-0 cursor-pointer w-[22px] h-[22px] grid place-items-center bg-transparent border border-header-control-line text-on-header hover:bg-header-hover"
           @click="mail.closeContactModal()"
         >
           <Icon name="x" :size="12" />
@@ -112,13 +112,13 @@ async function remove() {
       </div>
 
       <!-- Form -->
-      <div class="bg-white">
+      <div class="bg-surface">
         <!-- Name row -->
         <div class="flex items-center border-b border-line px-3">
-          <span class="w-[80px] text-[12px] font-semibold text-ink-sub flex-shrink-0">Name</span>
+          <span class="w-[80px] text-[12px] font-semibold text-fg-muted flex-shrink-0">Name</span>
           <div class="flex items-center gap-2 flex-1 py-2">
             <div
-              class="w-[34px] h-[34px] bg-accent-bar text-white grid place-items-center font-bold text-[13px] flex-shrink-0"
+              class="w-[34px] h-[34px] bg-accent-strong text-on-accent grid place-items-center font-bold text-[13px] flex-shrink-0"
             >
               {{
                 form.name
@@ -136,69 +136,69 @@ async function remove() {
               v-model="form.name"
               type="text"
               placeholder="Full name (e.g. Helena Vargas)"
-              class="flex-1 text-[13px] outline-none placeholder:text-ink-mute"
+              class="flex-1 text-[13px] outline-none placeholder:text-fg-subtle"
               autofocus
             />
           </div>
         </div>
         <!-- Email -->
         <div class="flex items-center border-b border-line px-3 py-2.5">
-          <span class="w-[80px] text-[12px] font-semibold text-ink-sub flex-shrink-0">Email</span>
+          <span class="w-[80px] text-[12px] font-semibold text-fg-muted flex-shrink-0">Email</span>
           <input
             v-model="form.email"
             type="email"
             placeholder="name@example.com"
-            class="flex-1 text-[13px] outline-none placeholder:text-ink-mute"
+            class="flex-1 text-[13px] outline-none placeholder:text-fg-subtle"
           />
         </div>
         <!-- Title -->
         <div class="flex items-center border-b border-line px-3 py-2.5">
-          <span class="w-[80px] text-[12px] font-semibold text-ink-sub flex-shrink-0">Title</span>
+          <span class="w-[80px] text-[12px] font-semibold text-fg-muted flex-shrink-0">Title</span>
           <input
             v-model="form.title"
             type="text"
             placeholder="Role (e.g. Strategic Partnerships)"
-            class="flex-1 text-[13px] outline-none placeholder:text-ink-mute"
+            class="flex-1 text-[13px] outline-none placeholder:text-fg-subtle"
           />
         </div>
         <!-- Company -->
         <div class="flex items-center border-b border-line px-3 py-2.5">
-          <span class="w-[80px] text-[12px] font-semibold text-ink-sub flex-shrink-0">Company</span>
+          <span class="w-[80px] text-[12px] font-semibold text-fg-muted flex-shrink-0">Company</span>
           <input
             v-model="form.company"
             type="text"
             placeholder="Organisation (e.g. Strataworks)"
-            class="flex-1 text-[13px] outline-none placeholder:text-ink-mute"
+            class="flex-1 text-[13px] outline-none placeholder:text-fg-subtle"
           />
         </div>
         <!-- Phone -->
         <div class="flex items-center border-b border-line px-3 py-2.5">
-          <span class="w-[80px] text-[12px] font-semibold text-ink-sub flex-shrink-0">Phone</span>
+          <span class="w-[80px] text-[12px] font-semibold text-fg-muted flex-shrink-0">Phone</span>
           <input
             v-model="form.phone"
             type="tel"
             placeholder="+351 21 000 0000"
-            class="flex-1 text-[13px] outline-none placeholder:text-ink-mute"
+            class="flex-1 text-[13px] outline-none placeholder:text-fg-subtle"
           />
         </div>
         <!-- Notes -->
         <div class="flex items-start border-b border-line px-3 py-2.5">
-          <span class="w-[80px] text-[12px] font-semibold text-ink-sub flex-shrink-0 pt-0.5">Notes</span>
+          <span class="w-[80px] text-[12px] font-semibold text-fg-muted flex-shrink-0 pt-0.5">Notes</span>
           <textarea
             v-model="form.notes"
             rows="4"
             placeholder="Optional notes…"
-            class="flex-1 text-[13px] outline-none placeholder:text-ink-mute resize-y"
+            class="flex-1 text-[13px] outline-none placeholder:text-fg-subtle resize-y"
           />
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="py-2 px-2.5 bg-panel-2 border-t border-line flex items-center gap-1.5">
+      <div class="py-2 px-2.5 bg-surface-2 border-t border-line flex items-center gap-1.5">
         <!-- Delete (edit mode only) -->
         <button
           v-if="isEdit()"
-          class="tbtn text-red-500 border-red-200 hover:bg-red-50"
+          class="tbtn tbtn-danger hover:bg-err-soft"
           type="button"
           :disabled="deleting"
           @click="remove"
@@ -207,12 +207,12 @@ async function remove() {
         </button>
 
         <template v-else>
-          <Icon name="info" :size="13" class="text-ink-mute" />
-          <span v-if="error" class="text-[12px] text-red-500">{{ error }}</span>
-          <span v-else class="text-[12px] text-ink-sub">Required: name and email</span>
+          <Icon name="info" :size="13" class="text-fg-subtle" />
+          <span v-if="error" class="text-[12px] text-danger">{{ error }}</span>
+          <span v-else class="text-[12px] text-fg-muted">Required: name and email</span>
         </template>
 
-        <span v-if="isEdit() && error" class="text-[12px] text-red-500 ml-1">{{ error }}</span>
+        <span v-if="isEdit() && error" class="text-[12px] text-danger ml-1">{{ error }}</span>
 
         <div class="ml-auto flex gap-1.5">
           <button class="tbtn" type="button" @click="mail.closeContactModal()">Cancel</button>

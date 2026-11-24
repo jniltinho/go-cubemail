@@ -316,7 +316,11 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       <button type="button" class="tbtn" :disabled="disabled" @click="showColor = !showColor" title="Text color">
         <Icon name="palette" :size="13" />
       </button>
-      <div v-if="showColor" class="absolute z-50 mt-1 bg-white border border-line p-2 shadow" style="min-width: 216px">
+      <div
+        v-if="showColor"
+        class="absolute z-50 mt-1 bg-surface border border-line p-2 sh-menu rounded-surface"
+        style="min-width: 216px"
+      >
         <div class="grid grid-cols-8 gap-1">
           <button
             v-for="c in [
@@ -380,7 +384,7 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       </button>
       <div
         v-if="showBgColor"
-        class="absolute z-50 mt-1 bg-white border border-line p-2 shadow"
+        class="absolute z-50 mt-1 bg-surface border border-line p-2 sh-menu rounded-surface"
         style="min-width: 216px"
       >
         <div class="grid grid-cols-8 gap-1">
@@ -485,7 +489,7 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       </button>
       <div
         v-if="showLink"
-        class="absolute z-50 bg-white border border-line p-2 shadow flex gap-2"
+        class="absolute z-50 bg-surface border border-line p-2 sh-menu rounded-surface flex gap-2"
         style="top: 100%; left: 0; min-width: 360px"
       >
         <input
@@ -509,7 +513,7 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       </button>
       <div
         v-if="showImage"
-        class="absolute z-50 bg-white border border-line p-2 shadow flex gap-2"
+        class="absolute z-50 bg-surface border border-line p-2 sh-menu rounded-surface flex gap-2"
         style="top: 100%; left: 0; min-width: 380px"
       >
         <input
@@ -530,7 +534,10 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       <button type="button" class="tbtn" :disabled="disabled" @click="showTable = !showTable" title="Insert table">
         <Icon name="table" :size="13" />
       </button>
-      <div v-if="showTable" class="absolute z-50 mt-1 bg-white border border-line p-2 shadow text-[12px]">
+      <div
+        v-if="showTable"
+        class="absolute z-50 mt-1 bg-surface border border-line p-2 sh-menu rounded-surface text-[12px]"
+      >
         <button class="tbtn w-full" @click="insertTable">Insert 3×3 table</button>
         <!-- Future: row/col inputs -->
       </div>
@@ -543,7 +550,7 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       </button>
       <div
         v-if="showEmoji"
-        class="absolute z-50 mt-1 bg-white border border-line p-2 shadow grid grid-cols-6 gap-1 text-lg"
+        class="absolute z-50 mt-1 bg-surface border border-line p-2 sh-menu rounded-surface grid grid-cols-6 gap-1 text-lg"
         style="min-width: 220px"
       >
         <button v-for="e in emojiList" :key="e" class="hover:bg-accent-soft p-1" @click="insertEmoji(e)">
@@ -565,7 +572,7 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
     </button>
 
     <!-- Word count (read-only display) -->
-    <span class="ml-auto text-[10.5px] text-ink-mute px-2 tabular-nums" title="Word count">
+    <span class="ml-auto text-[10.5px] text-fg-subtle px-2 tabular-nums" title="Word count">
       {{ wordCount }} words
     </span>
   </div>

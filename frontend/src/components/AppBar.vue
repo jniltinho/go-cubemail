@@ -25,12 +25,16 @@ const TABS = [
 </script>
 
 <template>
-  <div class="h-11 flex items-stretch bg-accent-bar text-white border-b border-[#0B1F40] select-none flex-shrink-0">
+  <div
+    class="on-header h-11 flex items-stretch bg-header text-on-header border-b border-header-line select-none flex-shrink-0"
+  >
     <!-- Brand -->
     <div
-      class="flex items-center gap-2.5 px-4 font-bold text-[14px] tracking-[0.3px] bg-accent border-r border-[#0B1F40] min-w-[220px]"
+      class="flex items-center gap-2.5 px-4 font-bold text-[14px] tracking-[0.3px] bg-header-brand border-r border-header-line min-w-[220px]"
     >
-      <div class="w-[22px] h-[22px] bg-white text-accent font-mono font-extrabold grid place-items-center text-[13px]">
+      <div
+        class="w-[22px] h-[22px] bg-on-header text-header-brand font-mono font-extrabold grid place-items-center text-[13px]"
+      >
         W
       </div>
       <div><b>Web</b>mail</div>
@@ -43,10 +47,10 @@ const TABS = [
         :key="tab.id"
         type="button"
         :class="[
-          'flex items-center gap-1.5 px-4 text-[12.5px] cursor-pointer border-r border-[#0B1F40] bg-transparent',
+          'flex items-center gap-1.5 px-4 text-[12.5px] cursor-pointer border-r border-header-line',
           mail.view === tab.id
-            ? 'bg-accent text-white shadow-[inset_0_-3px_0_#66A0FF]'
-            : 'text-[#D5E0F2] hover:bg-[#102744] hover:text-white',
+            ? 'tab-on'
+            : 'bg-transparent text-on-header-muted hover:bg-header-hover hover:text-on-header',
         ]"
         @click="mail.view = tab.id"
       >
@@ -76,11 +80,11 @@ const TABS = [
     </div>
 
     <!-- User + Logout -->
-    <div class="flex items-center gap-2.5 px-4 border-l border-[#0B1F40]">
-      <span class="text-white text-[12.5px]">{{ auth.currentUser.email }}</span>
+    <div class="flex items-center gap-2.5 px-4 border-l border-header-line">
+      <span class="text-on-header text-[12.5px]">{{ auth.currentUser.email }}</span>
       <button
         type="button"
-        class="inline-flex items-center justify-center w-7 h-[26px] bg-transparent border border-[#4A6FA0] text-[#D5E0F2] hover:bg-[#102744] hover:text-white hover:border-[#66A0FF] cursor-pointer"
+        class="inline-flex items-center justify-center w-7 h-[26px] bg-transparent border border-header-control-line text-on-header-muted hover:bg-header-hover hover:text-on-header hover:border-tab-mark rounded-control cursor-pointer"
         title="Logout"
         @click="auth.handleLogout()"
       >

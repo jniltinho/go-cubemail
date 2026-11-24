@@ -80,52 +80,37 @@ export function extIcon(ext: string): string {
  * Resolves a Tailwind CSS color utility class for a given file extension.
  *
  * @param ext - The file extension.
- * @returns The target CSS color class (e.g. "text-[#B22B2B]").
+ * @returns The target CSS color class (e.g. "text-danger").
  */
 export function extColor(ext: string): string {
   const e = (ext || '').toUpperCase()
-  if (e === 'PDF') return 'text-[#B22B2B]'
+  if (e === 'PDF') return 'text-danger'
   if (['DOC', 'DOCX'].includes(e)) return 'text-accent'
-  if (['XLS', 'XLSX'].includes(e)) return 'text-[#1F7A45]'
-  if (['ZIP', 'RAR', '7Z'].includes(e)) return 'text-[#7A4E1F]'
-  return 'text-ink-sub'
+  if (['XLS', 'XLSX'].includes(e)) return 'text-ok'
+  if (['ZIP', 'RAR', '7Z'].includes(e)) return 'text-fg-muted'
+  return 'text-fg-muted'
 }
 
+/** Color of a calendar that has none of its own. Content, not interface: it does not follow the theme. */
+export const DEFAULT_CAL_COLOR = '#3788d8'
+
 /**
- * Calculates derived dark and light accent colors from a primary hex color
- * and injects them as dynamic CSS custom variables on the document root element.
+ * Ink for text drawn over a color the user chose (a calendar's color): black or white, whichever has the higher
+ * WCAG contrast with it. Literal on purpose: the background is the user's, so the ink cannot follow the theme.
  *
- * @param hex - The base hex primary accent color (e.g. "#1B3A6B").
+ * @param color - Background as `#rgb` or `#rrggbb`; anything else is treated as dark.
  */
-export function applyAccent(hex: string): void {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  const darken = (k: number) =>
-    '#' +
-    [r, g, b]
-      .map((v) =>
-        Math.max(0, Math.round(v * k))
-          .toString(16)
-          .padStart(2, '0'),
-      )
-      .join('')
-  const lighten = (k: number) =>
-    '#' +
-    [r, g, b]
-      .map((v) =>
-        Math.min(255, Math.round(v + (255 - v) * k))
-          .toString(16)
-          .padStart(2, '0'),
-      )
-      .join('')
-  const s = document.documentElement.style
-  s.setProperty('--accent', hex)
-  s.setProperty('--accent-2', lighten(0.25))
-  s.setProperty('--accent-bar', darken(0.78))
-  s.setProperty('--accent-soft', lighten(0.88))
-  s.setProperty('--accent-soft-2', lighten(0.76))
-  s.setProperty('--row-selected', lighten(0.8))
+export function inkOn(color: string): '#000000' | '#ffffff' {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec((color || '').trim())
+  if (!m) return '#ffffff'
+  const hex = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1]
+  const lin = (i: number) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }
+  const luminance = 0.2126 * lin(0) + 0.7152 * lin(2) + 0.0722 * lin(4)
+  // black wins when (L + 0.05) / 0.05 > 1.05 / (L + 0.05)
+  return luminance > 0.179 ? '#000000' : '#ffffff'
 }
 
 /**

@@ -17,7 +17,7 @@ LDFLAGS    := -trimpath -ldflags "-s -w -X $(PREFIX).Version=$(VERSION) -X $(PRE
 
 .PHONY: all build build-prod run clean frontend frontend-dev frontend-check dev \
         migrate tidy deps deps-frontend install-upx certs swagger \
-        test test-race test-integration docker help
+        test test-frontend test-race test-integration docker help
 
 ## Default: build frontend + go binary
 all: clean frontend build
@@ -35,6 +35,10 @@ frontend-dev:
 ## Format, lint and type-check the frontend (Vite+: vp check, then vue-tsc for the .vue files)
 frontend-check:
 	cd frontend && npm run check
+
+## Frontend unit tests (theme files, component color lint, WCAG contrast)
+test-frontend:
+	cd frontend && npm test
 
 ## Development mode helper: starts Vite on :5173 (proxies /api to backend :8080).
 ## Start the Go backend separately in another terminal: go run . serve [--debug]
@@ -134,6 +138,7 @@ help:
 	@echo "  frontend         - Build Vue 3 SPA to web/dist/"
 	@echo "  frontend-dev     - Start Vite dev server (:5173)"
 	@echo "  frontend-check   - Format, lint and type-check the frontend"
+	@echo "  test-frontend    - Run the frontend unit tests (themes, contrast)"
 	@echo "  dev              - Start Vite dev server (:5173) + backend hint"
 	@echo "  build            - Build Go binary (requires web/dist/)"
 	@echo "  build-prod       - Full prod build with UPX compression"

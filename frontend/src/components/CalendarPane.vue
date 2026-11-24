@@ -3,6 +3,7 @@ import { computed, watch, onMounted, ref } from 'vue'
 import Icon from './Icon.vue'
 import { useMailStore } from '../stores/mail'
 import type { CalendarEvent } from '../types'
+import { DEFAULT_CAL_COLOR, inkOn } from '../utils/helpers'
 
 const mail = useMailStore()
 
@@ -176,6 +177,12 @@ async function onDropCell(date: Date, hour?: number) {
   await mail.moveEvent(id, newStart.toISOString(), newEnd.toISOString())
 }
 
+/** Background of an event (its calendar's color) and the ink that is readable on it. */
+function eventColors(ev: CalendarEvent): Record<string, string> {
+  const backgroundColor = ev.color || DEFAULT_CAL_COLOR
+  return { backgroundColor, color: inkOn(backgroundColor) }
+}
+
 function eventStyle(ev: CalendarEvent, view: 'day' | 'week'): Record<string, string> {
   const start = new Date(ev.start_at)
   const end = new Date(ev.end_at)
@@ -187,7 +194,7 @@ function eventStyle(ev: CalendarEvent, view: 'day' | 'week'): Record<string, str
   const top = (minutes / 60) * hourHeight
 
   return {
-    backgroundColor: ev.color || '#3788d8',
+    ...eventColors(ev),
     height: `${Math.max(height - 4, 20)}px`,
     top: `${top + 2}px`,
   }
@@ -211,9 +218,9 @@ watch(
 </script>
 
 <template>
-  <div class="bg-white overflow-hidden flex flex-col">
+  <div class="bg-surface overflow-hidden flex flex-col">
     <!-- Toolbar -->
-    <div class="h-10 px-4 bg-panel-2 border-b border-line flex items-center gap-1.5 flex-shrink-0">
+    <div class="h-10 px-4 bg-surface-2 border-b border-line flex items-center gap-1.5 flex-shrink-0">
       <button class="tbtn" type="button" @click="mail.navigatePrev()">
         <Icon name="chevron-left" :size="13" />
       </button>
@@ -221,7 +228,7 @@ watch(
         <Icon name="chevron-right" :size="13" />
       </button>
       <button class="tbtn" type="button" @click="mail.navigateToday()">Today</button>
-      <span class="text-[15px] font-bold text-accent-bar ml-2.5">{{ viewTitle }}</span>
+      <span class="text-[15px] font-bold text-heading ml-2.5">{{ viewTitle }}</span>
       <div class="ml-auto flex gap-1.5">
         <button
           :class="['tbtn', mail.calView === 'day' ? 'tbtn-primary' : '']"
@@ -273,7 +280,7 @@ watch(
             :key="j"
             class="cal-evt cursor-grab active:cursor-grabbing"
             :class="{ 'opacity-40': dragEventId === ev.id }"
-            :style="{ backgroundColor: ev.color || '#3788d8' }"
+            :style="eventColors(ev)"
             :title="ev.summary"
             draggable="true"
             @dragstart="onDragStart($event, ev)"
@@ -282,7 +289,7 @@ watch(
           >
             {{ ev.summary }}
           </div>
-          <div v-if="cell.events.length > 3" class="cal-evt text-ink-sub" style="background: transparent">
+          <div v-if="cell.events.length > 3" class="cal-evt text-fg-muted" style="background: transparent">
             +{{ cell.events.length - 3 }} more
           </div>
         </div>
@@ -294,7 +301,7 @@ watch(
       <div class="flex-1 overflow-auto">
         <!-- Header row -->
         <div
-          class="grid sticky top-0 bg-panel-2 border-b border-line z-10"
+          class="grid sticky top-0 bg-surface-2 border-b border-line z-10"
           style="grid-template-columns: 50px repeat(7, 1fr)"
         >
           <div class="border-r border-line" />
@@ -310,7 +317,7 @@ watch(
         <!-- Hour rows -->
         <div class="grid" style="grid-template-columns: 50px repeat(7, 1fr)">
           <template v-for="hour in HOURS" :key="hour">
-            <div class="text-[10px] text-ink-sub text-right pr-1.5 border-r border-line h-12 flex items-start pt-0.5">
+            <div class="text-[10px] text-fg-muted text-right pr-1.5 border-r border-line h-12 flex items-start pt-0.5">
               {{ formatHour(hour) }}
             </div>
             <div
@@ -335,7 +342,7 @@ watch(
                 v-for="ev in eventsForDayHour(day, hour)"
                 :key="ev.id"
                 :class="[
-                  'absolute inset-x-0.5 rounded text-[10px] text-white px-1 truncate z-10 cursor-grab active:cursor-grabbing',
+                  'absolute inset-x-0.5 rounded-control text-[10px] px-1 truncate z-10 cursor-grab active:cursor-grabbing',
                   { 'opacity-40': dragEventId === ev.id },
                 ]"
                 :style="eventStyle(ev, 'week')"
@@ -358,7 +365,7 @@ watch(
       <div class="flex-1 overflow-auto">
         <div class="grid" style="grid-template-columns: 50px 1fr">
           <template v-for="hour in HOURS" :key="hour">
-            <div class="text-[10px] text-ink-sub text-right pr-1.5 border-r border-line h-16 flex items-start pt-0.5">
+            <div class="text-[10px] text-fg-muted text-right pr-1.5 border-r border-line h-16 flex items-start pt-0.5">
               {{ formatHour(hour) }}
             </div>
             <div
@@ -381,7 +388,7 @@ watch(
                 v-for="ev in eventsForDayHour(mail.calCurrentDate, hour)"
                 :key="ev.id"
                 :class="[
-                  'absolute inset-x-1 rounded text-xs text-white px-2 py-0.5 truncate z-10 cursor-grab active:cursor-grabbing',
+                  'absolute inset-x-1 rounded-control text-xs px-2 py-0.5 truncate z-10 cursor-grab active:cursor-grabbing',
                   { 'opacity-40': dragEventId === ev.id },
                 ]"
                 :style="eventStyle(ev, 'day')"

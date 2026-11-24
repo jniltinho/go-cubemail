@@ -8,6 +8,7 @@
     "build": "vp build",
     "check": "vp check && vue-tsc --noEmit",
     "fmt": "vp fmt",
+    "test": "vp test run",
     "type-check": "vue-tsc --noEmit",
     "preview": "vp preview"
   },

@@ -10,6 +10,7 @@
 import { computed } from 'vue'
 import { useMailStore } from '../stores/mail'
 import { extIcon, extColor } from '../utils/helpers'
+import { activeTheme, roleValue } from '../utils/theme'
 import Icon from './Icon.vue'
 import SpinnerIcon from './SpinnerIcon.vue'
 import EnvelopeIllustration from './EnvelopeIllustration.vue'
@@ -84,17 +85,24 @@ function formatFullDate(raw) {
 /**
  * Sandboxes the raw HTML body inside a standardized document block for
  * rendering secure and responsive content in the iframe.
+ * The iframe does not inherit the page's roles, so the paper roles are written into it as resolved values and
+ * recomputed when the theme changes.
  */
 const srcdoc = computed(() => {
   const html = m.value?.htmlBody
   if (!html) return ''
+  void activeTheme.value
+  const paper = roleValue('--color-paper')
+  const ink = roleValue('--color-on-paper')
+  const link = roleValue('--color-paper-link')
+  const font = roleValue('--font-paper')
   return `<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8">
 <style>
-  html,body{margin:0;padding:12px 16px;font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;font-size:13.5px;color:#1a1f2a;line-height:1.6;background:#fff}
+  html,body{margin:0;padding:12px 16px;font-family:${font};font-size:13.5px;color:${ink};line-height:1.6;background:${paper}}
   img{max-width:100%;height:auto}
-  a{color:#2A5599}
+  a{color:${link}}
   pre{white-space:pre-wrap;word-break:break-all}
   table{border-collapse:collapse}
 </style>
@@ -103,9 +111,9 @@ const srcdoc = computed(() => {
 </script>
 
 <template>
-  <div class="relative bg-white flex flex-col min-h-0">
+  <div class="relative bg-surface flex flex-col min-h-0">
     <!-- Empty state -->
-    <div v-if="!m" class="flex-1 flex flex-col items-center justify-center bg-panel-2">
+    <div v-if="!m" class="flex-1 flex flex-col items-center justify-center bg-surface-2">
       <div class="es-root">
         <EnvelopeIllustration class="es-icon" />
         <p class="es-title">Select an item to read</p>
@@ -115,32 +123,35 @@ const srcdoc = computed(() => {
 
     <template v-else>
       <!-- Body loading overlay -->
-      <div v-if="bodyLoading" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 gap-3">
+      <div
+        v-if="bodyLoading"
+        class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-surface/80 gap-3"
+      >
         <SpinnerIcon />
-        <span class="text-[12px] text-ink-mute tracking-wide">Loading message…</span>
+        <span class="text-[12px] text-fg-subtle tracking-wide">Loading message…</span>
       </div>
 
       <!-- Message header -->
-      <div class="py-3.5 px-4 border-b border-line bg-white flex-shrink-0">
-        <h1 class="m-0 mb-2.5 text-[17px] text-accent-bar font-bold tracking-tight leading-snug">
+      <div class="py-3.5 px-4 border-b border-line bg-surface flex-shrink-0">
+        <h1 class="m-0 mb-2.5 text-[17px] text-heading font-bold tracking-tight leading-snug">
           {{ m.subject }}
         </h1>
         <div class="flex items-start gap-3">
           <!-- Sender avatar -->
-          <div class="w-9 h-9 bg-accent text-white grid place-items-center flex-shrink-0 mt-0.5">
+          <div class="w-9 h-9 bg-accent text-on-accent grid place-items-center flex-shrink-0 mt-0.5">
             <Icon name="user" :size="34" />
           </div>
           <!-- From / To -->
           <div class="flex-1 min-w-0 text-[13px] leading-snug">
             <div>
-              <b class="text-[#0E1A2E]">{{ m.from?.name }}</b>
-              <span class="text-ink-mute text-[12px] ml-1">&lt;{{ m.from?.addr }}&gt;</span>
+              <b class="text-fg-strong">{{ m.from?.name }}</b>
+              <span class="text-fg-subtle text-[12px] ml-1">&lt;{{ m.from?.addr }}&gt;</span>
             </div>
-            <div class="text-[12px] text-ink-sub mt-0.5">to <b class="text-ink">{{ m.to }}</b></div>
+            <div class="text-[12px] text-fg-muted mt-0.5">to <b class="text-fg">{{ m.to }}</b></div>
           </div>
           <!-- Date + actions -->
           <div class="flex-shrink-0 text-right">
-            <div class="text-[12px] text-ink-sub mb-1.5">
+            <div class="text-[12px] text-fg-muted mb-1.5">
               {{ formatFullDate(m.rawDate || m.fullDate) }}
             </div>
             <div class="flex gap-1 justify-end flex-wrap">
@@ -168,54 +179,56 @@ const srcdoc = computed(() => {
       </div>
 
       <!-- Calendar invitation bar -->
-      <div v-if="m.isCalendarRequest && m.calendarInfo" class="flex-shrink-0 border-b border-line bg-[#f4f7fc]">
+      <div v-if="m.isCalendarRequest && m.calendarInfo" class="flex-shrink-0 border-b border-line bg-surface-2">
         <!-- Event summary row -->
-        <div class="px-4 pt-3 pb-2 flex flex-wrap gap-x-5 gap-y-0.5 text-[12.5px] text-ink">
+        <div class="px-4 pt-3 pb-2 flex flex-wrap gap-x-5 gap-y-0.5 text-[12.5px] text-fg">
           <span v-if="m.calendarInfo.summary" class="font-semibold text-accent">
             {{ m.calendarInfo.summary }}
           </span>
-          <span v-if="m.calendarInfo.start_time" class="text-ink-sub">
+          <span v-if="m.calendarInfo.start_time" class="text-fg-muted">
             {{ m.calendarInfo.start_time
             }}<template v-if="m.calendarInfo.end_time"> — {{ m.calendarInfo.end_time }}</template>
           </span>
-          <span v-if="m.calendarInfo.location" class="text-ink-sub">
+          <span v-if="m.calendarInfo.location" class="text-fg-muted">
             <Icon name="map-pin" :size="11" class="inline mr-0.5" />{{ m.calendarInfo.location }}
           </span>
-          <span v-if="m.calendarInfo.organizer" class="text-ink-mute"> Organizer: {{ m.calendarInfo.organizer }} </span>
+          <span v-if="m.calendarInfo.organizer" class="text-fg-subtle">
+            Organizer: {{ m.calendarInfo.organizer }}
+          </span>
         </div>
         <!-- Action buttons: RSVP for REQUEST, remove-only for CANCEL -->
         <div class="px-4 pb-3 flex flex-wrap gap-2">
           <template v-if="m.calendarInfo.method !== 'CANCEL'">
             <button
-              class="px-3 py-1 text-[12px] font-semibold bg-[#1B3A6B] text-white hover:bg-[#14305a] transition-colors"
+              class="px-3 py-1 text-[12px] font-semibold rounded-control bg-action text-on-action hover:bg-action-hover transition-colors"
               type="button"
               @click="mail.calendarRsvp('ACCEPTED')"
             >
               ACCEPT
             </button>
             <button
-              class="px-3 py-1 text-[12px] font-semibold bg-[#e05a2b] text-white hover:bg-[#c44d22] transition-colors"
+              class="px-3 py-1 text-[12px] font-semibold rounded-control bg-danger text-on-danger hover:opacity-90 transition-colors"
               type="button"
               @click="mail.calendarRsvp('DECLINED')"
             >
               DECLINE
             </button>
             <button
-              class="px-3 py-1 text-[12px] font-semibold border border-[#bbb] bg-white text-ink hover:bg-panel-2 transition-colors"
+              class="px-3 py-1 text-[12px] font-semibold rounded-control border border-action-2-line bg-action-2 text-on-action-2 hover:bg-action-2-hover transition-colors"
               type="button"
               @click="mail.calendarRsvp('TENTATIVE')"
             >
               TENTATIVE
             </button>
             <button
-              class="px-3 py-1 text-[12px] font-semibold border border-[#bbb] bg-white text-ink hover:bg-panel-2 transition-colors"
+              class="px-3 py-1 text-[12px] font-semibold rounded-control border border-action-2-line bg-action-2 text-on-action-2 hover:bg-action-2-hover transition-colors"
               type="button"
               @click="mail.calendarDelegate()"
             >
               DELEGATE ...
             </button>
             <button
-              class="px-3 py-1 text-[12px] font-semibold border border-[#bbb] bg-white text-ink hover:bg-panel-2 transition-colors"
+              class="px-3 py-1 text-[12px] font-semibold rounded-control border border-action-2-line bg-action-2 text-on-action-2 hover:bg-action-2-hover transition-colors"
               type="button"
               @click="mail.calendarAddToCalendar()"
             >
@@ -224,7 +237,7 @@ const srcdoc = computed(() => {
           </template>
           <template v-else>
             <button
-              class="px-3 py-1 text-[12px] font-semibold border border-[#bbb] bg-white text-ink hover:bg-panel-2 transition-colors"
+              class="px-3 py-1 text-[12px] font-semibold rounded-control border border-action-2-line bg-action-2 text-on-action-2 hover:bg-action-2-hover transition-colors"
               type="button"
               @click="mail.calendarAddToCalendar()"
             >
@@ -237,10 +250,10 @@ const srcdoc = computed(() => {
       <!-- Attachments bar -->
       <div
         v-if="m.attachments?.length"
-        class="flex flex-wrap gap-1.5 px-4 py-2 bg-panel-2 border-b border-line-soft flex-shrink-0"
+        class="flex flex-wrap gap-1.5 px-4 py-2 bg-surface-2 border-b border-line-soft flex-shrink-0"
       >
         <span
-          class="text-[10.5px] uppercase text-ink-mute tracking-wider font-semibold self-center mr-1 flex items-center gap-1"
+          class="text-[10.5px] uppercase text-fg-subtle tracking-wider font-semibold self-center mr-1 flex items-center gap-1"
         >
           <Icon name="paperclip" :size="11" />
           {{ m.attachments.length }} attachment{{ m.attachments.length > 1 ? 's' : '' }}
@@ -250,12 +263,12 @@ const srcdoc = computed(() => {
           :key="i"
           :href="`/api/v1/mail/${m.folder}/${m.id}/attachment/${a.part ?? i}`"
           target="_blank"
-          class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white border border-line text-[11px] text-ink no-underline hover:border-accent-2 hover:bg-accent-soft"
+          class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-surface border border-line text-[11px] text-fg no-underline hover:border-action-2-hover-line hover:bg-accent-soft"
         >
           <Icon :name="extIcon(a.ext)" :size="11" :class="extColor(a.ext)" />
           <span class="font-medium max-w-[110px] overflow-hidden text-ellipsis whitespace-nowrap">{{ a.name }}</span>
-          <span v-if="a.size" class="text-ink-mute text-[10px]">· {{ a.size }}</span>
-          <Icon name="download" :size="10" class="text-accent-2" />
+          <span v-if="a.size" class="text-fg-subtle text-[10px]">· {{ a.size }}</span>
+          <Icon name="download" :size="10" class="text-link" />
         </a>
       </div>
 
@@ -271,43 +284,43 @@ const srcdoc = computed(() => {
       <!-- Body: cancellation detail card -->
       <div
         v-else-if="m.isCalendarRequest && m.calendarInfo?.method === 'CANCEL' && !m.body?.length"
-        class="flex-1 overflow-auto scroll-y py-5 px-5 text-[13px] text-ink"
+        class="flex-1 overflow-auto scroll-y py-5 px-5 text-[13px] text-fg"
       >
         <p class="mb-5 text-[13.5px]">Your invitation or the whole event was canceled.</p>
 
         <div v-if="m.calendarInfo.start_time" class="mb-4">
-          <div class="text-[10.5px] uppercase tracking-wider text-ink-mute font-semibold mb-0.5">Time</div>
+          <div class="text-[10.5px] uppercase tracking-wider text-fg-subtle font-semibold mb-0.5">Time</div>
           <div>{{ formatCalDateTime(m.calendarInfo.start_time, m.calendarInfo.end_time) }}</div>
         </div>
 
         <div v-if="m.calendarInfo.location" class="mb-4">
-          <div class="text-[10.5px] uppercase tracking-wider text-ink-mute font-semibold mb-0.5">Location</div>
+          <div class="text-[10.5px] uppercase tracking-wider text-fg-subtle font-semibold mb-0.5">Location</div>
           <div>{{ m.calendarInfo.location }}</div>
         </div>
 
         <div v-if="m.calendarInfo.attendees?.length">
-          <div class="text-[10.5px] uppercase tracking-wider text-ink-mute font-semibold mb-1.5">Attendees</div>
+          <div class="text-[10.5px] uppercase tracking-wider text-fg-subtle font-semibold mb-1.5">Attendees</div>
           <div class="flex flex-wrap gap-1.5">
             <span
               v-for="a in m.calendarInfo.attendees"
               :key="a"
-              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f3f4f6] border border-[#e5e7eb] text-[11.5px] text-ink"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-control bg-surface-2 border border-line-soft text-[11.5px] text-fg"
             >
-              <Icon name="user" :size="12" class="text-ink-mute" />{{ a }}
+              <Icon name="user" :size="12" class="text-fg-subtle" />{{ a }}
             </span>
           </div>
         </div>
       </div>
 
       <!-- Body: plain text fallback -->
-      <div v-else class="flex-1 overflow-auto scroll-y py-4 px-5 text-[13.5px] leading-relaxed text-ink">
-        <p v-if="!m.body?.length" class="text-ink-mute text-[12px]">(empty message)</p>
+      <div v-else class="flex-1 overflow-auto scroll-y py-4 px-5 text-[13.5px] leading-relaxed text-fg">
+        <p v-if="!m.body?.length" class="text-fg-subtle text-[12px]">(empty message)</p>
         <p v-for="(p, i) in m.body" :key="i" class="m-0 mb-3 last:mb-0">{{ p }}</p>
         <div
           v-if="m.signature"
-          class="mt-5 pt-3 border-t border-dashed border-line text-[12px] text-ink-sub leading-snug"
+          class="mt-5 pt-3 border-t border-dashed border-line text-[12px] text-fg-muted leading-snug"
         >
-          <b class="text-ink">{{ m.signature.name }}</b><br />{{ m.signature.role }}
+          <b class="text-fg">{{ m.signature.name }}</b><br />{{ m.signature.role }}
         </div>
       </div>
     </template>
@@ -329,13 +342,13 @@ const srcdoc = computed(() => {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: #1a1f2a;
+  color: var(--color-fg);
   letter-spacing: -0.2px;
 }
 .es-sub {
   margin: 4px 0 0;
   font-size: 12.5px;
-  color: #9ca3af;
+  color: var(--color-fg-subtle);
 }
 @keyframes es-float {
   0%,

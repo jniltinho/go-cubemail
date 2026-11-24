@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   signature_pos: 'below',
   oof_enabled: false,
   oof_message: '',
+  theme: '',
 }
 
 export function useSettingsActions({ auth, toast, identities, settings }: SettingsActionsContext) {
@@ -30,6 +31,8 @@ export function useSettingsActions({ auth, toast, identities, settings }: Settin
     try {
       const res = await axios.get(`${API_BASE}/settings`)
       settings.value = res.data as UserSettings
+      // the user's own theme replaces the one this browser remembered
+      auth.setTheme(settings.value.theme || '')
     } catch {
       settings.value = { ...DEFAULT_SETTINGS }
     }
@@ -42,6 +45,20 @@ export function useSettingsActions({ auth, toast, identities, settings }: Settin
       toast.success('Settings saved.')
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Failed to save settings.')
+    }
+  }
+
+  /**
+   * Saves the theme choice ('' follows the server default) and reports whether the server accepted it, so the
+   * caller can put the previous theme back. Unlike saveSettings it shows no toast.
+   */
+  async function saveTheme(id: string): Promise<boolean> {
+    try {
+      const res = await axios.put(`${API_BASE}/settings`, { theme: id })
+      settings.value = res.data as UserSettings
+      return true
+    } catch {
+      return false
     }
   }
 
@@ -98,6 +115,7 @@ export function useSettingsActions({ auth, toast, identities, settings }: Settin
   return {
     fetchSettings,
     saveSettings,
+    saveTheme,
     fetchIdentities,
     createIdentity,
     updateIdentity,

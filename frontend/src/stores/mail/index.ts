@@ -7,11 +7,11 @@
 
 import axios from 'axios'
 import { defineStore } from 'pinia'
-import { ref, computed, watch, watchEffect } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAuthStore } from '../auth'
 import { useDialogStore } from '../dialog'
 import { useToastStore } from '../toast'
-import { applyAccent, buildCalCells, parseMailDate } from '../../utils/helpers'
+import { buildCalCells, parseMailDate } from '../../utils/helpers'
 import { CAL_EVENTS } from './mockData'
 import { useMailApi } from './api'
 import { useFolderActions } from './folderActions'
@@ -42,8 +42,6 @@ export const useMailStore = defineStore('mail', () => {
 
   // ── State ──────────────────────────────────────────────────────────────────
 
-  /** Primary hex layout theme color key (defaults to deep navy blue) */
-  const accent = ref('#1B3A6B')
   /** True if background loading API queries are active */
   const loading = ref(false)
   /** True while the selected message body is being fetched from the server */
@@ -102,12 +100,6 @@ export const useMailStore = defineStore('mail', () => {
   const sortBy = ref<'date' | 'from' | 'subject' | 'size'>('date')
   /** Active sort direction for the mail list */
   const sortDir = ref<'asc' | 'desc'>('desc')
-
-  /**
-   * Watches base layout theme accent hex modifications to automatically
-   * recalculate and inject dynamic CSS variables to the document root element.
-   */
-  watchEffect(() => applyAccent(accent.value))
 
   // ── Computed ───────────────────────────────────────────────────────────────
 
@@ -348,7 +340,6 @@ export const useMailStore = defineStore('mail', () => {
   // ── Return ─────────────────────────────────────────────────────────────────
   return {
     // state
-    accent,
     loading,
     bodyLoading,
     mails,

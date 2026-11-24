@@ -7,6 +7,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
+import { applyTheme, cachedThemeId, resolveTheme, type ThemeInfo } from '../utils/theme'
 
 /**
  * Global authentication store (`useAuthStore`).
@@ -22,6 +23,9 @@ export const useAuthStore = defineStore('auth', () => {
   const datetimeFormat = ref('02/01/2006 15:04')
   /** Active backend application version string */
   const appVersion = ref('')
+  /** Theme registry and the server's default theme, from GET /themes */
+  const themes = ref<ThemeInfo[]>([])
+  const defaultTheme = ref('larry')
 
   /** Username field model in the login form view */
   const loginUser = ref('')
@@ -54,6 +58,12 @@ export const useAuthStore = defineStore('auth', () => {
    * Verifies the active user session, sets global Axios CSRF cookie interceptors,
    * and loads current app version values.
    */
+  /** Applies the theme with this id; '' or an id that is not registered means the server default. */
+  function setTheme(id: string): void {
+    const theme = resolveTheme(id, themes.value, defaultTheme.value)
+    if (theme) applyTheme(theme)
+  }
+
   async function checkSession(): Promise<void> {
     axios.defaults.xsrfCookieName = 'csrf_token'
     axios.defaults.xsrfHeaderName = 'X-CSRF-Token'
@@ -63,10 +73,17 @@ export const useAuthStore = defineStore('auth', () => {
       return cfg
     })
     try {
-      const [meRes, versionRes] = await Promise.allSettled([
+      const [meRes, versionRes, themesRes] = await Promise.allSettled([
         axios.get(`${API_BASE}/auth/me`),
         axios.get(`${API_BASE}/version`),
+        axios.get(`${API_BASE}/themes`),
       ])
+      if (themesRes.status === 'fulfilled') {
+        themes.value = themesRes.value.data.themes || []
+        defaultTheme.value = themesRes.value.data.default || 'larry'
+        // until a user signs in: the theme this browser remembers, else the server default
+        setTheme(cachedThemeId())
+      }
       if (versionRes.status === 'fulfilled') {
         appVersion.value = versionRes.value.data.version || ''
       }
@@ -152,6 +169,9 @@ export const useAuthStore = defineStore('auth', () => {
     isApiOnline,
     currentUser,
     appVersion,
+    themes,
+    defaultTheme,
+    setTheme,
     loginUser,
     loginPwd,
     loginBusy,

@@ -271,11 +271,11 @@ function backdrop(e) {
   <div class="modal-wrap" @click="backdrop">
     <div class="composer-shell" role="dialog" aria-label="New message">
       <!-- Header -->
-      <div class="bg-accent-bar text-white py-2 px-3 flex items-center gap-2 text-[13px] font-semibold">
+      <div class="on-header bg-header text-on-header py-2 px-3 flex items-center gap-2 text-[13px] font-semibold">
         <Icon name="pencil-line" :size="14" />
         <span>{{ prefill?.subj ? 'Re: ' + (subj || 'Message') : 'New Message' }}</span>
         <button
-          class="ml-auto cursor-pointer w-[22px] h-[22px] grid place-items-center bg-transparent border border-[#4A6FA0] text-white hover:bg-[#2A4978] text-[11px]"
+          class="ml-auto cursor-pointer w-[22px] h-[22px] grid place-items-center bg-transparent border border-header-control-line text-on-header hover:bg-header-hover text-[11px]"
           type="button"
           @click="$emit('close')"
         >
@@ -287,7 +287,7 @@ function backdrop(e) {
       <div v-if="mailStore.identities.length > 1" class="composer-field">
         <label>From</label>
         <select
-          class="border-0 bg-transparent text-[13px] text-ink focus:outline-none w-full"
+          class="border-0 bg-transparent text-[13px] text-fg w-full"
           @change="
             (e) => {
               const sel = mailStore.identities.find((i) => String(i.id) === (e.target as HTMLSelectElement).value)
@@ -303,7 +303,7 @@ function backdrop(e) {
       </div>
       <div v-else-if="activeIdentity" class="composer-field">
         <label>From</label>
-        <span class="text-[13px] text-ink-sub">
+        <span class="text-[13px] text-fg-muted">
           {{
             activeIdentity.display_name
               ? activeIdentity.display_name + ' <' + activeIdentity.email + '>'
@@ -325,20 +325,20 @@ function backdrop(e) {
         />
         <div
           v-if="showSuggestions && suggestions.length"
-          class="absolute left-0 z-50 bg-white border border-line shadow-md py-1 w-full"
+          class="absolute left-0 z-50 bg-surface border border-line sh-menu rounded-surface py-1 w-full"
           style="top: 100%"
         >
           <button
             v-for="(c, i) in suggestions"
             :key="c.email"
             type="button"
-            class="w-full text-left px-3 py-1.5 flex items-center gap-2.5 hover:bg-accent hover:text-white"
-            :class="i === activeSuggestion ? 'bg-accent text-white' : 'text-ink'"
+            class="w-full text-left px-3 py-1.5 flex items-center gap-2.5 hover:bg-action hover:text-on-action"
+            :class="i === activeSuggestion ? 'bg-action text-on-action' : 'text-fg'"
             @mousedown.prevent="selectSuggestion(c)"
           >
             <span
-              class="w-[26px] h-[26px] bg-accent text-white grid place-items-center font-bold text-[11px] flex-shrink-0 rounded-sm"
-              :class="i === activeSuggestion ? 'bg-white !text-accent' : ''"
+              class="w-[26px] h-[26px] bg-accent text-on-accent grid place-items-center font-bold text-[11px] flex-shrink-0 rounded-control"
+              :class="i === activeSuggestion ? 'bg-surface !text-accent' : ''"
             >
               {{ c.name.slice(0, 2).toUpperCase() }}
             </span>
@@ -353,8 +353,8 @@ function backdrop(e) {
         <label>Cc</label>
         <input v-model="cc" />
       </div>
-      <div v-else class="py-1 px-2.5 border-b border-line-soft bg-panel-2">
-        <a href="#" @click.prevent="showCc = true" class="text-[11px] text-accent-2 no-underline hover:underline"
+      <div v-else class="py-1 px-2.5 border-b border-line-soft bg-surface-2">
+        <a href="#" @click.prevent="showCc = true" class="text-[11px] text-link no-underline hover:underline"
           >+ Add Cc / Bcc</a
         >
       </div>
@@ -366,9 +366,9 @@ function backdrop(e) {
       <RichTextEditor v-model="body" placeholder="Write your message…" :min-height="433" />
 
       <!-- Attachments bar -->
-      <div v-if="attachments.length" class="flex flex-wrap gap-1.5 px-3 py-2 bg-panel-2 border-t border-line-soft">
+      <div v-if="attachments.length" class="flex flex-wrap gap-1.5 px-3 py-2 bg-surface-2 border-t border-line-soft">
         <span
-          class="text-[10.5px] uppercase text-ink-mute tracking-wider font-semibold self-center mr-1 flex items-center gap-1"
+          class="text-[10.5px] uppercase text-fg-subtle tracking-wider font-semibold self-center mr-1 flex items-center gap-1"
         >
           <Icon name="paperclip" :size="11" />
           {{ attachments.length }} attachment{{ attachments.length > 1 ? 's' : '' }}
@@ -376,14 +376,14 @@ function backdrop(e) {
         <div
           v-for="(f, i) in attachments"
           :key="i"
-          class="inline-flex items-center gap-1.5 px-2 py-1 bg-white border border-line text-[11.5px] text-ink"
+          class="inline-flex items-center gap-1.5 px-2 py-1 bg-surface border border-line text-[11.5px] text-fg"
         >
           <Icon :name="extIcon(fileExt(f.name))" :size="12" :class="extColor(fileExt(f.name))" />
           <span class="font-medium max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{{ f.name }}</span>
-          <span class="text-ink-mute text-[10.5px]">· {{ fmtSize(f.size) }}</span>
+          <span class="text-fg-subtle text-[10.5px]">· {{ fmtSize(f.size) }}</span>
           <button
             type="button"
-            class="ml-0.5 text-ink-mute hover:text-[#B22B2B] cursor-pointer bg-transparent border-0 p-0 leading-none"
+            class="ml-0.5 text-fg-subtle hover:text-danger cursor-pointer bg-transparent border-0 p-0 leading-none"
             @click="removeAttachment(i)"
           >
             <Icon name="x" :size="11" />
@@ -395,12 +395,12 @@ function backdrop(e) {
       <input ref="fileInputRef" type="file" multiple class="hidden" @change="onFilesSelected" />
 
       <!-- Send error -->
-      <div v-if="sendError" class="px-3 py-1.5 bg-[#FFF0F0] border-t border-[#F5C0C0] text-[11.5px] text-[#B22B2B]">
+      <div v-if="sendError" class="px-3 py-1.5 bg-err-soft border-t border-err-line text-[11.5px] text-on-err-soft">
         {{ sendError }}
       </div>
 
       <!-- Footer actions -->
-      <div class="py-2 px-2.5 bg-panel-2 border-t border-line flex items-center gap-1.5">
+      <div class="py-2 px-2.5 bg-surface-2 border-t border-line flex items-center gap-1.5">
         <button class="tbtn" type="button" @click="openFilePicker"><Icon name="paperclip" :size="13" /> Attach</button>
         <div class="ml-auto flex gap-1.5">
           <button class="tbtn" type="button" :disabled="sending" @click="$emit('close')">Discard</button>

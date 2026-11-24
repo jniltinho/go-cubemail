@@ -132,15 +132,16 @@ function onInputKey(e: KeyboardEvent) {
   z-index: 200;
   display: grid;
   place-items: center;
-  background: rgba(11, 31, 64, 0.4);
+  background: var(--color-overlay);
 }
 
 .dlg-shell {
   width: 380px;
   max-width: calc(100vw - 32px);
-  background: var(--color-panel);
-  border: 1px solid var(--accent-bar);
-  box-shadow: 0 8px 32px rgba(11, 31, 64, 0.22);
+  background: var(--color-surface);
+  border: 1px solid var(--color-popup-line);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--shadow-dialog);
   display: flex;
   flex-direction: column;
 }
@@ -154,7 +155,7 @@ function onInputKey(e: KeyboardEvent) {
 
 .dlg-icon {
   flex-shrink: 0;
-  color: var(--accent-2);
+  color: var(--color-link);
   margin-top: 1px;
 }
 .dlg-icon--danger {
@@ -164,7 +165,7 @@ function onInputKey(e: KeyboardEvent) {
 .dlg-message {
   margin: 0;
   font-size: 13px;
-  color: var(--color-ink);
+  color: var(--color-fg);
   line-height: 1.5;
   word-break: break-word;
 }
@@ -177,15 +178,12 @@ function onInputKey(e: KeyboardEvent) {
   width: 100%;
   height: 30px;
   padding: 0 8px;
-  border: 1px solid var(--color-line);
-  background: white;
+  border: 1px solid var(--color-field-line);
+  border-radius: var(--radius-control);
+  background: var(--color-field);
   font-size: 13px;
-  color: var(--color-ink);
+  color: var(--color-on-field);
   outline: none;
-}
-.dlg-input:focus {
-  border-color: var(--accent-2);
-  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .dlg-footer {
@@ -194,7 +192,7 @@ function onInputKey(e: KeyboardEvent) {
   gap: 8px;
   padding: 12px 20px;
   border-top: 1px solid var(--color-line-soft);
-  background: var(--color-panel-2);
+  background: var(--color-surface-2);
 }
 
 .dlg-btn {
@@ -203,22 +201,23 @@ function onInputKey(e: KeyboardEvent) {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  border: 1px solid var(--color-line);
-  background: white;
-  color: var(--color-ink);
+  border: 1px solid var(--color-action-2-line);
+  border-radius: var(--radius-control);
+  background: var(--color-action-2);
+  color: var(--color-on-action-2);
 }
 .dlg-btn:hover {
-  background: var(--color-panel-2);
+  background: var(--color-action-2-hover);
 }
 .dlg-btn--ok {
-  background: var(--accent);
-  border-color: var(--accent-bar);
-  color: white;
+  background: var(--color-action);
+  border-color: var(--color-action-line);
+  color: var(--color-on-action);
 }
 .dlg-btn--ok:hover {
-  background: var(--accent-2);
+  background: var(--color-action-hover);
 }
 .dlg-btn--cancel {
-  background: white;
+  background: var(--color-action-2);
 }
 </style>

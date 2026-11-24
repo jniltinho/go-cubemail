@@ -211,6 +211,8 @@ export interface UserSettings {
   signature_pos: string
   oof_enabled: boolean
   oof_message: string
+  /** Id of the chosen theme; '' follows the server default */
+  theme: string
 }
 
 /**

@@ -2,10 +2,15 @@
 import { ref, reactive, watch, computed } from 'vue'
 import Icon from './Icon.vue'
 import { useMailStore } from '../stores/mail'
+import { useAuthStore } from '../stores/auth'
+import { useToastStore } from '../stores/toast'
+import { activeTheme } from '../utils/theme'
 import { initWebPush } from '../utils/webpush'
 import type { Identity, UserSettings } from '../types'
 
 const mail = useMailStore()
+const auth = useAuthStore()
+const toast = useToastStore()
 
 // ── Notification state & actions ───────────────────────────────────────────
 const notificationPermission = ref(typeof Notification !== 'undefined' ? Notification.permission : 'default')
@@ -33,7 +38,7 @@ async function requestNotificationPermission() {
   }
 }
 
-type Tab = 'identities' | 'preferences'
+type Tab = 'identities' | 'preferences' | 'appearance'
 const activeTab = ref<Tab>('identities')
 
 // ── Identity editor state ──────────────────────────────────────────────────
@@ -99,6 +104,7 @@ const prefs = reactive<UserSettings>({
   signature_pos: 'below',
   oof_enabled: false,
   oof_message: '',
+  theme: '',
 })
 const savingPrefs = ref(false)
 
@@ -143,6 +149,37 @@ const DATE_FORMATS = [
   { value: '02 Jan 2006 15:04', label: 'DD Mon YYYY HH:MM (e.g. 30 May 2026 14:30)' },
 ]
 
+// ── Appearance ─────────────────────────────────────────────────────────────
+/** The saved choice; '' follows the server default */
+const savedTheme = computed(() => mail.settings?.theme ?? '')
+/** The entry marked in the list; bound to the radios so a failed save can put the mark back */
+const pickedTheme = ref(savedTheme.value)
+watch(savedTheme, (id) => (pickedTheme.value = id))
+const savingTheme = ref(false)
+
+const themeOptions = computed(() => {
+  const fallback = auth.themes.find((t) => t.id === auth.defaultTheme)
+  return [
+    { id: '', label: `Use the server default${fallback ? ` (${fallback.label})` : ''}`, scheme: '' },
+    ...auth.themes,
+  ]
+})
+
+/** Applies the theme at once and saves it; if the save fails the previous theme comes back. */
+async function chooseTheme(id: string) {
+  if (savingTheme.value || id === savedTheme.value) return
+  const previous = activeTheme.value
+  savingTheme.value = true
+  auth.setTheme(id)
+  const saved = await mail.saveTheme(id)
+  if (!saved) {
+    auth.setTheme(previous)
+    pickedTheme.value = savedTheme.value
+    toast.error('Could not save the theme. The previous one was restored.')
+  }
+  savingTheme.value = false
+}
+
 async function savePrefs() {
   savingPrefs.value = true
   try {
@@ -154,10 +191,10 @@ async function savePrefs() {
 </script>
 
 <template>
-  <div class="bg-white flex flex-col overflow-hidden" style="grid-column: 2/4">
+  <div class="bg-surface flex flex-col overflow-hidden" style="grid-column: 2/4">
     <!-- Header -->
-    <div class="h-10 px-4 bg-panel-2 border-b border-line flex items-center gap-4 flex-shrink-0">
-      <span class="font-semibold text-ink text-[13px]">Settings</span>
+    <div class="h-10 px-4 bg-surface-2 border-b border-line flex items-center gap-4 flex-shrink-0">
+      <span class="font-semibold text-fg text-[13px]">Settings</span>
       <div class="flex gap-1 ml-4">
         <button
           :class="['tbtn text-[12px]', activeTab === 'identities' ? 'tbtn-primary' : '']"
@@ -171,6 +208,12 @@ async function savePrefs() {
         >
           Preferences
         </button>
+        <button
+          :class="['tbtn text-[12px]', activeTab === 'appearance' ? 'tbtn-primary' : '']"
+          @click="activeTab = 'appearance'"
+        >
+          Appearance
+        </button>
       </div>
     </div>
 
@@ -178,7 +221,7 @@ async function savePrefs() {
     <div v-if="activeTab === 'identities'" class="flex-1 overflow-y-auto p-5">
       <div class="max-w-2xl">
         <div class="flex items-center justify-between mb-4">
-          <p class="text-[13px] text-ink-sub">
+          <p class="text-[13px] text-fg-muted">
             Identities define your "From:" name and email address when composing messages.
           </p>
           <button class="tbtn tbtn-primary text-[12px]" @click="openNewIdentity()">
@@ -187,8 +230,8 @@ async function savePrefs() {
         </div>
 
         <!-- Identity list -->
-        <div class="border border-line rounded overflow-hidden">
-          <div v-if="mail.identities.length === 0" class="px-4 py-6 text-center text-[13px] text-ink-sub italic">
+        <div class="border border-line rounded-surface overflow-hidden">
+          <div v-if="mail.identities.length === 0" class="px-4 py-6 text-center text-[13px] text-fg-muted italic">
             No identities yet. Add one to customise your "From:" name.
           </div>
           <div
@@ -205,17 +248,17 @@ async function savePrefs() {
               <Icon
                 :name="id.is_default ? 'star' : 'star'"
                 :size="14"
-                :class="id.is_default ? 'text-yellow-400 fill-yellow-400' : 'text-ink-sub'"
+                :class="id.is_default ? 'text-star fill-star' : 'text-fg-muted'"
               />
             </button>
 
             <!-- Info -->
             <div class="flex-1 min-w-0">
-              <div class="text-[13px] font-medium text-ink truncate">
+              <div class="text-[13px] font-medium text-fg truncate">
                 {{ id.display_name || id.email }}
-                <span v-if="id.display_name" class="text-ink-sub font-normal ml-1">&lt;{{ id.email }}&gt;</span>
+                <span v-if="id.display_name" class="text-fg-muted font-normal ml-1">&lt;{{ id.email }}&gt;</span>
               </div>
-              <div v-if="id.reply_to" class="text-[11px] text-ink-sub truncate">Reply-To: {{ id.reply_to }}</div>
+              <div v-if="id.reply_to" class="text-[11px] text-fg-muted truncate">Reply-To: {{ id.reply_to }}</div>
               <div v-if="id.is_default" class="text-[11px] text-accent font-semibold mt-0.5">Default</div>
             </div>
 
@@ -225,7 +268,7 @@ async function savePrefs() {
                 <Icon name="pencil" :size="12" />
               </button>
               <button
-                class="tbtn text-[11px] py-0.5 text-red-500 hover:bg-red-50"
+                class="tbtn tbtn-danger text-[11px] py-0.5 hover:bg-err-soft"
                 :disabled="id.is_default && mail.identities.length === 1"
                 @click="id.id && mail.deleteIdentity(id.id)"
               >
@@ -238,14 +281,14 @@ async function savePrefs() {
     </div>
 
     <!-- ── PREFERENCES TAB ─────────────────────────────────────────────── -->
-    <div v-else class="flex-1 overflow-y-auto p-5">
+    <div v-else-if="activeTab === 'preferences'" class="flex-1 overflow-y-auto p-5">
       <div class="max-w-lg space-y-5">
         <!-- Rows per page -->
         <div>
-          <label class="block text-[12px] font-semibold text-ink mb-1">Messages per page</label>
+          <label class="block text-[12px] font-semibold text-fg mb-1">Messages per page</label>
           <select
             v-model.number="prefs.rows_per_page"
-            class="border border-line rounded px-2.5 py-1.5 text-[13px] w-full focus:outline-none focus:ring-1 focus:ring-accent"
+            class="border border-line rounded-surface px-2.5 py-1.5 text-[13px] w-full"
           >
             <option :value="25">25</option>
             <option :value="50">50</option>
@@ -256,21 +299,18 @@ async function savePrefs() {
 
         <!-- Timezone -->
         <div>
-          <label class="block text-[12px] font-semibold text-ink mb-1">Timezone</label>
-          <select
-            v-model="prefs.timezone"
-            class="border border-line rounded px-2.5 py-1.5 text-[13px] w-full focus:outline-none focus:ring-1 focus:ring-accent"
-          >
+          <label class="block text-[12px] font-semibold text-fg mb-1">Timezone</label>
+          <select v-model="prefs.timezone" class="border border-line rounded-surface px-2.5 py-1.5 text-[13px] w-full">
             <option v-for="tz in TIMEZONES" :key="tz" :value="tz">{{ tz }}</option>
           </select>
         </div>
 
         <!-- Date format -->
         <div>
-          <label class="block text-[12px] font-semibold text-ink mb-1">Date format</label>
+          <label class="block text-[12px] font-semibold text-fg mb-1">Date format</label>
           <select
             v-model="prefs.date_format"
-            class="border border-line rounded px-2.5 py-1.5 text-[13px] w-full focus:outline-none focus:ring-1 focus:ring-accent"
+            class="border border-line rounded-surface px-2.5 py-1.5 text-[13px] w-full"
           >
             <option v-for="df in DATE_FORMATS" :key="df.value" :value="df.value">{{ df.label }}</option>
           </select>
@@ -284,7 +324,7 @@ async function savePrefs() {
 
         <!-- Signature position -->
         <div>
-          <label class="block text-[12px] font-semibold text-ink mb-1">Signature position</label>
+          <label class="block text-[12px] font-semibold text-fg mb-1">Signature position</label>
           <div class="flex gap-3">
             <label class="flex items-center gap-1.5 text-[13px] cursor-pointer">
               <input type="radio" v-model="prefs.signature_pos" value="below" /> Below reply text
@@ -296,27 +336,27 @@ async function savePrefs() {
         </div>
 
         <!-- OOF -->
-        <div class="border border-line rounded p-4 space-y-3">
+        <div class="border border-line rounded-surface p-4 space-y-3">
           <label class="flex items-center gap-2 cursor-pointer text-[13px] font-semibold">
             <input type="checkbox" v-model="prefs.oof_enabled" class="checkbox" />
             Out of Office auto-reply
           </label>
           <div v-if="prefs.oof_enabled">
-            <label class="block text-[12px] text-ink-sub mb-1">Auto-reply message</label>
+            <label class="block text-[12px] text-fg-muted mb-1">Auto-reply message</label>
             <textarea
               v-model="prefs.oof_message"
               rows="3"
-              class="w-full border border-line rounded px-2.5 py-1.5 text-[13px] resize-none focus:outline-none focus:ring-1 focus:ring-accent"
+              class="w-full border border-line rounded-control px-2.5 py-1.5 text-[13px] resize-none"
               placeholder="I'm currently out of office…"
             />
           </div>
         </div>
 
         <!-- Notifications -->
-        <div class="border border-line rounded p-4 space-y-3">
-          <label class="block text-[12px] font-semibold text-ink">Desktop & Push Notifications</label>
+        <div class="border border-line rounded-surface p-4 space-y-3">
+          <label class="block text-[12px] font-semibold text-fg">Desktop & Push Notifications</label>
           <div class="flex items-center justify-between">
-            <span class="text-[13px] text-ink-sub">
+            <span class="text-[13px] text-fg-muted">
               {{ notificationStatusText }}
             </span>
             <button
@@ -339,6 +379,40 @@ async function savePrefs() {
         </div>
       </div>
     </div>
+
+    <!-- ── APPEARANCE TAB ──────────────────────────────────────────────── -->
+    <div v-else class="flex-1 overflow-y-auto p-5">
+      <div class="max-w-2xl">
+        <p class="text-[13px] text-fg-muted mb-4">
+          Choose how the webmail looks. The theme is applied at once and saved to your account, so it follows you to
+          other browsers.
+        </p>
+        <fieldset
+          role="radiogroup"
+          aria-label="Theme"
+          :disabled="savingTheme"
+          class="border border-line rounded-surface overflow-hidden m-0 p-0 min-w-0"
+        >
+          <label
+            v-for="opt in themeOptions"
+            :key="opt.id"
+            :class="[
+              'flex items-center gap-3 px-4 py-2.5 border-b border-line last:border-b-0 text-[13px] text-fg',
+              savingTheme ? 'cursor-wait' : 'cursor-pointer',
+              opt.id === pickedTheme ? 'bg-accent-soft font-semibold' : 'hover:bg-row-hover',
+            ]"
+          >
+            <input v-model="pickedTheme" type="radio" name="theme" :value="opt.id" @change="chooseTheme(opt.id)" />
+            <span class="flex-1">{{ opt.label }}</span>
+            <span
+              v-if="opt.scheme"
+              class="text-[10.5px] font-normal uppercase tracking-wider text-fg-muted border border-line rounded-control px-1.5 py-0.5"
+              >{{ opt.scheme }}</span
+            >
+          </label>
+        </fieldset>
+      </div>
+    </div>
   </div>
 
   <!-- Identity editor modal -->
@@ -347,10 +421,10 @@ async function savePrefs() {
     class="fixed inset-0 z-50 flex items-center justify-center"
     @click.self="identityOpen = false"
   >
-    <div class="absolute inset-0 bg-black/40" />
-    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 z-10">
+    <div class="absolute inset-0 bg-overlay" />
+    <div class="relative bg-surface rounded-surface sh-dialog w-full max-w-md mx-4 z-10">
       <div class="flex items-center justify-between px-5 py-3.5 border-b border-line">
-        <span class="font-semibold text-ink text-[13px]">
+        <span class="font-semibold text-fg text-[13px]">
           {{ editingId ? 'Edit Identity' : 'New Identity' }}
         </span>
         <button class="tbtn p-1" @click="identityOpen = false">
@@ -359,41 +433,41 @@ async function savePrefs() {
       </div>
       <div class="px-5 py-4 space-y-3">
         <div>
-          <label class="block text-[12px] text-ink-sub mb-1">Display name</label>
+          <label class="block text-[12px] text-fg-muted mb-1">Display name</label>
           <input
             v-model="identityForm.display_name"
-            class="w-full border border-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-1 focus:ring-accent"
+            class="w-full border border-line rounded-control px-2.5 py-1.5 text-[13px]"
             placeholder="Your Name"
             autofocus
           />
         </div>
 
         <div>
-          <label class="block text-[12px] text-ink-sub mb-1">Email address *</label>
+          <label class="block text-[12px] text-fg-muted mb-1">Email address *</label>
           <input
             v-model="identityForm.email"
             type="email"
-            class="w-full border border-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-1 focus:ring-accent"
+            class="w-full border border-line rounded-control px-2.5 py-1.5 text-[13px]"
             placeholder="you@example.com"
           />
         </div>
 
         <div>
-          <label class="block text-[12px] text-ink-sub mb-1">Reply-To (optional)</label>
+          <label class="block text-[12px] text-fg-muted mb-1">Reply-To (optional)</label>
           <input
             v-model="identityForm.reply_to"
             type="email"
-            class="w-full border border-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-1 focus:ring-accent"
+            class="w-full border border-line rounded-control px-2.5 py-1.5 text-[13px]"
             placeholder="replies@example.com"
           />
         </div>
 
         <div>
-          <label class="block text-[12px] text-ink-sub mb-1">Signature</label>
+          <label class="block text-[12px] text-fg-muted mb-1">Signature</label>
           <textarea
             v-model="identityForm.signature"
             rows="4"
-            class="w-full border border-line rounded px-2.5 py-1.5 text-[13px] resize-none focus:outline-none focus:ring-1 focus:ring-accent"
+            class="w-full border border-line rounded-control px-2.5 py-1.5 text-[13px] resize-none"
             placeholder="-- &#10;Your signature"
           />
         </div>

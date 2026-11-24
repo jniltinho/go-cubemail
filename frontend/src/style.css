@@ -1,34 +1,150 @@
 @import 'tailwindcss';
+@import './themes/outlook.css';
+@import './themes/apple-mail.css';
+@import './themes/breeze.css';
+@import './themes/graphite.css';
+@import './themes/high-contrast.css';
 
-@theme {
-  --color-accent: var(--accent);
-  --color-accent-2: var(--accent-2);
-  --color-accent-bar: var(--accent-bar);
-  --color-accent-soft: var(--accent-soft);
-  --color-accent-soft-2: var(--accent-soft-2);
-  --color-row-selected: var(--row-selected);
+/*
+ * Role contract. Every color, corner radius, shadow and font of the interface is a role declared here; components
+ * use roles only. The values below are the Larry theme (the default), as it rendered before themes existed (its
+ * lighter and darker blues were derived at run time from the navy); a theme file under ./themes gives other
+ * values to the same roles and nothing else. See DOCUMENTS/docs/THEMES.md.
+ * `static`: keep every role in the build, including those read only by a theme file or from script.
+ */
+@theme static {
+  /* text */
+  --color-fg: #1a1f2a;
+  --color-fg-strong: #0e1a2e;
+  --color-fg-muted: #5a6473;
+  --color-fg-subtle: #66707f; /* AA on every surface, was #8a93a1 (3.1:1) */
+  --color-heading: #152d53;
+  --color-link: #546b90;
+  --color-link-hover: #1b3a6b;
+
+  /* page and surfaces */
+  --color-page: #eceff3;
+  --color-backdrop: #c9cdd3;
+  --color-surface: #ffffff;
+  --color-surface-2: #f5f7fa;
+  --color-surface-3: #f8f9fc;
   --color-line: #c9d1dc;
   --color-line-soft: #e2e6ec;
-  --color-panel: #ffffff;
-  --color-panel-2: #f5f7fa;
-  --color-app-bg: #eceff3;
-  --color-ink: #1a1f2a;
-  --color-ink-sub: #5a6473;
-  --color-ink-mute: #8a93a1;
-  --color-star: #e0a40c;
+  --color-popup-line: #152d53;
+  --color-row-hover: #f0f3f8;
+  --color-overlay: rgba(11, 31, 64, 0.35);
+  --color-scroll-thumb: #c1cad6;
+
+  /* selection (the selected message) */
+  --color-selection: #d1d8e1;
+  --color-on-selection: #1a1f2a;
+  --color-on-selection-muted: #555e6d; /* AA on the selection, was #5a6473 */
+  --color-on-selection-subtle: #555e6d; /* AA on the selection, was #8a93a1 */
+  --color-selection-mark: #1b3a6b;
+  --color-selection-line: #546b90;
+
+  /* fields and keyboard focus */
+  --color-field: #ffffff;
+  --color-on-field: #1a1f2a;
+  --color-field-line: #c9d1dc;
+  --color-field-focus: #546b90;
+  --color-focus: #1b3a6b;
+
+  /* primary action */
+  --color-action: #1b3a6b;
+  --color-action-hover: #546b90;
+  --color-action-line: #152d53;
+  --color-on-action: #ffffff;
+
+  /* secondary action */
+  --color-action-2: #ffffff;
+  --color-action-2-hover: #e4e7ed;
+  --color-action-2-line: #c9d1dc;
+  --color-action-2-hover-line: #546b90;
+  --color-on-action-2: #1a1f2a;
+
+  /* danger and status */
   --color-danger: #b22b2b;
-  --color-success: #1f7a45;
+  --color-on-danger: #ffffff;
+  --color-ok: #1f7a45;
+  --color-err: #b22b2b;
+  --color-warn: #bf8c0a; /* 3:1 as an icon on the surface, was #e0a40c */
+  --color-err-soft: #fff0f0;
+  --color-on-err-soft: #b22b2b;
+  --color-err-line: #f5c0c0;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #152d53;
+  --color-header-brand: #1b3a6b;
+  --color-on-header: #ffffff;
+  --color-on-header-muted: #d5e0f2;
+  --color-on-header-err: #ff8a8a;
+  --color-header-line: #0b1f40;
+  --color-header-control-line: #4a6fa0;
+  --color-header-hover: #102744;
+  --color-tab-on: #1b3a6b;
+  --color-on-tab-on: #ffffff;
+  --color-tab-mark: #66a0ff;
+
+  /* sidebar */
+  --color-sidebar: #ffffff;
+  --color-on-sidebar: #1a1f2a;
+  --color-sidebar-hover: #f0f3f8;
+  --color-sidebar-active: #d1d8e1;
+  --color-on-sidebar-active: #152d53;
+  --color-count: #5a6473;
+
+  /* mail list */
+  --color-unread: #1a1f2a;
+  --color-unread-mark: #5a6473;
+  --color-star: #e0a40c;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #1b3a6b;
+  --color-accent-strong: #152d53;
+  --color-accent-soft: #e4e7ed;
+  --color-on-accent: #ffffff;
+
+  /* raw source viewer */
+  --color-code: #0e1a2e;
+  --color-on-code: #d5e0f2;
+  --color-on-code-muted: #6c84a1; /* AA, was #6a82a0 */
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #6d7787; /* AA on the paper, was #8a93a1 */
+  --color-paper-link: #2a5599;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+  --radius-control: 0px;
+  --radius-surface: 0px;
+  --radius-row: 0px;
+
+  /* type */
   --font-sans: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-mono: 'Consolas', 'Menlo', monospace;
 }
 
+/* Roles that are not Tailwind theme keys: depth, the selected row's shape, the login backdrop, the paper's font. */
 :root {
-  --accent: #1b3a6b;
-  --accent-2: #2a5599;
-  --accent-bar: #14305a;
-  --accent-soft: #e6ecf4;
-  --accent-soft-2: #d2dceb;
-  --row-selected: #dce5f2;
+  --shadow-menu: 0 6px 16px rgba(11, 31, 64, 0.18), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  --shadow-dialog: 0 8px 32px rgba(11, 31, 64, 0.22);
+  --shadow-toast: 0 4px 16px rgba(11, 31, 64, 0.16);
+  --shadow-card:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 2px 4px rgba(11, 31, 64, 0.18), 0 16px 40px -8px rgba(11, 31, 64, 0.45),
+    0 30px 60px -20px rgba(11, 31, 64, 0.35);
+  --shadow-focus: 0 0 0 1px var(--color-focus);
+  --shadow-focus-header: inset 0 0 0 2px var(--color-tab-mark);
+  --row-inset-x: 0px;
+  --selection-mark-w: 3px;
+  --bg-backdrop:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px);
+  --font-paper: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 html,
@@ -40,22 +156,26 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   font-size: 13px;
-  color: var(--color-ink);
-  background: var(--color-app-bg);
+  color: var(--color-fg);
+  background: var(--color-page);
   -webkit-font-smoothing: antialiased;
 }
 *,
 *::before,
 *::after {
   box-sizing: border-box;
-  border-radius: 0 !important;
 }
 button,
 input,
 select,
 textarea {
   font-family: inherit;
-  border-radius: 0;
+}
+/* fields take the control radius; buttons take it through .tbtn or the rounded-control utility */
+input:not([type='checkbox'], [type='radio'], [type='color'], [type='range']),
+select,
+textarea {
+  border-radius: var(--radius-control);
 }
 
 @layer components {
@@ -64,37 +184,38 @@ textarea {
     height: 26px;
     padding-left: 10px;
     padding-right: 10px;
-    background: white;
-    border: 1px solid var(--color-line);
+    background: var(--color-action-2);
+    border: 1px solid var(--color-action-2-line);
+    border-radius: var(--radius-control);
     font-size: 12px;
-    color: var(--color-ink);
+    color: var(--color-on-action-2);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 6px;
   }
   .tbtn:hover {
-    background: var(--color-accent-soft);
-    border-color: var(--color-accent-2);
+    background: var(--color-action-2-hover);
+    border-color: var(--color-action-2-hover-line);
   }
   .tbtn:disabled {
-    color: var(--color-ink-mute);
-    background: var(--color-panel-2);
+    color: var(--color-fg-subtle);
+    background: var(--color-surface-2);
     cursor: default;
   }
   .tbtn:disabled:hover {
-    background: var(--color-panel-2);
-    border-color: var(--color-line);
+    background: var(--color-surface-2);
+    border-color: var(--color-action-2-line);
   }
   .tbtn-primary {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent-bar);
+    background: var(--color-action);
+    color: var(--color-on-action);
+    border-color: var(--color-action-line);
   }
   .tbtn-primary:hover {
-    background: var(--accent-2);
-    border-color: var(--accent-bar);
-    color: white;
+    background: var(--color-action-hover);
+    border-color: var(--color-action-line);
+    color: var(--color-on-action);
   }
   .tbtn-danger {
     color: var(--color-danger);
@@ -112,26 +233,34 @@ textarea {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 6px 6px 14px;
+    margin-inline: var(--row-inset-x);
+    padding: 6px 6px 6px calc(17px - var(--selection-mark-w));
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-on-sidebar);
     cursor: pointer;
-    border-left: 3px solid transparent;
+    border-left: var(--selection-mark-w) solid transparent;
+    border-radius: var(--radius-row);
     position: relative;
   }
   .side-item:hover {
-    background: #f0f3f8;
+    background: var(--color-sidebar-hover);
   }
   .side-item.active {
-    background: var(--color-row-selected);
-    border-left-color: var(--accent);
+    background: var(--color-sidebar-active);
+    border-left-color: var(--color-selection-mark);
     font-weight: 600;
-    color: var(--accent-bar);
+    color: var(--color-on-sidebar-active);
   }
   .side-item.drag-over {
     background: var(--color-accent-soft) !important;
-    border-left-color: var(--color-accent-2) !important;
-    box-shadow: 0 0 0 1px var(--color-accent-2) inset !important;
+    border-left-color: var(--color-selection-line) !important;
+    box-shadow: 0 0 0 1px var(--color-selection-line) inset !important;
+  }
+  .side-item .ic {
+    color: var(--color-link);
+  }
+  .side-item.active .ic {
+    color: var(--color-on-sidebar-active);
   }
   .side-item .lbl {
     flex: 1;
@@ -142,19 +271,20 @@ textarea {
   }
   .side-item .count {
     font-size: 11px;
-    color: var(--color-ink-sub);
+    color: var(--color-count);
     font-variant-numeric: tabular-nums;
   }
   .side-item.active .count {
-    color: var(--accent-bar);
+    color: var(--color-on-sidebar-active);
     font-weight: 700;
   }
   .side-item .kebab {
     width: 20px;
     height: 20px;
     border: 0;
+    border-radius: var(--radius-control);
     background: transparent;
-    color: var(--color-ink-sub);
+    color: var(--color-count);
     cursor: pointer;
     padding: 0;
     display: grid;
@@ -162,51 +292,80 @@ textarea {
     margin-left: 2px;
     visibility: hidden;
   }
+  .side-item.active .kebab {
+    color: var(--color-on-sidebar-active);
+  }
   .side-item:hover .kebab,
   .side-item.active .kebab,
   .side-item.menu-open .kebab {
     visibility: visible;
   }
   .side-item .kebab:hover {
-    background: var(--accent);
-    color: white;
+    background: var(--color-action);
+    color: var(--color-on-action);
   }
 
   /* Mail row */
   .mail-row {
     display: grid;
     gap: 8px;
+    margin-inline: var(--row-inset-x);
     padding: 8px 12px;
     border-bottom: 1px solid var(--color-line-soft);
+    border-radius: var(--radius-row);
     cursor: pointer;
     position: relative;
     align-items: start;
     grid-template-columns: 22px 1fr auto;
   }
   .mail-row:hover {
-    background: #f0f3f8;
+    background: var(--color-row-hover);
   }
-  .mail-row.selected {
-    background: var(--color-row-selected);
-    box-shadow: inset 3px 0 0 var(--accent);
-    outline: 1px solid var(--accent-2);
-    outline-offset: -1px;
+  .mail-row .from,
+  .mail-row .date {
+    color: var(--color-fg-muted);
+  }
+  .mail-row .subject {
+    color: var(--color-fg);
+  }
+  .mail-row .snippet,
+  .mail-row .flag {
+    color: var(--color-fg-subtle);
   }
   .mail-row.unread .from,
   .mail-row.unread .subject {
-    color: #0e1a2e;
-    font-weight: 700;
+    color: var(--color-unread);
+    font-weight: 600;
   }
   .mail-row.unread .date {
-    color: var(--accent-2);
+    color: var(--color-unread-mark);
     font-weight: 700;
+  }
+  .mail-row.selected {
+    background: var(--color-selection);
+    box-shadow: inset var(--selection-mark-w) 0 0 var(--color-selection-mark);
+    outline: 1px solid var(--color-selection-line);
+    outline-offset: -1px;
+  }
+  .mail-row.selected .from,
+  .mail-row.selected .date {
+    color: var(--color-on-selection-muted);
+  }
+  .mail-row.selected .subject,
+  .mail-row.selected.unread .from {
+    color: var(--color-on-selection);
+  }
+  .mail-row.selected .snippet,
+  .mail-row.selected .flag {
+    color: var(--color-on-selection-subtle);
   }
 
   .checkbox {
     width: 14px;
     height: 14px;
-    border: 1px solid var(--color-line);
-    background: white;
+    border: 1px solid var(--color-field-line);
+    border-radius: var(--radius-control);
+    background: var(--color-field);
     cursor: pointer;
     display: grid;
     place-items: center;
@@ -214,9 +373,9 @@ textarea {
     flex-shrink: 0;
   }
   .checkbox.on {
-    background: var(--accent);
-    border-color: var(--accent-bar);
-    color: white;
+    background: var(--color-action);
+    border-color: var(--color-action-line);
+    color: var(--color-on-action);
   }
   .checkbox.on::after {
     content: '✓';
@@ -224,20 +383,27 @@ textarea {
     line-height: 1;
   }
 
+  /* Depth of popups (menus, pickers) and dialogs */
+  .sh-menu {
+    box-shadow: var(--shadow-menu);
+  }
+  .sh-dialog {
+    box-shadow: var(--shadow-dialog);
+  }
+
   /* Kebab dropdown */
   .kebab-menu {
     position: absolute;
     z-index: 30;
-    background: white;
-    border: 1px solid var(--accent-bar);
+    background: var(--color-surface);
+    border: 1px solid var(--color-popup-line);
+    border-radius: var(--radius-surface);
     min-width: 190px;
     padding: 4px 0;
     cursor: auto;
     top: 100%;
     right: 4px;
-    box-shadow:
-      0 6px 16px rgba(11, 31, 64, 0.18),
-      0 1px 0 rgba(255, 255, 255, 0.4) inset;
+    box-shadow: var(--shadow-menu);
   }
   .kmi {
     display: flex;
@@ -245,16 +411,16 @@ textarea {
     gap: 10px;
     padding: 6px 12px;
     font-size: 12.5px;
-    color: var(--color-ink);
+    color: var(--color-fg);
     cursor: pointer;
     border-left: 3px solid transparent;
   }
   .kmi:hover {
     background: var(--color-accent-soft);
-    border-left-color: var(--accent);
+    border-left-color: var(--color-selection-mark);
   }
   .kmi.disabled {
-    color: var(--color-ink-mute);
+    color: var(--color-fg-subtle);
     cursor: default;
   }
   .kmi.disabled:hover {
@@ -264,10 +430,10 @@ textarea {
   .kmi .ic-wrap {
     width: 14px;
     text-align: center;
-    color: var(--color-accent-2);
+    color: var(--color-link);
   }
   .kmi.disabled .ic-wrap {
-    color: var(--color-ink-mute);
+    color: var(--color-fg-subtle);
   }
   .kdiv {
     height: 1px;
@@ -275,25 +441,22 @@ textarea {
     margin: 4px 0;
   }
 
-  /* Attachments */
-  .attachments {
-    margin-top: 16px;
-    padding: 10px;
-    border: 1px solid var(--color-line);
-    background: var(--color-panel-2);
+  /* Dialog title bars and the header's small buttons */
+  .header-btn {
+    background: transparent;
+    border: 1px solid var(--color-header-control-line);
+    border-radius: var(--radius-control);
+    color: var(--color-on-header-muted);
   }
-  .attachments .att {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    background: white;
-    border: 1px solid var(--color-line);
-    font-size: 12px;
+  .header-btn:hover {
+    background: var(--color-header-hover);
+    border-color: var(--color-tab-mark);
+    color: var(--color-on-header);
   }
-  .attachments .att:hover {
-    border-color: var(--color-accent-2);
-    background: var(--color-accent-soft);
+  .tab-on {
+    background: var(--color-tab-on);
+    color: var(--color-on-tab-on);
+    box-shadow: inset 0 -3px 0 var(--color-tab-mark);
   }
 
   /* Composer modal */
@@ -303,13 +466,15 @@ textarea {
     display: grid;
     place-items: center;
     z-index: 50;
-    background: rgba(11, 31, 64, 0.35);
+    background: var(--color-overlay);
   }
   .composer-shell {
     width: 1530px;
     max-width: calc(100vw - 40px);
-    background: white;
-    border: 1px solid var(--accent-bar);
+    background: var(--color-surface);
+    border: 1px solid var(--color-popup-line);
+    border-radius: var(--radius-surface);
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     max-height: calc(100vh - 60px);
@@ -321,20 +486,21 @@ textarea {
     grid-template-columns: 70px 1fr;
   }
   .composer-field > label {
-    background: var(--color-panel-2);
+    background: var(--color-surface-2);
     border-right: 1px solid var(--color-line-soft);
     padding: 8px 10px;
     font-size: 12px;
-    color: var(--color-ink-sub);
+    color: var(--color-fg-muted);
     font-weight: 600;
   }
   .composer-field input,
   .composer-field textarea {
     border: 0;
+    border-radius: 0;
     outline: none;
     padding: 8px 10px;
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-fg);
     resize: vertical;
   }
   .composer-field textarea {
@@ -344,30 +510,10 @@ textarea {
   .composer-rich {
     padding: 0;
   }
-  .composer-rich .tox.tox-tinymce {
-    border: 0;
-    border-top: 1px solid var(--color-line-soft);
-  }
-  .composer-rich .tox .tox-toolbar,
-  .composer-rich .tox .tox-toolbar__primary {
-    background: #f5f7fa !important;
-    border-bottom: 1px solid #e2e6ec !important;
-  }
-  .composer-rich .tox .tox-tbtn {
-    border-radius: 0 !important;
-  }
-  .composer-rich .tox .tox-tbtn:hover {
-    background: #e6ecf4 !important;
-  }
-  .composer-rich .tox .tox-tbtn--enabled,
-  .composer-rich .tox .tox-tbtn--enabled:hover {
-    background: #dce5f2 !important;
-    color: var(--accent-bar) !important;
-  }
 
-  /* Rich Text Editor (TipTap) - matches Larry composer + old TinyMCE visual treatment */
+  /* Rich Text Editor (TipTap) */
   .rte-toolbar {
-    background: var(--color-panel-2);
+    background: var(--color-surface-2);
     border-bottom: 1px solid var(--color-line-soft);
     padding: 4px 6px;
     display: flex;
@@ -379,16 +525,15 @@ textarea {
     height: 24px;
     padding: 0 6px;
     font-size: 11px;
-    border-radius: 0 !important;
   }
   .rte-toolbar .tbtn:hover {
-    background: var(--color-accent-soft);
+    background: var(--color-action-2-hover);
   }
   .rte-toolbar .tbtn.rte-active,
   .rte-toolbar .tbtn[data-active='true'] {
-    background: #dce5f2;
-    border-color: var(--accent-bar);
-    color: var(--accent-bar);
+    background: var(--color-selection);
+    border-color: var(--color-action-line);
+    color: var(--color-on-selection);
   }
   .rte-toolbar .rte-separator {
     width: 1px;
@@ -397,20 +542,28 @@ textarea {
     margin: 0 4px;
     align-self: center;
   }
+  /* the document being written: paper roles, the same in every theme */
   .rte-content {
-    background: white;
+    background: var(--color-paper);
     min-height: 380px;
     max-height: 520px;
     overflow: auto;
     padding: 10px 12px;
-    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    font-family: var(--font-paper);
     font-size: 13.5px;
-    color: #1a1f2a;
+    color: var(--color-on-paper);
     line-height: 1.6;
   }
   .rte-content .ProseMirror {
     outline: none;
     min-height: inherit;
+  }
+  .rte-content textarea {
+    background: var(--color-paper);
+    color: var(--color-on-paper);
+  }
+  .rte-content .rte-note {
+    color: var(--color-paper-subtle);
   }
   .rte-content img {
     max-width: 100%;
@@ -421,23 +574,23 @@ textarea {
     cursor: default;
   }
   .rte-content img.ProseMirror-selectednode {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--color-paper-link);
     outline-offset: 2px;
   }
   .rte-content .ProseMirror p.is-empty.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     float: left;
-    color: var(--color-ink-mute);
+    color: var(--color-paper-subtle);
     pointer-events: none;
     height: 0;
   }
   .rte-content a {
-    color: var(--accent-2);
+    color: var(--color-paper-link);
     text-decoration: underline;
     cursor: pointer;
   }
   .rte-content a:hover {
-    color: var(--accent);
+    color: var(--color-on-paper);
   }
   .rte-content p {
     margin: 0 0 10px;
@@ -445,8 +598,8 @@ textarea {
   .rte-content blockquote {
     margin: 0 0 1em 0;
     padding: 6px 12px;
-    border-left: 3px solid #c8d4e8;
-    color: #444;
+    border-left: 3px solid var(--color-paper-line);
+    color: var(--color-paper-muted);
   }
   .rte-content ul,
   .rte-content ol {
@@ -478,12 +631,12 @@ textarea {
   }
   .rte-content table td,
   .rte-content table th {
-    border: 1px solid var(--color-line);
+    border: 1px solid var(--color-paper-line);
     padding: 4px 6px;
     vertical-align: top;
   }
   .rte-content table th {
-    background: var(--color-panel-2);
+    background: var(--color-paper-2);
     font-weight: 600;
   }
 
@@ -493,46 +646,50 @@ textarea {
     max-width: 560px;
     display: flex;
     align-items: stretch;
-    background: white;
-    border: 1px solid #0b1f40;
+    background: var(--color-field);
+    border: 1px solid var(--color-header-line);
+    border-radius: var(--radius-control);
+    overflow: hidden;
   }
   .search-box input {
     flex: 1;
     border: 0;
+    border-radius: 0;
     outline: none;
     padding: 0 10px;
     font-size: 12.5px;
     height: 26px;
-    background: white;
-    color: var(--color-ink);
+    background: var(--color-field);
+    color: var(--color-on-field);
   }
   .search-box select {
     border: 0;
     border-right: 1px solid var(--color-line);
-    background: var(--color-panel-2);
+    border-radius: 0;
+    background: var(--color-surface-2);
     font-size: 12px;
     padding: 0 8px;
     height: 26px;
-    color: var(--color-ink-sub);
+    color: var(--color-fg-muted);
   }
   .search-box button {
-    background: var(--accent);
-    color: white;
+    background: var(--color-action);
+    color: var(--color-on-action);
     border: 0;
     padding: 0 12px;
     font-size: 12px;
     cursor: pointer;
   }
   .search-box button:hover {
-    background: var(--accent-2);
+    background: var(--color-action-hover);
   }
 
   /* Calendar */
   .cal-cell {
-    background: white;
+    background: var(--color-surface);
     padding: 6px 8px;
     font-size: 11px;
-    color: var(--color-ink-sub);
+    color: var(--color-fg-muted);
     display: flex;
     flex-direction: column;
     gap: 3px;
@@ -540,7 +697,7 @@ textarea {
     overflow: hidden;
   }
   .cal-cell.head {
-    background: var(--color-panel-2);
+    background: var(--color-surface-2);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -549,80 +706,61 @@ textarea {
     padding: 6px 8px;
   }
   .cal-cell.dim {
-    background: #f8f9fc;
-    color: var(--color-ink-mute);
+    background: var(--color-surface-3);
+    color: var(--color-fg-subtle);
   }
   .cal-cell .num {
     font-size: 12px;
-    color: var(--color-ink);
+    color: var(--color-fg);
     font-weight: 600;
   }
   .cal-cell.today .num {
-    background: var(--accent);
-    color: white;
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border-radius: var(--radius-control);
     padding: 0 6px;
     align-self: flex-start;
   }
+  /* an event label; its background is the calendar's own color and its ink is computed from it (eventInk) */
   .cal-evt {
     font-size: 10.5px;
     padding: 1px 6px;
-    color: white;
-    background: var(--accent);
+    border-radius: var(--radius-control);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .cal-evt.alt {
-    background: #6a8dbe;
-  }
-  .cal-evt.ghost {
-    background: #b9c6da;
-    color: #2f3b4d;
-  }
-  .cal-evt.warn {
-    background: #b07a20;
-  }
   .cal-cell.drag-over {
-    background: var(--accent-soft) !important;
-    outline: 2px dashed var(--accent);
+    background: var(--color-accent-soft) !important;
+    outline: 2px dashed var(--color-accent);
     outline-offset: -2px;
   }
 
   /* Login */
+  .login-page {
+    background-color: var(--color-backdrop);
+    background-image: var(--bg-backdrop);
+  }
   .login-shadow {
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.4) inset,
-      0 2px 4px rgba(11, 31, 64, 0.18),
-      0 16px 40px -8px rgba(11, 31, 64, 0.45),
-      0 30px 60px -20px rgba(11, 31, 64, 0.35);
+    box-shadow: var(--shadow-card);
   }
   .login-input {
     width: 100%;
     height: 30px;
-    border: 1px solid #0b1f40;
-    background: white;
+    border: 1px solid var(--color-header-line);
+    background: var(--color-field);
     padding: 0 10px;
     font-size: 13px;
-    color: var(--color-ink);
+    color: var(--color-on-field);
     outline: none;
   }
   .login-input:focus {
-    border-color: var(--accent-2);
-    box-shadow: inset 0 0 0 1px var(--accent-2);
+    border-color: var(--color-field-focus);
+    box-shadow: inset 0 0 0 1px var(--color-field-focus);
   }
   .login-input.bad {
-    border-color: #ff8a8a;
-    box-shadow: inset 0 0 0 1px #ff8a8a;
-  }
-
-  /* Keyboard shortcut pills */
-  .kbd {
-    font-family: var(--font-mono);
-    font-size: 10.5px;
-    background: #f0f3f8;
-    border: 1px solid var(--color-line);
-    padding: 0 4px;
-    color: var(--color-ink-sub);
+    border-color: var(--color-on-header-err);
+    box-shadow: inset 0 0 0 1px var(--color-on-header-err);
   }
 }
 
@@ -631,117 +769,32 @@ textarea {
   width: 12px;
 }
 .scroll-y::-webkit-scrollbar-thumb {
-  background: #c1cad6;
-  border: 3px solid white;
+  background: var(--color-scroll-thumb);
+  border: 3px solid var(--color-surface);
 }
 .scroll-y::-webkit-scrollbar-track {
-  background: white;
+  background: var(--color-surface);
 }
 
-/* Tweaks panel */
-.gw-tweaks-panel {
-  position: fixed;
-  right: 16px;
-  bottom: 32px;
-  width: 260px;
-  background: white;
-  border: 1px solid var(--accent);
-  z-index: 100;
-  font-family: var(--font-sans);
-  font-size: 12.5px;
-  color: var(--color-ink);
-  box-shadow:
-    0 10px 24px rgba(11, 31, 64, 0.2),
-    0 1px 0 rgba(255, 255, 255, 0.4) inset;
+/*
+ * Keyboard focus: one mark for every control, drawn from the focus roles. Unlayered, so it wins over the component
+ * and utility layers. Text fields show it on click too, as before. The transparent outline keeps a visible mark in
+ * forced-colors mode, where shadows are dropped.
+ */
+:where(button, a, input, select, textarea, summary, [tabindex], [role='radio'], [role='tab']):focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--shadow-focus);
 }
-.gw-tweaks-head {
-  background: var(--accent-bar);
-  color: white;
-  padding: 6px 10px 6px 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: move;
-  user-select: none;
+/* on the header the ring is drawn inside the control, in the color of the tab mark */
+.on-header :where(button, a, select, [tabindex]):focus-visible {
+  box-shadow: var(--shadow-focus-header);
 }
-.gw-tweaks-title {
-  flex: 1;
+/* borderless fields that fill their row: the row shows the focus, not the field */
+.composer-field :where(input, textarea):focus-visible,
+.search-box :where(input, select):focus-visible,
+.rte-content textarea:focus-visible {
+  box-shadow: none;
 }
-.gw-tweaks-x {
-  width: 22px;
-  height: 22px;
-  border: 1px solid #4a6fa0;
-  background: transparent;
-  color: white;
-  cursor: pointer;
-  font-size: 11px;
-  display: grid;
-  place-items: center;
-}
-.gw-tweaks-x:hover {
-  background: #2a4978;
-}
-.gw-tweaks-body {
-  padding-top: 4px;
-  padding-bottom: 8px;
-  max-height: 70vh;
-  overflow: auto;
-}
-.gw-tweak-section {
-  padding-top: 8px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--color-line-soft);
-}
-.gw-tweak-section:last-child {
-  border-bottom: none;
-}
-.gw-tweak-label {
-  padding: 0 12px 4px;
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-ink-sub);
-  font-weight: 700;
-}
-.gw-tweak-color {
-  padding: 4px 12px 8px;
-}
-.gw-tweak-color-label {
-  font-size: 11.5px;
-  color: var(--color-ink);
-  margin-bottom: 6px;
-}
-.gw-tweak-color-row {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.gw-tweak-swatch {
-  width: 38px;
-  height: 38px;
-  border: 1px solid var(--color-line);
-  cursor: pointer;
-  padding: 0;
-  position: relative;
-}
-.gw-tweak-swatch:hover {
-  outline: 2px solid var(--accent-2);
-  outline-offset: 1px;
-}
-.gw-tweak-swatch.on {
-  outline: 2px solid var(--accent-bar);
-  outline-offset: 1px;
-}
-.gw-tweak-swatch.on::after {
-  content: '✓';
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: white;
-  font-size: 14px;
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+.search-box:focus-within {
+  box-shadow: var(--shadow-focus-header);
 }

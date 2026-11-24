@@ -35,17 +35,17 @@ function onDragStart(event: DragEvent, message: MailMessage) {
 </script>
 
 <template>
-  <div class="bg-white border-r border-line flex flex-col min-h-0">
+  <div class="bg-surface border-r border-line flex flex-col min-h-0">
     <!-- Header -->
-    <div class="h-10 px-3 bg-panel-2 border-b border-line flex items-center justify-between flex-shrink-0">
-      <h2 class="m-0 text-[13px] text-accent-bar font-bold tracking-tight">
+    <div class="h-10 px-3 bg-surface-2 border-b border-line flex items-center justify-between flex-shrink-0">
+      <h2 class="m-0 text-[13px] text-heading font-bold tracking-tight">
         {{ mail.currentFolderLabel }}
       </h2>
-      <div class="inline-flex items-center gap-1.5 text-[12px] text-ink-sub">
+      <div class="inline-flex items-center gap-1.5 text-[12px] text-fg-muted">
         <span class="text-[11.5px]">Sort by</span>
         <select
           v-model="mail.sortBy"
-          class="bg-white border border-line h-[22px] px-1.5 text-[11.5px] text-ink hover:bg-accent-soft cursor-pointer outline-none"
+          class="rounded-control bg-action-2 border border-action-2-line h-[22px] px-1.5 text-[11.5px] text-on-action-2 hover:bg-action-2-hover cursor-pointer outline-none"
         >
           <option value="date">Date</option>
           <option value="from">From</option>
@@ -53,7 +53,7 @@ function onDragStart(event: DragEvent, message: MailMessage) {
           <option value="size">Size</option>
         </select>
         <button
-          class="h-[22px] w-[22px] flex items-center justify-center border border-line bg-white hover:bg-accent-soft text-ink cursor-pointer outline-none"
+          class="h-[22px] w-[22px] flex items-center justify-center rounded-control border border-action-2-line bg-action-2 hover:bg-action-2-hover text-on-action-2 cursor-pointer outline-none"
           :title="mail.sortDir === 'asc' ? 'Ascending' : 'Descending'"
           @click="mail.sortDir = mail.sortDir === 'asc' ? 'desc' : 'asc'"
         >
@@ -65,7 +65,7 @@ function onDragStart(event: DragEvent, message: MailMessage) {
     <!-- Empty state -->
     <div
       v-if="mail.visibleMails.length === 0"
-      class="flex-1 flex items-center justify-center text-ink-mute text-[12px] px-5 py-10 text-center"
+      class="flex-1 flex items-center justify-center text-fg-subtle text-[12px] px-5 py-10 text-center"
     >
       {{ mail.query ? `No messages matching "${mail.query}"` : 'This folder is empty.' }}
     </div>
@@ -85,32 +85,26 @@ function onDragStart(event: DragEvent, message: MailMessage) {
 
         <!-- From / Subject / Snippet -->
         <div class="min-w-0" style="grid-column: 2; grid-row: 1/4">
-          <div
-            class="from text-[12.5px] overflow-hidden whitespace-nowrap text-ellipsis"
-            :class="m.unread ? 'text-ink font-semibold' : 'text-ink-sub'"
-          >
+          <div class="from text-[12.5px] overflow-hidden whitespace-nowrap text-ellipsis">
             {{ m.from?.name || m.from?.addr || '(unknown)' }}
           </div>
-          <div
-            class="subject text-[12.5px] text-ink overflow-hidden whitespace-nowrap text-ellipsis mt-px"
-            :class="{ 'font-semibold': m.unread }"
-          >
+          <div class="subject text-[12.5px] overflow-hidden whitespace-nowrap text-ellipsis mt-px">
             {{ m.subject }}
           </div>
-          <div class="snippet text-[11.5px] text-ink-mute overflow-hidden whitespace-nowrap text-ellipsis mt-0.5">
+          <div class="snippet text-[11.5px] overflow-hidden whitespace-nowrap text-ellipsis mt-0.5">
             {{ m.snippet }}
           </div>
         </div>
 
         <!-- Date -->
-        <div class="date text-[11px] text-ink-sub tabular-nums pt-0.5 text-right" style="grid-column: 3; grid-row: 1">
+        <div class="date text-[11px] tabular-nums pt-0.5 text-right" style="grid-column: 3; grid-row: 1">
           {{ formatDate(m.rawDate || m.date) }}
         </div>
 
         <!-- Flags -->
         <div class="flex flex-col items-end gap-1 mt-0.5" style="grid-column: 3; grid-row: 2/4">
           <Icon v-if="m.starred" name="star" :size="12" class="text-star" style="fill: currentColor" />
-          <Icon v-if="m.attachments?.length" name="paperclip" :size="12" class="text-ink-mute" />
+          <Icon v-if="m.attachments?.length" name="paperclip" :size="12" class="flag" />
         </div>
       </div>
     </div>

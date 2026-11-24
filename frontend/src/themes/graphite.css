@@ -1,0 +1,129 @@
+/*
+ * "Graphite" theme (dark): Grafana v11 (packages/grafana-data/src/themes/createColors.ts), ported from ad-manager's
+ * frontend/src/themes/graphite.css (jniltinho/ad-manager, commit dcad381): canvas #111217, primary #181B1F,
+ * secondary #22252B, primary.main #3D71D9 and the orange #FF8833 accent. Square corners, as there. Only role values
+ * of the contract in ../style.css.
+ * Changed here: danger is the upstream error text #FF5286 with dark ink (the upstream #D10E5C button fill is 3.2:1
+ * as text on the surface, and this contract uses one danger role for both).
+ */
+
+/* Graphite (dark): canvas #111217, surfaces #181B1F, actions #3D71D9, accent #FF8833 */
+:root[data-theme='graphite'] {
+  /* text */
+  --color-fg: #ccccdc;
+  --color-fg-strong: #ffffff;
+  --color-fg-muted: rgba(204, 204, 220, 0.65);
+  --color-fg-subtle: rgba(204, 204, 220, 0.65);
+  --color-heading: #ffffff;
+  --color-link: #6e9fff;
+  --color-link-hover: #8ab2ff;
+
+  /* page and surfaces */
+  --color-page: #111217;
+  --color-backdrop: #0b0c0e;
+  --color-surface: #181b1f;
+  --color-surface-2: #22252b;
+  --color-surface-3: #1d2025;
+  --color-line: rgba(204, 204, 220, 0.12);
+  --color-line-soft: rgba(204, 204, 220, 0.07);
+  --color-popup-line: rgba(204, 204, 220, 0.25);
+  --color-row-hover: #22252b;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-scroll-thumb: #3a3d45;
+
+  /* selection (the selected message) */
+  --color-selection: #2d3b55;
+  --color-on-selection: #ffffff;
+  --color-on-selection-muted: #ccccdc;
+  --color-on-selection-subtle: #ccccdc;
+  --color-selection-mark: #ff8833;
+  --color-selection-line: #3d71d9;
+
+  /* fields and keyboard focus */
+  --color-field: #111217;
+  --color-on-field: #ccccdc;
+  --color-field-line: rgba(204, 204, 220, 0.5);
+  --color-field-focus: #6e9fff;
+  --color-focus: #6e9fff;
+
+  /* primary action */
+  --color-action: #3461bb;
+  --color-action-hover: #3d71d9;
+  --color-action-line: #3d71d9;
+  --color-on-action: #ffffff;
+
+  /* secondary action */
+  --color-action-2: #22252b;
+  --color-action-2-hover: #2d3037;
+  --color-action-2-line: rgba(204, 204, 220, 0.3);
+  --color-action-2-hover-line: #6e9fff;
+  --color-on-action-2: #ccccdc;
+
+  /* danger and status */
+  --color-danger: #ff5286;
+  --color-on-danger: #111217;
+  --color-ok: #6ccf8e;
+  --color-err: #ff5286;
+  --color-warn: #fbad37;
+  --color-err-soft: #361929;
+  --color-on-err-soft: #ffa0bc;
+  --color-err-line: #6b2540;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #15171b;
+  --color-header-brand: #181b1f;
+  --color-on-header: #ccccdc;
+  --color-on-header-muted: rgba(204, 204, 220, 0.65);
+  --color-on-header-err: #ff5286;
+  --color-header-line: rgba(204, 204, 220, 0.12);
+  --color-header-control-line: rgba(204, 204, 220, 0.3);
+  --color-header-hover: #22252b;
+  --color-tab-on: #181b1f;
+  --color-on-tab-on: #ffffff;
+  --color-tab-mark: #ff8833;
+
+  /* sidebar */
+  --color-sidebar: #181b1f;
+  --color-on-sidebar: #ccccdc;
+  --color-sidebar-hover: #22252b;
+  --color-sidebar-active: #2d3b55;
+  --color-on-sidebar-active: #ffffff;
+  --color-count: rgba(204, 204, 220, 0.65);
+
+  /* mail list */
+  --color-unread: #ffffff;
+  --color-unread-mark: #6e9fff;
+  --color-star: #fbad37;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #ff8833;
+  --color-accent-strong: #ff9d57;
+  --color-accent-soft: #262a33;
+  --color-on-accent: #111217;
+
+  /* raw source viewer */
+  --color-code: #0b0c0e;
+  --color-on-code: #ccccdc;
+  --color-on-code-muted: rgba(204, 204, 220, 0.65);
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #6d7787;
+  --color-paper-link: #2a5599;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+
+  /* type */
+
+  /* depth and the selected row's shape */
+  --shadow-focus: 0 0 0 2px var(--color-focus);
+  --bg-backdrop: none;
+  --shadow-menu: 0 8px 24px rgba(1, 4, 9, 0.75);
+  --shadow-dialog: 0 13px 20px 1px rgba(1, 4, 9, 0.8);
+  --shadow-toast: 0 4px 8px rgba(24, 26, 27, 0.75);
+  --shadow-card: 0 8px 24px rgba(1, 4, 9, 0.75);
+}

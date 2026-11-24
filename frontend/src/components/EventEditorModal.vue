@@ -102,11 +102,11 @@ async function remove() {
     class="fixed inset-0 z-50 flex items-center justify-center"
     @click.self="mail.closeEditor()"
   >
-    <div class="absolute inset-0 bg-black/40" />
-    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 z-10 flex flex-col">
+    <div class="absolute inset-0 bg-overlay" />
+    <div class="relative bg-surface rounded-surface sh-dialog w-full max-w-lg mx-4 z-10 flex flex-col">
       <!-- Header -->
       <div class="flex items-center justify-between px-5 py-3.5 border-b border-line">
-        <span class="font-semibold text-ink">{{ title }}</span>
+        <span class="font-semibold text-fg">{{ title }}</span>
         <button class="tbtn p-1" @click="mail.closeEditor()">
           <Icon name="x" :size="14" />
         </button>
@@ -116,10 +116,10 @@ async function remove() {
       <div class="overflow-y-auto px-5 py-4 space-y-3">
         <!-- Title -->
         <div>
-          <label class="block text-xs text-ink-sub mb-1">Title *</label>
+          <label class="block text-xs text-fg-muted mb-1">Title *</label>
           <input
             v-model="form.summary"
-            class="w-full border border-line rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+            class="w-full border border-line rounded-control px-2.5 py-1.5 text-sm"
             placeholder="Event title"
             autofocus
           />
@@ -127,11 +127,8 @@ async function remove() {
 
         <!-- Calendar -->
         <div>
-          <label class="block text-xs text-ink-sub mb-1">Calendar</label>
-          <select
-            v-model="form.calendar_id"
-            class="w-full border border-line rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
-          >
+          <label class="block text-xs text-fg-muted mb-1">Calendar</label>
+          <select v-model="form.calendar_id" class="w-full border border-line rounded-control px-2.5 py-1.5 text-sm">
             <option v-for="cal in mail.calendars" :key="cal.id" :value="cal.id">{{ cal.name }}</option>
           </select>
         </div>
@@ -145,51 +142,48 @@ async function remove() {
         <!-- Start / End -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs text-ink-sub mb-1">Start</label>
+            <label class="block text-xs text-fg-muted mb-1">Start</label>
             <input
               v-model="form.start_at"
               :type="form.is_all_day ? 'date' : 'datetime-local'"
-              class="w-full border border-line rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+              class="w-full border border-line rounded-control px-2.5 py-1.5 text-sm"
             />
           </div>
           <div>
-            <label class="block text-xs text-ink-sub mb-1">End</label>
+            <label class="block text-xs text-fg-muted mb-1">End</label>
             <input
               v-model="form.end_at"
               :type="form.is_all_day ? 'date' : 'datetime-local'"
-              class="w-full border border-line rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+              class="w-full border border-line rounded-control px-2.5 py-1.5 text-sm"
             />
           </div>
         </div>
 
         <!-- Location -->
         <div>
-          <label class="block text-xs text-ink-sub mb-1">Location</label>
+          <label class="block text-xs text-fg-muted mb-1">Location</label>
           <input
             v-model="form.location"
-            class="w-full border border-line rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+            class="w-full border border-line rounded-control px-2.5 py-1.5 text-sm"
             placeholder="Optional location"
           />
         </div>
 
         <!-- Description -->
         <div>
-          <label class="block text-xs text-ink-sub mb-1">Description</label>
+          <label class="block text-xs text-fg-muted mb-1">Description</label>
           <textarea
             v-model="form.description"
             rows="3"
-            class="w-full border border-line rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            class="w-full border border-line rounded-control px-2.5 py-1.5 text-sm resize-none"
             placeholder="Optional notes"
           />
         </div>
 
         <!-- Recurrence -->
         <div>
-          <label class="block text-xs text-ink-sub mb-1">Recurrence (RRULE)</label>
-          <select
-            v-model="form.rrule"
-            class="w-full border border-line rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
-          >
+          <label class="block text-xs text-fg-muted mb-1">Recurrence (RRULE)</label>
+          <select v-model="form.rrule" class="w-full border border-line rounded-control px-2.5 py-1.5 text-sm">
             <option value="">No recurrence</option>
             <option value="FREQ=DAILY">Daily</option>
             <option value="FREQ=WEEKLY">Weekly</option>
@@ -202,7 +196,7 @@ async function remove() {
 
       <!-- Footer -->
       <div class="flex items-center justify-between px-5 py-3 border-t border-line">
-        <button v-if="!isNew" class="tbtn text-red-600 hover:bg-red-50" @click="remove">
+        <button v-if="!isNew" class="tbtn tbtn-danger hover:bg-err-soft" @click="remove">
           <Icon name="trash-2" :size="13" class="mr-1" /> Delete
         </button>
         <div v-else />

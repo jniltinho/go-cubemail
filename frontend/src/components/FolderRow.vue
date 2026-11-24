@@ -151,7 +151,7 @@ const iconName = computed(() => FOLDER_ICON_MAP[props.folder.id] || 'folder')
     @dragend="onDragLeave"
     @drop="onDrop"
   >
-    <Icon :name="iconName" :size="14" class="text-accent-2" />
+    <Icon :name="iconName" :size="14" class="ic" />
     <span class="lbl">{{ folder.label }}</span>
     <span class="count">{{ folder.count }}</span>
     <button class="kebab" type="button" title="Folder options" @click.stop="menu = !menu">

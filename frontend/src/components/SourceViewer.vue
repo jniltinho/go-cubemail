@@ -49,12 +49,12 @@ function download() {
   <div class="modal-wrap" @click="backdrop">
     <div class="composer-shell" style="width: 820px" role="dialog" aria-label="View Source">
       <!-- Header -->
-      <div class="bg-accent-bar text-white py-2 px-3 flex items-center gap-2 text-[13px] font-semibold">
+      <div class="on-header bg-header text-on-header py-2 px-3 flex items-center gap-2 text-[13px] font-semibold">
         <Icon name="code-2" :size="14" />
         <span class="truncate">View Source — {{ mail.sourceMail?.subject }}</span>
         <button
           type="button"
-          class="ml-auto flex-shrink-0 cursor-pointer w-[22px] h-[22px] grid place-items-center bg-transparent border border-[#4A6FA0] text-white hover:bg-[#2A4978]"
+          class="ml-auto flex-shrink-0 cursor-pointer w-[22px] h-[22px] grid place-items-center bg-transparent border border-header-control-line text-on-header hover:bg-header-hover"
           @click="mail.closeSource()"
         >
           <Icon name="x" :size="12" />
@@ -63,11 +63,11 @@ function download() {
 
       <!-- Raw body -->
       <div
-        class="bg-[#0E1A2E] text-[#D5E0F2] font-mono text-[12px] leading-snug py-3.5 px-4 max-h-[calc(100vh-200px)] overflow-auto whitespace-pre-wrap break-words scroll-y"
+        class="bg-code text-on-code font-mono text-[12px] leading-snug py-3.5 px-4 max-h-[calc(100vh-200px)] overflow-auto whitespace-pre-wrap break-words scroll-y"
       >
         <div v-if="!mail.sourceRaw" class="flex flex-col items-center justify-center py-12 gap-3">
           <svg
-            class="animate-spin text-[#4A6FA0]"
+            class="animate-spin text-on-code-muted"
             width="28"
             height="28"
             viewBox="0 0 24 24"
@@ -79,14 +79,14 @@ function download() {
           >
             <path d="M21 12a9 9 0 1 1-6.219-8.56" />
           </svg>
-          <span class="text-[#6A82A0] text-[12px]">Loading source…</span>
+          <span class="text-on-code-muted text-[12px]">Loading source…</span>
         </div>
         <template v-else>{{ mail.sourceRaw }}</template>
       </div>
 
       <!-- Footer -->
-      <div class="py-2 px-2.5 bg-panel-2 border-t border-line flex items-center gap-1.5">
-        <span class="text-[12px] text-ink-sub px-1.5"
+      <div class="py-2 px-2.5 bg-surface-2 border-t border-line flex items-center gap-1.5">
+        <span class="text-[12px] text-fg-muted px-1.5"
           >{{ sizeLabel ? sizeLabel + ' · ' : '' }}Raw RFC 822 source · read-only</span
         >
         <div class="ml-auto flex gap-1.5">

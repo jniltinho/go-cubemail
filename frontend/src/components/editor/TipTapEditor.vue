@@ -123,18 +123,18 @@ defineExpose({
     <!-- Rich contenteditable area -->
     <div v-if="!showSource" class="rte-content" :style="contentStyle">
       <EditorContent v-if="editor" :editor="editor" :style="{ minHeight: contentStyle.minHeight }" />
-      <div v-else class="text-ink-mute p-3 text-sm">Loading editor…</div>
+      <div v-else class="rte-note p-3 text-sm">Loading editor…</div>
     </div>
 
     <!-- Raw HTML source view (syncs with rich editor) -->
     <div v-else class="rte-content" :style="contentStyle">
       <textarea
         v-model="sourceHtml"
-        class="w-full h-full font-mono text-[12.5px] border-0 outline-none resize-y bg-white"
+        class="w-full h-full font-mono text-[12.5px] border-0 outline-none resize-y"
         style="min-height: inherit; font-family: var(--font-mono)"
         placeholder="Raw HTML..."
       />
-      <div class="text-[10px] text-ink-mute pt-1">
+      <div class="rte-note text-[10px] pt-1">
         Editing raw HTML. Use with caution — invalid markup may be sanitized on send.
       </div>
     </div>
