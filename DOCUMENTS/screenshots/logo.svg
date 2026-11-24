@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="200" viewBox="0 0 640 200" role="img" aria-labelledby="title description">
+  <title id="title">Webmail</title>
+  <desc id="description">A filled envelope with a transparent V-shaped flap cut and shallow cube faces, beside the Webmail wordmark.</desc>
+  <rect width="640" height="200" fill="#FFFFFF" />
+  <g transform="translate(56 34) scale(6)" fill="#1B3A6B">
+    <path d="M2 7 6 3h14l-4 4Z" fill="#5B83BC" />
+    <path d="m16 7 4-4v12l-4 4Z" opacity="0.8" />
+    <path d="M2 7h14l-7 5Z" />
+    <path d="M2 9 9 14l7-5v10H2Z" />
+  </g>
+  <text x="200" y="123" fill="#1B3A6B" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="64" font-weight="400" letter-spacing="-2"><tspan font-weight="700">Web</tspan>mail</text>
+</svg>

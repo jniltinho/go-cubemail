@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 32 32" role="img" aria-labelledby="title description">
+  <title id="title">Concept B: Split cube</title>
+  <desc id="description">Three solid planes separated by open seams, with a diamond-shaped envelope lid. An alternative, not the selected mark.</desc>
+  <g transform="translate(5 5)" fill="#1B3A6B">
+    <path d="M11 1 20 6 11 12 2 6Z" />
+    <path d="M2 9 10 14.3V21L2 16Z" />
+    <path d="m12 14.3 8-5.3v7l-8 5Z" />
+  </g>
+</svg>

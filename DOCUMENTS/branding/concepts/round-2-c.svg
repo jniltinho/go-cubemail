@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
+  <title>Webmail concept C: envelope folded around a corner</title>
+  <g fill="#1B3A6B">
+    <path d="M2 6h11l-5 6Z" />
+    <path d="M2 8 8 14l5-6v11H2Z" />
+    <path d="m14 6 6-3-4 7Z" fill="#5B83BC" />
+    <path d="m14 9 2 3 4-7v11l-6 3Z" opacity="0.72" />
+  </g>
+</svg>

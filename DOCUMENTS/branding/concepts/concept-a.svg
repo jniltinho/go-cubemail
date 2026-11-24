@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 32 32" role="img" aria-labelledby="title description">
+  <title id="title">Concept A: Corner letter</title>
+  <desc id="description">An envelope cut from a square sheet with a detached folded corner. An alternative, not the selected mark.</desc>
+  <g transform="translate(5 5)">
+    <path d="M2 3H13V10H20V19H2Z" fill="#1B3A6B" />
+    <path d="M15 3 21 9H15Z" fill="#5173A3" />
+    <path d="m4 8 7 6 7-3" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round" />
+  </g>
+</svg>

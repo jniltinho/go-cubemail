@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
+  <title>Webmail concept B: open envelope flap as a cube lid</title>
+  <g fill="#1B3A6B">
+    <path d="M2 9 10 2l7 7-7 5Z" fill="#5B83BC" />
+    <path d="m18 10 2-2v10l-2 2Z" opacity="0.72" />
+    <path d="M2 11 10 16l7-5v9H2Z" />
+  </g>
+</svg>

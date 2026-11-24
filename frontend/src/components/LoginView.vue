@@ -8,6 +8,7 @@
 
 import { useAuthStore } from '../stores/auth'
 import { useMailStore } from '../stores/mail'
+import BrandMark from './BrandMark.vue'
 import Icon from './Icon.vue'
 
 /** Authentication store instance */
@@ -34,8 +35,8 @@ async function onSubmit() {
     >
       <!-- Card header -->
       <div class="flex items-center gap-3 px-5 py-3.5 bg-header border-b border-header-line">
-        <div class="w-7 h-7 bg-tab-mark text-header grid place-items-center font-mono font-extrabold text-[13px]">
-          W
+        <div class="w-7 h-7 bg-tab-mark text-header grid place-items-center">
+          <BrandMark :size="22" />
         </div>
         <div class="text-[17px] font-bold tracking-tight">
           <b>Web</b>mail<span

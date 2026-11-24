@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 32 32" role="img" aria-labelledby="title description">
+  <title id="title">Concept C: Four folds</title>
+  <desc id="description">Four triangular envelope folds form a compact square with diagonal negative space. An alternative, not the selected mark.</desc>
+  <g transform="translate(5 5)" fill="#1B3A6B">
+    <path d="M2 4H20L11 12Z" />
+    <path d="M2 7 9 13 2 19Z" />
+    <path d="m20 7-7 6 7 6Z" />
+    <path d="m4 19 7-6 7 6Z" />
+  </g>
+</svg>

@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Envelope body -->
-  <rect width="28" height="20" x="2" y="6" rx="3" fill="#1B3A6B"/>
-  <!-- Envelope flap (V shape) -->
-  <path d="M2 9 L16 18.5 L30 9" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Bottom-left fold -->
-  <path d="M2 26 L12 17.5" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-  <!-- Bottom-right fold -->
-  <path d="M30 26 L20 17.5" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
+  <title>Webmail</title>
+  <rect width="22" height="22" rx="4" fill="#FFFFFF" />
+  <g fill="#1B3A6B">
+    <path d="M2 7 6 3h14l-4 4Z" fill="#5B83BC" />
+    <path d="m16 7 4-4v12l-4 4Z" opacity="0.8" />
+    <path d="M2 7h14l-7 5Z" />
+    <path d="M2 9 9 14l7-5v10H2Z" />
+  </g>
 </svg>
