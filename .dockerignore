@@ -1,0 +1,16 @@
+.git
+.github
+.agents
+DOCUMENTS
+openspec
+bin
+data
+tmp
+ssl
+web/dist
+frontend/node_modules
+config.toml
+config.local.toml
+*.db
+*.db-shm
+*.db-wal

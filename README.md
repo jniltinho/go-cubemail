@@ -38,6 +38,28 @@ Built with a modern Vue 3 + Go stack, inspired by the classic Roundcube "Larry" 
 
 Pre-built binaries are published on every release. For production setup with MariaDB + systemd, see the [Production Setup Guide](DOCUMENTS/setup/README.md).
 
+### Docker
+
+Multi-arch images (amd64, arm64) are published to the GitHub Container Registry:
+`latest` and `X.Y.Z` on every release, `edge` from `main`.
+
+```bash
+docker run -d --name go-cubemail -p 8080:8080 \
+  -e GORC_SERVER_SECRET_KEY="$(openssl rand -base64 24)" \
+  -e GORC_IMAP_HOST=mail.example.com \
+  -e GORC_SMTP_HOST=mail.example.com \
+  -v go-cubemail-data:/data \
+  ghcr.io/jniltinho/go-cubemail:latest
+```
+
+- The container runs `migrate` and then `serve`, as an unprivileged user (uid 10001).
+- `/data` holds the SQLite database. With a bind mount instead of a named volume,
+  make the directory writable for uid 10001.
+- `GORC_SERVER_SECRET_KEY` is required and must stay the same across restarts:
+  it encrypts the IMAP password kept in the session, so changing it logs everyone out.
+- Any other setting is a `GORC_` variable (`GORC_SMTP_PORT`, `GORC_DATABASE_DRIVER`,
+  `GORC_DATABASE_DSN`, …), or mount a full config file at `/etc/go-cubemail/config.toml`.
+
 ### Build from source
 
 Requires Go 1.26+ and Node.js (build time only).

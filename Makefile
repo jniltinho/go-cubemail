@@ -17,7 +17,7 @@ LDFLAGS    := -trimpath -ldflags "-s -w -X $(PREFIX).Version=$(VERSION) -X $(PRE
 
 .PHONY: all build build-prod run clean frontend frontend-dev frontend-check dev \
         migrate tidy deps deps-frontend install-upx certs swagger \
-        test test-race test-integration help
+        test test-race test-integration docker help
 
 ## Default: build frontend + go binary
 all: clean frontend build
@@ -79,6 +79,10 @@ run:
 migrate:
 	@echo "Running database migrations..."
 	./$(BIN) migrate
+
+## Build the Docker image locally (CI publishes it: .github/workflows/docker.yml)
+docker:
+	docker build --build-arg VERSION=$(VERSION) --build-arg GIT_COMMIT=$(GIT_COMMIT) --build-arg BUILD_DATE=$(BUILD_TIME) -t ghcr.io/jniltinho/$(APP):$(VERSION) .
 
 ## Clean build artifacts
 clean:
