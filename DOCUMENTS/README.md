@@ -9,6 +9,8 @@ This directory contains all official documentation for the **go-cubemail-vue** p
 | `docs/` | Technical documentation, architecture, development guides, and contributor guidelines |
 | `setup/` | Production installation guides and deployment examples (systemd, databases, etc.) |
 | `specs/` | Project specifications and rules (e.g., coding standards, language policy) |
+| `screenshots/` | Screenshots used by the READMEs: the cover, one per theme, and the main views |
+| `branding/` | Logo concepts from the design rounds |
 
 ## Quick Start
 
@@ -26,6 +28,7 @@ This directory contains all official documentation for the **go-cubemail-vue** p
 - [Development Guide](docs/DEVELOPMENT.md) — How to set up your local environment and develop the project
 - [Contributing Guide](docs/CONTRIBUTING.md) — Guidelines for contributing code and opening pull requests
 - [Code Audit & Improvements Report](docs/CODE_AUDIT_AND_IMPROVEMENTS.md) — Results of a recent documentation and code quality review
+- [Themes Guide](docs/THEMES.md) — The shipped themes, how to add one, and what the contrast tests guarantee
 - [Releasing Guide](docs/RELEASING.md) — How to create version tags and GitHub Releases with polished, structured release notes
 
 ### In `setup/`

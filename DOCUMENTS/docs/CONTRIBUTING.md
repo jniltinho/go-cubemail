@@ -18,7 +18,7 @@ Before contributing, please read:
 
 ### Reporting Bugs
 
-- Use the [GitHub Issues](https://github.com/jniltinho/go-cubemail-vue/issues) page.
+- Use the [GitHub Issues](https://github.com/jniltinho/go-cubemail/issues) page.
 - Provide a clear and descriptive title.
 - Include steps to reproduce the issue.
 - Mention your environment (OS, Go version, Node version, database).
@@ -58,7 +58,9 @@ Pull requests that do not comply will be requested to be updated.
 ### Code Style
 
 - **Go**: Follow `gofmt` and `goimports`. Run `go fmt ./...` before committing.
-- **Frontend**: Follow the existing Prettier + ESLint configuration.
+- **Frontend**: Formatted and linted by Vite+ (`cd frontend && npm run check`; `npm run fmt` formats). Interface
+  colors come from theme roles only, never literals; see the [Themes guide](THEMES.md).
+- Before opening a pull request run `make test`, `make test-frontend` and `make frontend-check`.
 - Keep functions small and focused.
 - Add comments for complex logic.
 
@@ -110,7 +112,7 @@ When contributing, please keep documentation up to date:
 
 If you have questions or need clarification:
 
-- Open a [GitHub Discussion](https://github.com/jniltinho/go-cubemail-vue/discussions)
+- Open a [GitHub Discussion](https://github.com/jniltinho/go-cubemail/discussions)
 - Or open an issue with the `question` label
 
 We appreciate your time and effort in helping improve Go CubeMail!

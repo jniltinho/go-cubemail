@@ -55,40 +55,61 @@ export function buildCalCells(events: Record<number, CalEvent[]> = {}): CalCell[
 
 ```bash
 frontend/
+├── index.html             # Loads /theme-boot.js before the app, so a reload starts in the user's theme
+├── public/
+│   ├── theme-boot.js      # Applies the remembered theme before the first paint (a file: the CSP forbids inline scripts)
+│   └── favicon.svg, sw.js
+├── scripts/
+│   ├── themes.mjs         # `npm run theme:new` and `npm run themes` (registry generation)
+│   └── style-dump.js      # Console snippet to compare a screen before and after a stylesheet change
+├── tests/unit/            # Theme tests: file structure, color lint, registry, WCAG AAA contrast
 ├── src/
 │   ├── components/        # 🎨 Vue 3 SFCs (Single File Components)
-│   │   ├── AppBar.vue     # Top global header & global search bar
-│   │   ├── AppSidebar.vue # Expandable mailbox navigation tree & quota gauge
-│   │   ├── AppToolbar.vue # Mail actions toolbar (Compose, Delete, Move, Reply)
-│   │   ├── MailList.vue        # Scrollable message list with checkboxes, sorting, bulk actions
-│   │   ├── ReadingPane.vue     # Headers + sandboxed HTML body (iframe) + attachments + calendar invites
-│   │   ├── ComposerModal.vue   # Full composer with TinyMCE, autocomplete, attachments
+│   │   ├── AppBar.vue          # Top bar: brand mark, view tabs, global search, sign-out
+│   │   ├── AppSidebar.vue      # Folder tree and quota gauge
+│   │   ├── AppToolbar.vue      # Mail actions (compose, reply, delete, move)
+│   │   ├── MailList.vue        # Message list with checkboxes and sorting
+│   │   ├── ReadingPane.vue     # Headers, sandboxed HTML body (iframe), attachments, calendar invitations
+│   │   ├── ComposerModal.vue   # Composer: recipients with autocomplete, attachments, the rich-text editor
+│   │   ├── editor/             # TipTap rich-text editor and its toolbar
 │   │   ├── ContactsPane.vue    # Address book with import/export
-│   │   ├── CalendarPane.vue    # Monthly grid view (demo data)
-│   │   └── ...                 # AppBar, AppSidebar, AppToolbar, modals (Dialog, Toast, SourceViewer, ContactModal, etc.)
+│   │   ├── CalendarPane.vue    # Month, week and day views
+│   │   ├── SettingsPane.vue    # Identities, preferences and the Appearance tab (theme picker)
+│   │   ├── BrandMark.vue       # The logo, drawn with currentColor
+│   │   └── ...                 # Dialogs, toasts, source viewer, contact and event modals, icons
 │   │
 │   ├── stores/            # 🍍 Pinia State Modules
-│   │   ├── auth.ts        # Session, CSRF tokens, and credentials authorization
-│   │   ├── dialog.ts      # Global interactive pop-ups stack (Alert, Confirm)
-│   │   ├── toast.ts       # Visual temporary notifications queues
-│   │   └── mail/          # Unified Mail Store Architecture (deliberately split for maintainability)
-│   │       ├── index.ts   # Main store assembly + getters + cross-cutting concerns
-│   │       ├── api.ts     # All REST calls (fetchFolderMessages, loadFromApi, fetchMessageBody…)
-│   │       ├── mailActions.ts    # Reply/forward, flag, move, delete, archive, select
-│   │       ├── folderActions.ts  # Create/rename/delete folders + context menu handling
+│   │   ├── auth.ts        # Session, CSRF token, theme registry and the active theme
+│   │   ├── dialog.ts      # Alert, confirm and prompt dialogs
+│   │   ├── toast.ts       # Toast notification queue
+│   │   └── mail/          # Mail store, deliberately split for maintainability
+│   │       ├── index.ts           # Store assembly, getters, cross-cutting concerns
+│   │       ├── api.ts             # REST calls (folders, messages, bodies)
+│   │       ├── mailActions.ts     # Reply/forward, flag, move, delete, archive, select
+│   │       ├── folderActions.ts   # Create/rename/delete folders, context menu
 │   │       ├── composerActions.ts # Compose, reply, forward, draft, source viewer
-│   │       ├── contactActions.ts  # Contacts CRUD + CSV/VCard import/export + autocomplete
-│   │       ├── constants.ts & mockData.ts # Folder name mapping + demo calendar events
+│   │       ├── contactActions.ts  # Contacts CRUD, import/export, autocomplete
+│   │       ├── calendarActions.ts # Calendars and events
+│   │       └── settingsActions.ts # Preferences, identities, theme save
+│   │
+│   ├── styles/            # 🎨 Stylesheets
+│   │   ├── contract.css   # The role contract: every color, radius, shadow and font, with Larry's values
+│   │   ├── base.css       # Document defaults, large-screen scaling, scrollbars, keyboard focus
+│   │   └── components/    # One file per group of component classes (buttons, sidebar, mail-list, ...)
+│   ├── themes/            # One file per theme (role values only) + contrast.json; loaded automatically
+│   ├── style.css          # Entry: Tailwind and the files of styles/
 │   │
 │   ├── utils/             # 🛠️ Utility Services
 │   │   ├── helpers.ts     # Date formatting, ink over calendar colors, calendar grid, raw source builder
-│   │   └── sse.ts         # Client-side new-mail polling (10 min) + Web Audio notifications (legacy "SSE" module name)
+│   │   ├── theme.ts       # Applies a theme to the document and remembers it
+│   │   ├── sse.ts         # Client-side new-mail polling (legacy "SSE" module name)
+│   │   └── webpush.ts     # Web Push subscription
 │   │
-│   ├── main.ts            # 🚀 Application entry bootstrap
-│   └── types.ts           # 🏷️ Unified static TypeScript models
+│   ├── main.ts            # 🚀 Application entry: Inter font, style.css, every theme file
+│   └── types.ts           # 🏷️ TypeScript models
 │
-├── vite.config.ts         # ⚙️ Vite & proxy routing configurations
-└── tsconfig.json          # 🔧 Strictly configured TypeScript compiler options
+├── vite.config.ts         # ⚙️ Vite+ config: dev server and proxy, build, tests, formatter and linter
+└── tsconfig.json          # 🔧 TypeScript compiler options
 ```
 
 ---

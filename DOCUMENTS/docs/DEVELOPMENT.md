@@ -18,7 +18,7 @@ Optional but recommended:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/jniltinho/go-cubemail-vue.git
+   git clone https://github.com/jniltinho/go-cubemail.git
    cd go-cubemail-vue
    ```
 
@@ -144,21 +144,34 @@ make migrate
 
 - Follow the **English-only policy** strictly. See [DOCUMENTS/specs/english_only.md](../specs/english_only.md).
 - Use `gofmt` / `goimports` for Go code.
-- Use Prettier + ESLint for the frontend.
+- The frontend is formatted and linted by Vite+ (Oxfmt and Oxlint): `make frontend-check` checks, `npm run fmt` formats.
 - Write clear, English comments and documentation.
 
 ## Testing
 
-Currently, the project has limited automated tests. When adding new features:
+Three commands cover the automated checks; run them before opening a pull request:
+
+```bash
+make test             # Go unit tests (in-memory SQLite and IMAP server, no network needed)
+make test-frontend    # frontend unit tests: theme files, component color lint, WCAG AAA contrast
+make frontend-check   # format, lint and type-check the frontend
+```
+
+When adding new features:
 
 - Add unit tests for new packages under `internal/`.
 - Test CLI commands manually using `./bin/go-cubemail <command>`.
 - Test IMAP/SMTP flows with real or mocked accounts when possible.
 
-Run Go tests:
+### Working on themes
+
+A theme is one CSS file of role values; see the [Themes guide](THEMES.md).
 
 ```bash
-go test ./...
+cd frontend
+npm run theme:new -- nord "Nord" dark --from graphite   # create a theme from an existing one
+npm test                                                # structure and contrast
+npm run themes                                          # regenerate the server's registry after renaming one
 ```
 
 ## Working with the CLI
@@ -186,10 +199,10 @@ For the complete process of creating tags and GitHub Releases — including how 
 Quick reference:
 
 1. Create an annotated tag: `git tag -a v0.0.24 -m "Release v0.0.24"`
-2. Push it: `git push origin v0.0.24` (this triggers the automated build)
+2. Push it: `git push origin v0.0.24` (this triggers the release build and publishes the Docker image)
 3. After CI finishes, add the formatted release notes using `gh release edit`
 
-See [`.github/workflows/release.yml`](https://github.com/jniltinho/go-cubemail-vue/blob/main/.github/workflows/release.yml) for the current automation details.
+See [`.github/workflows/release.yml`](https://github.com/jniltinho/go-cubemail/blob/main/.github/workflows/release.yml) for the current automation details.
 
 ## Additional Resources
 

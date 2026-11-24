@@ -196,7 +196,7 @@ go-cubemail-vue/
 │       ├── styles/           # contract.css (role tokens, Larry's values), base.css, components/*.css
 │       ├── themes/           # one file per theme (role values only) + contrast.json; loaded automatically
 │       ├── env.d.ts
-│       ├── components/       # 16 Vue SFC components
+│       ├── components/       # 24 Vue SFC components (4 of them under editor/)
 │       ├── stores/           # Pinia stores
 │       └── utils/
 │           ├── helpers.ts    # Date formatting, ink over calendar colors
@@ -470,11 +470,12 @@ Overlays (always mounted):
 ├── ToastContainer.vue   — toast notification queue
 ├── SourceViewer.vue     — raw email source viewer
 ├── FolderRow.vue        — reusable folder tree row with context menu
+├── BrandMark.vue        — the logo, drawn with currentColor so it follows the theme
 ├── Icon.vue / SpinnerIcon.vue
 └── RichTextEditor.vue   — TipTap rich text editor (editor/ directory)
 ```
 
-**Current component count:** 17 Vue SFCs.
+**Current component count:** 24 Vue SFCs (20 in `components/`, 4 in `components/editor/`).
 
 ### 9.2 Pinia Stores (modular architecture)
 

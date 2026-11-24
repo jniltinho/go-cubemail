@@ -3,6 +3,10 @@
 The webmail ships with eleven themes. Each user picks one in **Settings → Appearance**; the choice is saved to the
 account, so it follows the user to other browsers. The administrator sets the default with `ui.theme`.
 
+![The eleven themes](../screenshots/themes.jpg)
+
+Full-size screenshots, one per theme, are in [`DOCUMENTS/screenshots/themes`](../screenshots/themes).
+
 | Theme | Id | Scheme | Reference |
 |---|---|---|---|
 | Larry | `larry` | light | Roundcube's Larry skin: the look the application always had. The default. |

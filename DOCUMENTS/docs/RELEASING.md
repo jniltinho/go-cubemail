@@ -87,6 +87,9 @@ The workflow (`release.yml`) will:
 - Package the Linux amd64 tarball
 - Create the GitHub Release and attach the artifact
 
+The same tag also triggers the Docker workflow (`docker.yml`), which publishes the multi-arch image to
+`ghcr.io/jniltinho/go-cubemail` as `X.Y.Z`, `X.Y` and `latest`.
+
 You can monitor progress in the **Actions** tab or poll with:
 
 ```bash
@@ -152,15 +155,15 @@ Copy and adapt the following template:
 
 - ...
 
-**Full Changelog**: https://github.com/jniltinho/go-cubemail-vue/compare/v0.0.22...v0.0.23
+**Full Changelog**: https://github.com/jniltinho/go-cubemail/compare/v0.0.22...v0.0.23
 ```
 
 ### Example of Real Notes
 
 See the actual releases for reference:
 
-- [v0.0.23](https://github.com/jniltinho/go-cubemail-vue/releases/tag/v0.0.23)
-- [v0.0.21](https://github.com/jniltinho/go-cubemail-vue/releases/tag/v0.0.21)
+- [v0.0.23](https://github.com/jniltinho/go-cubemail/releases/tag/v0.0.23)
+- [v0.0.21](https://github.com/jniltinho/go-cubemail/releases/tag/v0.0.21)
 
 ## Commit Categorization Guidelines
 
@@ -178,7 +181,7 @@ When a single commit touches multiple areas, choose the most relevant section or
 
 The release workflow (`.github/workflows/release.yml`) currently:
 
-- Only builds for `linux/amd64`
+- Only builds the binary for `linux/amd64` (the Docker image, built by `docker.yml`, is amd64 and arm64)
 - Produces a single `.tar.gz` artifact
 - Does **not** automatically generate nice release notes (body is left empty)
 - Deb and RPM packaging steps are commented out
@@ -187,7 +190,7 @@ These are intentional simplifications. If you need additional architectures or p
 
 ## Related Documentation
 
-- [Release Workflow](https://github.com/jniltinho/go-cubemail-vue/blob/main/.github/workflows/release.yml) — The actual GitHub Action definition
+- [Release Workflow](https://github.com/jniltinho/go-cubemail/blob/main/.github/workflows/release.yml) — The actual GitHub Action definition
 - [Development Guide](DEVELOPMENT.md) — Short releasing overview + local development commands
 - [Software Design Document (SDD)](SDD.md) — Project architecture
 
