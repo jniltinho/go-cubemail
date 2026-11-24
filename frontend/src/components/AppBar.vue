@@ -33,9 +33,7 @@ const TABS = [
     <div
       class="flex items-center gap-2.5 px-4 font-bold text-[14px] tracking-[0.3px] bg-header-brand border-r border-header-line min-w-[220px]"
     >
-      <div class="w-7 h-7 bg-on-header text-header-brand grid place-items-center">
-        <BrandMark :size="22" />
-      </div>
+      <BrandMark :size="26" />
       <div><b>Web</b>mail</div>
     </div>
 

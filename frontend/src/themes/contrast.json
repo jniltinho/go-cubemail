@@ -56,7 +56,6 @@
     { "id": "header-muted", "fg": "on-header-muted", "bg": ["header"], "size": "normal" },
     { "id": "header-muted/brand", "fg": "on-header-muted", "bg": ["header-brand"], "size": "normal" },
     { "id": "header-err/brand", "fg": "on-header-err", "bg": ["header-brand"], "size": "ui" },
-    { "id": "brand-mark", "fg": "header-brand", "bg": ["on-header"], "size": "large" },
     { "id": "tab-on", "fg": "on-tab-on", "bg": ["tab-on"], "size": "normal" },
     { "id": "tab-mark/tab-on", "fg": "tab-mark", "bg": ["tab-on"], "size": "ui" },
     { "id": "sidebar", "fg": "on-sidebar", "bg": ["sidebar"], "size": "normal" },

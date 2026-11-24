@@ -35,9 +35,7 @@ async function onSubmit() {
     >
       <!-- Card header -->
       <div class="flex items-center gap-3 px-5 py-3.5 bg-header border-b border-header-line">
-        <div class="w-7 h-7 bg-tab-mark text-header grid place-items-center">
-          <BrandMark :size="22" />
-        </div>
+        <BrandMark :size="26" />
         <div class="text-[17px] font-bold tracking-tight">
           <b>Web</b>mail<span
             v-if="auth.appVersion"
