@@ -3,7 +3,7 @@
 - [x] 1.1 Write `frontend/scripts/style-dump.js`: a console snippet that returns as JSON, for every element of the
       current screen and for its `::before`/`::after`, the color, background, border colors, radius, box-shadow,
       outline color, font family and the SVG `fill`, `stroke` and `stop-color`.
-- [ ] 1.2 Start the app against the real mailbox and save the baseline dumps of: login, the loading screen, mail list
+- [x] 1.2 Start the app against the real mailbox and save the baseline dumps of: login, the loading screen, mail list
       with a message open (HTML and plain text), composer (rich text and HTML source), contacts, calendar with an
       event, settings (both tabs), a confirm dialog, a toast and the folder context menu.
 - [x] 1.3 Inventory every color use (literals, palette utilities such as `gray-*`, `white`/`black`, arbitrary shadows,
@@ -123,7 +123,7 @@
 
 ## 7. Verification in the running app
 
-- [ ] 7.1 Build (`make frontend build`), run `go-cubemail migrate`, start on localhost against the real mailbox and,
+- [x] 7.1 Build (`make frontend build`), run `go-cubemail migrate`, start on localhost against the real mailbox and,
       in each of the nine themes, walk: login, mail list (read, unread, starred, selected, hover, multi-select),
       reading pane (HTML, plain text, attachments, calendar invitation), composer with the toolbar's menus and the
       HTML-source mode, contacts with its modal, calendar with the event editor, settings (three tabs),
@@ -150,26 +150,31 @@
 
 ## Verification notes
 
-Everything below ran on localhost against a seeded in-memory IMAP mailbox and an SMTP sink, driven with
-agent-browser, not against a real mailbox. That is why 1.2 and 7.1 stay open.
+Two environments were used on localhost: a seeded in-memory IMAP mailbox with an SMTP sink (driven with
+agent-browser), where anything that changes state was done, and the real mailbox (in Chrome), where the walk only
+looked: the theme was switched on the page without saving it, only an already-read message was opened, and nothing
+was sent, moved or deleted.
 
-- **1.2 / 2.8** Computed-style dumps were compared between the pre-change build and this one on: login, mail list
-  with an HTML, a plain-text and an attachment message open, composer (rich text), contacts, calendar and both
-  settings tabs. Not dumped: the loading screen, the composer's HTML-source mode, a calendar with an event, a
-  confirm dialog, a toast and the folder context menu. The only differences are the ones listed under "Changes to
-  the Larry look" in `DOCUMENTS/docs/THEMES.md`.
-- **7.1** Still open: no screen was walked by hand theme by theme against the real mailbox, and these states were
-  not reached at all: a calendar invitation, the drag-over state of a folder, multi-select and hover states.
-- **7.2** An in-page audit measured the rendered contrast of every text and icon, and looked for light boxes left
-  in dark themes, in each of the nine themes on: mail list (with unread and starred rows), a message with
-  attachments, the source viewer, the four toast kinds, the folder context menu, confirm and prompt dialogs, the
-  composer in rich-text and HTML-source mode, the contact modal, the event editor, the identity editor, contacts,
-  calendar and the three settings tabs. It found the active folder's icon and the star on the selected message
-  (invisible in High contrast); both are fixed, the second with the new `--color-on-selection-star` role. What is
-  left is the star on an unselected row in the light themes, the documented `aaaOnly` exception.
+- **1.2 / 2.8** Done on the test mailbox, not the real one as the task says: the pre-change build would have needed
+  a second sign-in to the real account. Computed-style dumps were compared between the pre-change build and this
+  one on login, mail list with an HTML, a plain-text and an attachment message open, composer (rich text),
+  contacts, calendar and both settings tabs. The only differences are the ones listed under "Changes to the Larry
+  look" in `DOCUMENTS/docs/THEMES.md`.
+- **7.1 / 7.2** An in-page audit measured the rendered contrast of every text and icon, and looked for light boxes
+  left in dark themes, in each of the nine themes.
+  - Real mailbox: mail list with unread rows, a message open, multi-select, a folder in the drag-over look, the four
+    toast kinds, the folder context menu, a confirm dialog, the composer and its six toolbar menus, contacts,
+    calendar, the three settings tabs, and a hovered row (text stays at 4.5:1 or more in every theme, 12:1 in High
+    contrast).
+  - Test mailbox, in addition: starred rows, a message with attachments, the source viewer, the prompt dialog, the
+    composer's HTML-source mode, the contact modal, the event editor and the identity editor.
+  - Found and fixed: the active folder's icon, and the star on the selected message (invisible in High contrast),
+    the second with the new `--color-on-selection-star` role. What is left is the star on an unselected row and on
+    the default identity in the light themes, the documented `aaaOnly` exception.
+  - Never reached, in either environment: the calendar invitation panel of a message (no invitation at hand).
 - **7.3** Tab was pressed through the mail, settings and calendar views in Larry and the mail and contacts views in
   High contrast: every control showed the ring, and a mouse click left none. The search box draws its ring around
-  the box (it was hidden behind its fields at first; fixed). The composer was not walked.
+  the box (it was hidden behind its fields at first; fixed). The composer was not walked with the keyboard.
 - **7.4** A reply written in Graphite was sent through the SMTP sink: the HTML that left has no custom property and
   no theme color. The editor drops the inline styles of the quote markup, so the quote carries no color at all.
 - **7.5** Reload in a dark theme starts dark; sign-out keeps the theme; a fresh browser profile shows the server
