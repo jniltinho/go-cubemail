@@ -195,6 +195,7 @@ function onInputKey(e: KeyboardEvent) {
   background: var(--color-surface-2);
 }
 
+/* the dialog's buttons take the same fills and relief as toolbar buttons, so a theme's gradient or bevel shows */
 .dlg-btn {
   height: 28px;
   padding: 0 16px;
@@ -203,21 +204,26 @@ function onInputKey(e: KeyboardEvent) {
   cursor: pointer;
   border: 1px solid var(--color-action-2-line);
   border-radius: var(--radius-control);
-  background: var(--color-action-2);
+  background-color: var(--color-action-2);
+  background-image: var(--bg-action-2);
+  box-shadow: var(--shadow-action-2);
   color: var(--color-on-action-2);
 }
 .dlg-btn:hover {
-  background: var(--color-action-2-hover);
+  background-color: var(--color-action-2-hover);
+  background-image: var(--bg-action-2-hover);
+  border-color: var(--color-action-2-hover-line);
 }
 .dlg-btn--ok {
-  background: var(--color-action);
+  background-color: var(--color-action);
+  background-image: var(--bg-action);
+  box-shadow: var(--shadow-action);
   border-color: var(--color-action-line);
   color: var(--color-on-action);
 }
 .dlg-btn--ok:hover {
-  background: var(--color-action-hover);
-}
-.dlg-btn--cancel {
-  background: var(--color-action-2);
+  background-color: var(--color-action-hover);
+  background-image: var(--bg-action-hover);
+  border-color: var(--color-action-line);
 }
 </style>

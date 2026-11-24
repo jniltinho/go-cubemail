@@ -118,7 +118,7 @@ More screenshots in [DOCUMENTS/screenshots](DOCUMENTS/screenshots).
   - What a client sends is what it gets back — addresses, photos, birthdays, alarms and custom fields are never dropped in a round trip
 - **Web Push notifications** — Real-time new mail alerts in the browser even when the tab is in the background (requires HTTPS + VAPID keys).
 - **Privacy by design** — Your emails never leave your IMAP server. The database only stores contacts, calendar events, identities, settings and sessions.
-- **Themes** — Ten looks, each user picks their own: Larry (default), Outlook and Apple Mail inspired (light and dark), Breeze (light and dark), Graphite, High contrast and Windows XP. All meet WCAG AAA contrast; a new theme is one CSS file (`npm run theme:new`). See [Themes](DOCUMENTS/docs/THEMES.md).
+- **Themes** — Eleven looks, each user picks their own: Larry (default), Outlook and Apple Mail inspired (light and dark), Breeze (light and dark), Graphite, High contrast, Windows XP and Windows 98. All meet WCAG AAA contrast; a new theme is one CSS file (`npm run theme:new`). See [Themes](DOCUMENTS/docs/THEMES.md).
 - **Full HD, QHD and 4K** — The interface scales up on wide monitors instead of leaving small text.
 - **Multiple identities & signatures** — Send from different addresses with per-identity signatures.
 - **Easy to operate** — `init` generates a ready-to-use config, migrations are a single idempotent command. Production examples with systemd + MariaDB/PostgreSQL included.

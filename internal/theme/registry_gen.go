@@ -15,4 +15,5 @@ var registry = []Theme{
 	{ID: "graphite", Label: "Graphite (dark)", Scheme: "dark"},
 	{ID: "high-contrast", Label: "High contrast (dark)", Scheme: "dark"},
 	{ID: "windows-xp", Label: "Windows XP", Scheme: "light"},
+	{ID: "windows-98", Label: "Windows 98", Scheme: "light"},
 }

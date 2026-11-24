@@ -105,7 +105,7 @@ secure    = false
 http_only = true
 
 [ui]
-theme           = "larry"     # default theme: larry | outlook | outlook-dark | apple-mail | apple-mail-dark | breeze | breeze-dark | graphite | high-contrast | windows-xp
+theme           = "larry"     # default theme: larry | outlook | outlook-dark | apple-mail | apple-mail-dark | breeze | breeze-dark | graphite | high-contrast | windows-xp | windows-98
 rows_per_page   = 50
 timezone        = "America/Sao_Paulo"
 date_format     = "02/01/2006"
@@ -581,9 +581,9 @@ Every color, corner radius, shadow and font of the interface is a named **role**
 
 Components use roles only (`bg-surface`, `text-fg-muted`, `rounded-control`, `var(--color-…)`); literal colors and
 palette utilities fail the theme tests. A theme is one file under `frontend/src/themes/` with nothing but
-`:root[data-theme='<id>'] { --role: value }` rules, selected by the `data-theme` attribute of `<html>`. Ten themes
-ship, all at WCAG AAA contrast: `larry`, `outlook`, `outlook-dark`, `apple-mail`, `apple-mail-dark`, `breeze`,
-`breeze-dark`, `graphite`, `high-contrast` and `windows-xp`. A new one is created with `npm run theme:new`; the
+`:root[data-theme='<id>'] { --role: value }` rules, selected by the `data-theme` attribute of `<html>`. Eleven
+themes ship, all at WCAG AAA contrast: `larry`, `outlook`, `outlook-dark`, `apple-mail`, `apple-mail-dark`,
+`breeze`, `breeze-dark`, `graphite`, `high-contrast`, `windows-xp` and `windows-98`. A new one is created with `npm run theme:new`; the
 server's list is generated from the theme files. Wide viewports (QHD, 4K) scale the whole interface up. Each user chooses one in Settings → Appearance (`UserSettings.Theme`); `ui.theme` is the default.
 
 Message content (HTML mail and the composer's document) is drawn on the paper roles, which stay light in every
@@ -677,7 +677,7 @@ clean       # remove binary
 - [x] Calendar view (monthly grid with mock events)
 - [x] View raw email source + download as .eml
 - [x] Keyboard shortcuts (j/k/r/e/#/c + Delete)
-- [x] Themes: ten selectable per user (Larry, Outlook, Apple Mail, Breeze, Graphite, High contrast, Windows XP), all WCAG AAA, with contrast tests
+- [x] Themes: eleven selectable per user (Larry, Outlook, Apple Mail, Breeze, Graphite, High contrast, Windows XP, Windows 98), all WCAG AAA, with contrast tests
 - [x] Large screens: the interface scales up on QHD and 4K viewports
 - [x] Toast notifications + modal dialogs
 - [x] Folder create / rename / delete

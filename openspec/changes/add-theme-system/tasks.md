@@ -173,6 +173,10 @@
       Windows XP's first choice.
 - [x] 9.10 Draw the brand mark straight on the header, without a plate behind it.
 
+- [x] 9.11 Windows XP login on the Bliss backdrop of go-guacamole's XP theme.
+- [x] 9.12 Add the `windows-98` theme (created with `npm run theme:new`); dialog buttons take the theme's fills and
+      relief; the gradient test checks every stop of a sideways gradient.
+
 ## Verification notes
 
 Two environments were used on localhost: a seeded in-memory IMAP mailbox with an SMTP sink (driven with

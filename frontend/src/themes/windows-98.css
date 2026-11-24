@@ -1,0 +1,172 @@
+/*
+ * "Windows 98" theme: the classic gray desktop, after ad-manager's "Classic gray (98)" (frontend/src/themes/
+ * classics.css, jniltinho/ad-manager) and go-guacamole's win98 theme (jniltinho/go-guacamole, frontend/src/themes/
+ * win98/theme.css), adapted to a webmail: the app bar and dialog title bars are the navy title bar with its
+ * gradient, toolbars are the gray 3D face (#C0C0C0), toolbar buttons are raised with the white and dark bevel,
+ * fields are sunken, lists are white with the navy selection, menus and dialogs have the hard-edged frame and a
+ * solid drop shadow, the login sits on the teal desktop, square corners everywhere. The primary action is navy
+ * with its own bevel, so it stands out from the gray buttons. Drawn at the original's small size, in the bundled
+ * Inter with MS Sans Serif behind it. No affiliation with Microsoft; no logo, icon or font of the product is used.
+ * The title bar gradient ends at #0B5B90 instead of the original #1084D0, which holds white text at only 4:1.
+ * Held to WCAG AAA (text 7:1, large text 4.5:1, components 3:1).
+ * Only role values of the contract in ../styles/contract.css.
+ */
+:root[data-theme='windows-98'] {
+  --theme-label: 'Windows 98';
+  --theme-scheme: light;
+  --theme-order: 110;
+
+  /* text */
+  --color-fg: #000000;
+  --color-fg-strong: #000080;
+  --color-fg-muted: #242424;
+  --color-fg-subtle: #242424;
+  --color-heading: #000080;
+  --color-link: #000080;
+  --color-link-hover: #00005a;
+
+  /* page and surfaces */
+  --color-page: #c0c0c0;
+  --color-backdrop: #008080;
+  --color-surface: #ffffff;
+  --color-surface-2: #c0c0c0;
+  --color-surface-3: #dfdfdf;
+  --color-line: #808080;
+  --color-line-soft: #c0c0c0;
+  --color-popup-line: #000000;
+  --color-row-hover: #dfdfdf;
+  --color-overlay: rgba(0, 0, 0, 0.4);
+  --color-scroll-thumb: #808080;
+
+  /* selection (the selected message) */
+  --color-selection: #000080;
+  --color-on-selection: #ffffff;
+  --color-on-selection-muted: #ffffff;
+  --color-on-selection-subtle: #ffffff;
+  --color-on-selection-star: #ffff00;
+  --color-selection-mark: #000080;
+  --color-selection-line: #000080;
+
+  /* fields and keyboard focus */
+  --color-field: #ffffff;
+  --color-on-field: #000000;
+  --color-field-line: #808080;
+  --color-field-focus: #000080;
+  --color-focus: #000000;
+
+  /* primary action */
+  --color-action: #000080;
+  --color-action-hover: #0000a8;
+  --color-action-line: #000000;
+  --color-on-action: #ffffff;
+
+  /* secondary action */
+  --color-action-2: #c0c0c0;
+  --color-action-2-hover: #d4d4d4;
+  --color-action-2-line: #808080;
+  --color-action-2-hover-line: #000000;
+  --color-on-action-2: #000000;
+
+  /* danger and status */
+  --color-danger: #640000;
+  --color-on-danger: #ffffff;
+  --color-ok: #003700;
+  --color-err: #640000;
+  --color-warn: #5c4d00;
+  --color-err-soft: #f0dcdc;
+  --color-on-err-soft: #640000;
+  --color-err-line: #a06060;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #0b5b90;
+  --color-header-brand: #000080;
+  --color-on-header: #ffffff;
+  --color-on-header-muted: #ffffff;
+  --color-on-header-err: #ffd6d6;
+  --color-header-line: #000000;
+  --color-header-control-line: #c0c0c0;
+  --color-header-hover: #0000a8;
+  --color-tab-on: #00005a;
+  --color-on-tab-on: #ffffff;
+  --color-tab-mark: #ffffff;
+
+  /* sidebar */
+  --color-sidebar: #ffffff;
+  --color-on-sidebar: #000000;
+  --color-sidebar-hover: #dfdfdf;
+  --color-sidebar-active: #000080;
+  --color-on-sidebar-active: #ffffff;
+  --color-count: #242424;
+
+  /* mail list */
+  --color-unread: #000000;
+  --color-unread-mark: #000080;
+  --color-star: #8a6d00;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #000080;
+  --color-accent-strong: #00005a;
+  --color-accent-soft: #dfdfdf;
+  --color-on-accent: #ffffff;
+
+  /* raw source viewer */
+  --color-code: #000000;
+  --color-on-code: #c0c0c0;
+  --color-on-code-muted: #a8a8a8;
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #515965;
+  --color-paper-link: #1f4a8a;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+  --radius-control: 0px;
+  --radius-surface: 0px;
+  --radius-row: 0px;
+
+  /* type */
+  --font-sans: 'Inter Variable', 'MS Sans Serif', 'Microsoft Sans Serif', Tahoma, Arial, sans-serif;
+  --font-mono: 'Fixedsys', 'Lucida Console', 'Courier New', monospace;
+  --shadow-menu:
+    inset -1px -1px 0 #000000, inset 1px 1px 0 #dfdfdf, inset -2px -2px 0 #808080, inset 2px 2px 0 #ffffff,
+    2px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-dialog:
+    inset -1px -1px 0 #000000, inset 1px 1px 0 #dfdfdf, inset -2px -2px 0 #808080, inset 2px 2px 0 #ffffff,
+    3px 3px 0 rgba(0, 0, 0, 0.55);
+  --shadow-toast:
+    inset -1px -1px 0 #000000, inset 1px 1px 0 #dfdfdf, inset -2px -2px 0 #808080, inset 2px 2px 0 #ffffff,
+    2px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-card:
+    0 0 0 1px #dfdfdf, 0 0 0 2px #ffffff, 1px 1px 0 2px #808080, 2px 2px 0 2px #000000,
+    6px 6px 0 2px rgba(0, 0, 0, 0.35);
+  --shadow-focus: 0 0 0 1px #ffffff, 0 0 0 3px var(--color-focus);
+  --shadow-focus-header: inset 0 0 0 2px var(--color-tab-mark);
+
+  /* relief: the mark of the current tab, and the bevel of buttons and fields in themes that have one */
+  --shadow-tab-on: inset 1px 1px 0 #000000, inset -1px -1px 0 #8f8fd0, inset 2px 2px 0 #00003a;
+  --shadow-action:
+    inset 1px 1px 0 #8f8fd0, inset -1px -1px 0 #000000, inset 2px 2px 0 #3a3ab0, inset -2px -2px 0 #00003a;
+  --shadow-action-2:
+    inset 1px 1px 0 #ffffff, inset -1px -1px 0 #404040, inset 2px 2px 0 #dfdfdf, inset -2px -2px 0 #808080;
+  --shadow-field: inset 1px 1px 0 #404040, inset -1px -1px 0 #dfdfdf;
+
+  /* fills that a theme may draw as a gradient over the color role of the same name (none: the color shows) */
+  --bg-header: linear-gradient(to right, #000080 0%, #0b5b90 100%);
+  --bg-tab-on: none;
+  --bg-action: none;
+  --bg-action-hover: none;
+  --bg-action-2: none;
+  --bg-action-2-hover: none;
+  --bg-strip: none;
+  --row-inset-x: 0px;
+  --selection-mark-w: 0px;
+
+  /* size of the whole interface in this theme (1 = as drawn); multiplied into the large-screen scaling */
+  --theme-scale: 0.85;
+  --bg-backdrop: none;
+  --font-paper: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}

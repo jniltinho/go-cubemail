@@ -179,8 +179,9 @@ describe('contrast (WCAG AAA in every theme)', () => {
     expect(parseColor('rgb(255 0 0 / 50%)')).toEqual([255, 0, 0, 0.5])
     expect(parseColor('linear-gradient(red, blue)')).toBe(null)
   })
-  // A gradient fill is drawn over the color role of the same name. Its top fifth and bottom fifth may hold a
-  // highlight or a shade (text is centered in a bar or a button); every stop in between must keep the text at 7:1.
+  // A gradient fill is drawn over the color role of the same name. In a top-to-bottom gradient the top fifth and
+  // the bottom fifth may hold a highlight or a shade (text is centered in a bar or a button); every stop in between
+  // must keep the text at 7:1.
   const FILLS = {
     '--bg-header': ['on-header', 'on-header-muted'],
     '--bg-tab-on': ['on-tab-on'],
@@ -195,8 +196,11 @@ describe('contrast (WCAG AAA in every theme)', () => {
     for (const { id } of themes) {
       const roles = merged(id)
       for (const [fill, inks] of Object.entries(FILLS)) {
-        for (const stop of gradientStops(resolve(roles.get(fill), roles))) {
-          if (stop.at < 20 || stop.at > 80) continue
+        const value = resolve(roles.get(fill), roles)
+        // a gradient that runs sideways has text over its whole length, so every stop counts
+        const sideways = /^linear-gradient\(\s*(to (right|left)|90deg|270deg)/.test(value)
+        for (const stop of gradientStops(value)) {
+          if (!sideways && (stop.at < 20 || stop.at > 80)) continue
           for (const ink of inks) {
             const got = ratio(colorOf(ink, roles), stop.color)
             if (got < 7) bad.push(`${id} ${fill} at ${stop.at}%: ${ink} ${got.toFixed(2)}:1`)

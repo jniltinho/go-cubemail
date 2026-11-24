@@ -10,7 +10,7 @@ contrast level; adding or changing a shipped theme is a change to this capabilit
 ### Requirement: Theme registry
 The system SHALL keep one ordered registry of themes, each with an id, a label and a scheme (`light` or `dark`).
 The registry SHALL contain, in this order: `larry`, `outlook`, `outlook-dark`, `apple-mail`, `apple-mail-dark`,
-`breeze`, `breeze-dark`, `graphite`, `high-contrast`, `windows-xp`. The registry SHALL be generated from the theme
+`breeze`, `breeze-dark`, `graphite`, `high-contrast`, `windows-xp`, `windows-98`. The registry SHALL be generated from the theme
 files, each of which declares its own label, scheme and position.
 
 #### Scenario: Registry and stylesheet agree
@@ -137,6 +137,21 @@ original's small size.
 - **WHEN** the contrast test reads a gradient fill of the theme
 - **THEN** every stop between 20% and 80% of its height keeps the text drawn over it at 7:1
 
+### Requirement: Windows 98 theme
+The registry SHALL include `windows-98` ("Windows 98", light): the gray 3D face `#C0C0C0` on toolbars, a navy
+title-bar gradient on the app bar and dialog title bars, raised bevels on buttons, sunken fields, white lists with a
+navy selection, hard-edged frames with a solid drop shadow on menus and dialogs, a teal login backdrop and square
+corners, drawn at the original's small size.
+
+#### Scenario: Choose Windows 98
+- **WHEN** the user chooses "Windows 98"
+- **THEN** the header is a navy gradient with white text, toolbar buttons are gray with a white and dark bevel, the
+  selected message is navy with white text, and every corner is square
+
+#### Scenario: Sideways gradient
+- **WHEN** the contrast test reads the title bar's left-to-right gradient
+- **THEN** every stop of it, the lightest end included, keeps white text at 7:1
+
 ### Requirement: Every shipped theme meets enhanced contrast
 Every theme of the registry SHALL meet WCAG AAA in each listed pairing: 7:1 for normal text, 4.5:1 for large text
 and 3:1 for interface components, including the outlines of fields and of secondary buttons and the star.
@@ -146,7 +161,7 @@ and 3:1 for interface components, including the outlines of fields and of second
 - **THEN** the theme uses a value moved in lightness only, and the theme file notes the original value
 
 ### Requirement: No third-party brand assets
-Themes inspired by other products (Outlook, Apple Mail, Windows XP) SHALL use only colors and font stacks made of
+Themes inspired by other products (Outlook, Apple Mail, Windows XP, Windows 98) SHALL use only colors and font stacks made of
 system fonts and the application's own bundled font. They SHALL NOT add that product's
 logo, icons, bundled fonts or name anywhere except the theme's label.
 
