@@ -86,7 +86,8 @@ Replace the binary and run the migration again before starting the new version:
 ./go-cubemail migrate
 ```
 
-Migrations are idempotent, so running them when nothing changed is harmless.
+Migrations are idempotent, so running them when nothing changed is harmless. A release that adds a column (the
+user's theme, for example) needs it: without the migration the settings endpoints fail.
 
 ## Screenshots
 
@@ -117,6 +118,7 @@ More screenshots in [DOCUMENTS/screenshots](DOCUMENTS/screenshots).
   - What a client sends is what it gets back — addresses, photos, birthdays, alarms and custom fields are never dropped in a round trip
 - **Web Push notifications** — Real-time new mail alerts in the browser even when the tab is in the background (requires HTTPS + VAPID keys).
 - **Privacy by design** — Your emails never leave your IMAP server. The database only stores contacts, calendar events, identities, settings and sessions.
+- **Themes** — Nine looks, each user picks their own: Larry (default), Outlook and Apple Mail inspired (light and dark), Breeze (light and dark), Graphite and a WCAG AAA high-contrast theme. See [Themes](DOCUMENTS/docs/THEMES.md).
 - **Multiple identities & signatures** — Send from different addresses with per-identity signatures.
 - **Easy to operate** — `init` generates a ready-to-use config, migrations are a single idempotent command. Production examples with systemd + MariaDB/PostgreSQL included.
 - **Production API** — Versioned REST API with Swagger documentation. Useful for automation and integrations.

@@ -11,7 +11,7 @@ A modern, responsive webmail interface built as the frontend for **go-cubemail-v
 - **📦 Clean State Management**: Pinia stores with a deliberately split mail module (`stores/mail/`) to keep the main store readable while isolating API, folder, composer, mail, and contact actions.
 - **💡 Keyboard Shortcuts**: Vim-style navigation (`j`/`k`), compose (`c`), reply (`r`), archive (`e`), delete (`#` or `Delete`). Implemented globally in `App.vue`.
 - **📧 Isolated Mail Rendering**: Secure read-pane framing utilizing sandboxed iframes to completely isolate external HTML contents and block unauthorized scripts.
-- **🎨 Runtime Theming**: In-app accent color picker that updates CSS custom properties live (no reload).
+- **🎨 Themes**: Nine themes built on one contract of role tokens in `style.css`; a theme is one CSS file of role values under `src/themes/`. Chosen per user in Settings → Appearance, applied without a reload. See `DOCUMENTS/docs/THEMES.md`.
 - **🔔 New Mail Notifications**: Client-side polling (10-minute interval) that detects new messages in the inbox and plays an audio alert. True server-push (SSE) is planned but not yet implemented — see `DOCUMENTS/docs/SDD.md` §5.4 for details.
 
 ---
@@ -81,7 +81,7 @@ frontend/
 │   │       ├── constants.ts & mockData.ts # Folder name mapping + demo calendar events
 │   │
 │   ├── utils/             # 🛠️ Utility Services
-│   │   ├── helpers.ts     # Date formatting, accent color derivation, calendar grid, raw source builder
+│   │   ├── helpers.ts     # Date formatting, ink over calendar colors, calendar grid, raw source builder
 │   │   └── sse.ts         # Client-side new-mail polling (10 min) + Web Audio notifications (legacy "SSE" module name)
 │   │
 │   ├── main.ts            # 🚀 Application entry bootstrap

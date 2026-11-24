@@ -12,6 +12,7 @@
 
 - [Development Guide](DEVELOPMENT.md) — Local setup and contribution workflow
 - [Contributing Guide](CONTRIBUTING.md) — How to contribute to the project
+- [Themes](THEMES.md) — Role-token contract, the shipped themes and how to add one
 - [Code Audit Report](CODE_AUDIT_AND_IMPROVEMENTS.md) — Recent documentation and code quality review
 
 ---
@@ -104,7 +105,7 @@ secure    = false
 http_only = true
 
 [ui]
-theme           = "larry"
+theme           = "larry"     # default theme: larry | outlook | outlook-dark | apple-mail | apple-mail-dark | breeze | breeze-dark | graphite | high-contrast
 rows_per_page   = 50
 timezone        = "America/Sao_Paulo"
 date_format     = "02/01/2006"
@@ -177,6 +178,8 @@ go-cubemail-vue/
 │   │   └── settings.go
 │   ├── database/
 │   │   └── database.go       # Centralized DB connection + GORM query logger (sqlite, mariadb, mysql, postgres)
+│   ├── theme/
+│   │   └── theme.go          # Theme registry (id, label, scheme): the single list
 │   └── session/
 │       └── imap_session.go   # Wrapper: credentials + in-memory IMAP conn + cleanup goroutine
 ├── frontend/                 # Vue 3 SPA source (not served directly)
@@ -188,12 +191,14 @@ go-cubemail-vue/
 │       ├── main.ts
 │       ├── App.vue           # Root: layout, SSE, keyboard shortcuts
 │       ├── types.ts          # TypeScript interfaces
-│       ├── style.css         # Tailwind import + design tokens
+│       ├── style.css         # Tailwind import + the role-token contract (Larry's values)
+│       ├── themes/           # one file per theme family: role values only + contrast.json
 │       ├── env.d.ts
 │       ├── components/       # 16 Vue SFC components
 │       ├── stores/           # Pinia stores
 │       └── utils/
-│           └── helpers.ts    # Date formatting, color utilities
+│           ├── helpers.ts    # Date formatting, ink over calendar colors
+│           └── theme.ts      # applies a theme (data-theme, color-scheme, browser cache)
 ├── web/
 │   ├── dist/                 # Vite build output — embedded in binary
 │   ├── templates/            # Legacy Go templates (inactive)
@@ -277,6 +282,7 @@ The misleading function names `startSSE()` / `stopSSE()` are legacy and should i
 |---|---|---|---|
 | POST | `/api/v1/auth/login` | auth.DoLogin | Authenticates via IMAP, sets session cookie |
 | GET | `/version` | — | App version JSON |
+| GET | `/api/v1/themes` | themes.List | Theme registry and the server's default theme |
 | GET | `/*` | SPA handler | Serves embedded Vue SPA (fallback to index.html) |
 
 ### Protected (middleware: auth + CSRF + security headers)
@@ -393,6 +399,7 @@ type UserSettings struct {
     ComposeHTML    bool   `gorm:"default:true"`
     DateFormat     string
     SignaturePos   string `gorm:"default:'below'"`
+    Theme          string // chosen theme id; "" follows ui.theme. No default tag: it must be clearable
 }
 
 // model/session.go
@@ -443,7 +450,7 @@ type Session struct {
 App.vue (root)
 ├── LoginView.vue        — shown when !isAuthenticated
 └── Authenticated layout
-    ├── AppBar.vue       — top bar: logo, global search, user menu, logout, accent picker
+    ├── AppBar.vue       — top bar: logo, global search, user menu, logout
     ├── AppToolbar.vue   — action buttons (reply, delete, move, archive, compose…)
     ├── AppSidebar.vue   — folder tree with unread counts + context menu + quota
     ├── [view === 'mail']
@@ -475,7 +482,7 @@ Overlays (always mounted):
 - Axios interceptor injects CSRF token on mutating requests
 
 **`stores/mail.ts` + `stores/mail/` sub-module** (highly modular)
-- `index.ts` — Main store assembly, state, computed getters, watchEffect for accent
+- `index.ts` — Main store assembly, state, computed getters
 - `api.ts` — All REST calls (`fetchFolderMessages`, `loadFromApi`, `fetchMessageBody`, etc.)
 - `mailActions.ts` — Reply, forward, delete, flag, move, archive, compose
 - `folderActions.ts` — Create/rename/delete folders + context menu
@@ -553,23 +560,33 @@ interface DialogState {
 | `#` / `Delete` | Delete |
 | `c` | Compose |
 
-### 9.5 Design System (`style.css`)
+### 9.5 Design System and Themes (`style.css`, `themes/`)
 
-Design tokens defined as CSS custom properties:
+Every color, corner radius, shadow and font of the interface is a named **role** declared once in `style.css`
+(`@theme static` plus one `:root` rule). The contract's values are the Larry theme, the default:
 
 ```css
-:root {
-  --accent:       #1B3A6B;   /* primary navy blue */
-  --accent-soft:  #e8eef7;   /* selected row background */
-  --row-selected: #d4e4f7;
-  --ink:          #1e2433;
-  --ink-soft:     #6b7280;
+@theme static {
+  --color-fg: #1a1f2a;        /* text */
+  --color-surface: #ffffff;   /* panels */
+  --color-header: #152d53;    /* app bar */
+  --color-action: #1b3a6b;    /* primary button */
+  --color-selection: #d1d8e1; /* selected message */
+  --radius-control: 0px;      /* buttons, fields */
+  /* … about 80 roles */
 }
 ```
 
-Custom component classes: `.tbtn`, `.side-item`, `.mail-row`, `.checkbox`, `.modal-wrap`, `.composer-shell`, `.search-box`.
+Components use roles only (`bg-surface`, `text-fg-muted`, `rounded-control`, `var(--color-…)`); literal colors and
+palette utilities fail the theme tests. A theme is one file under `frontend/src/themes/` with nothing but
+`:root[data-theme='<id>'] { --role: value }` rules, selected by the `data-theme` attribute of `<html>`. Nine themes
+ship: `larry`, `outlook`, `outlook-dark`, `apple-mail`, `apple-mail-dark`, `breeze`, `breeze-dark`, `graphite` and
+`high-contrast`. Each user chooses one in Settings → Appearance (`UserSettings.Theme`); `ui.theme` is the default.
 
-Supports an in-app **accent color picker** — swatches update `--accent` and related tokens at runtime via inline CSS variable override.
+Message content (HTML mail and the composer's document) is drawn on the paper roles, which stay light in every
+theme. The contract, the role list, how to add a theme and the contrast tests are in [THEMES.md](THEMES.md).
+
+Custom component classes: `.tbtn`, `.side-item`, `.mail-row`, `.checkbox`, `.modal-wrap`, `.composer-shell`, `.search-box`.
 
 ### 9.6 3-Column Layout (Larry theme)
 
@@ -657,7 +674,7 @@ clean       # remove binary
 - [x] Calendar view (monthly grid with mock events)
 - [x] View raw email source + download as .eml
 - [x] Keyboard shortcuts (j/k/r/e/#/c + Delete)
-- [x] Accent color picker (runtime CSS variable update)
+- [x] Themes: nine selectable per user (Larry, Outlook, Apple Mail, Breeze, Graphite, High contrast), with WCAG contrast tests
 - [x] Toast notifications + modal dialogs
 - [x] Folder create / rename / delete
 - [x] 10-minute background polling for new mail with audio notification (see 5.4)
@@ -763,6 +780,7 @@ never cached.
 | Session hijacking | `HttpOnly`, `Secure` (prod), `SameSite=Lax` cookies |
 | Rate limiting | Echo rate limiter middleware on auth endpoints |
 | Clickjacking | `X-Frame-Options: DENY` security header |
+| Inline script injection | CSP `script-src 'self'`: no inline scripts; the pre-paint theme script is a file (`/theme-boot.js`) |
 
 ---
 

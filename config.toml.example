@@ -59,6 +59,8 @@ secure    = false
 http_only = true
 
 [ui]
+# Default theme for users who have not chosen one (Settings → Appearance) and for the login screen:
+# larry | outlook | outlook-dark | apple-mail | apple-mail-dark | breeze | breeze-dark | graphite | high-contrast
 theme           = "larry"
 rows_per_page   = 50
 timezone        = "America/Sao_Paulo"
