@@ -5,9 +5,13 @@ go-cubemail's look is Roundcube's Larry theme, written directly into the code:
 - `frontend/src/style.css` has a `@theme` block with literal values (`--color-line`, `--color-panel`, `--color-ink`,
   ...), a `:root` block with six accent variables, and about 48 literal colors inside its component classes.
 - The components carry about 130 hex literals (56 of them are the composer's color swatches, which are content) and
-  about 60 `white`/`black` utilities.
+  about 60 `white`/`black`/`gray-*` utilities; `App.vue` and `editor/TipTapEditor.vue` have some too.
 - `*, *::before, *::after { border-radius: 0 !important }` makes every corner square; the 28 `rounded*` utilities in
-  the components have no effect today.
+  the components have no effect today. Two more resets sit beside it: `button, input, select, textarea
+  { border-radius: 0 }` and `.rte-toolbar .tbtn { border-radius: 0 !important }`.
+- Fields get their focus ring from per-element utilities (`focus:ring-1 focus:ring-accent`); `.tbtn` buttons have no
+  focus style at all.
+- Larry's faintest text (`--color-ink-mute`, `#8A93A1`, used for message snippets) is 3.1:1 on white, below WCAG AA.
 - `applyAccent()` (`frontend/src/utils/helpers.ts`) writes the accent variables as **inline styles** on `<html>`,
   driven by an `accent` value in the mail store that no component changes. Inline styles win over any stylesheet
   rule, so this code would silently override every theme.
@@ -29,7 +33,7 @@ a registry in Go, and tests for file structure, component colors, registry parit
 **Goals:**
 
 - A new theme is one CSS file plus one registry line; no component is edited.
-- Larry stays the default and renders exactly as it does now.
+- Larry stays the default and keeps its look; only documented contrast corrections change it.
 - Outlook and Apple Mail looks, light and dark, plus four themes ported from ad-manager.
 - Each user picks a theme; the choice follows the user across browsers and survives reloads without a flash.
 - A theme cannot ship with unreadable text: contrast is tested, not eyeballed.
@@ -99,12 +103,18 @@ components plus the `var(--accent*)` references) is assigned to the role of its 
 *Alternative considered:* keep today's names and add roles only for the literals. Less churn, but ad-manager's
 palettes would need a name translation forever, and `accent` would still mean four different things.
 
-### D2. Larry is the contract's default; phase A changes nothing a user can see
+### D2. Larry is the contract's default; tokenizing changes nothing a user can see
 
 Tokenizing (task groups 1 and 2) lands before any second theme exists, with the rule "no computed style changes".
 It is checked with a computed-style dump: a small script, run in the browser console on the same screens before and
-after, writes the color, background, border, radius, shadow, outline and font of every element; the two dumps must
-be equal. This needs no new dependency and is stricter than comparing screenshots by eye.
+after, writes for every element and for its `::before`/`::after` the color, background, border colors, radius,
+shadow, outline, font family and the SVG `fill`, `stroke` and `stop-color`; the two dumps must be equal. This needs
+no new dependency and is stricter than comparing screenshots by eye. The dump sees the resting state only; hover,
+focus and drag states are checked by hand in task group 7.
+
+Larry's contrast corrections come **after** that gate, as their own step (task 6.5): each pairing the contrast test
+rejects is fixed by the smallest change in lightness, same hue, with the original value noted in the contract, as
+ad-manager did for its default theme. Known so far: `--color-fg-subtle` (`#8A93A1`, 3.1:1 on the surface).
 
 `larry` has no theme file: `data-theme="larry"` matches no block and the contract's defaults apply.
 
@@ -124,7 +134,9 @@ role or shape parameter, available to every theme.
 
 ### D4. Radius roles replace the global reset
 
-`* { border-radius: 0 !important }` is removed. Three roles take its place, all `0` by default:
+`* { border-radius: 0 !important }` is removed, and so are the two resets beside it (the native-control one and
+`.rte-toolbar .tbtn`'s `!important`), which would otherwise keep defeating the roles. Three roles take their place,
+all `0` by default:
 `--radius-control` (buttons, fields, checkboxes, chips), `--radius-surface` (dialogs, menus, cards, toasts) and
 `--radius-row` (list rows, sidebar items). Declared in `@theme`, they produce the utilities `rounded-control`,
 `rounded-surface` and `rounded-row`. The component classes use the roles; the 28 `rounded*` utilities are each
@@ -157,12 +169,17 @@ test anyway, and the server must own validation.
   login screen needs it before any session exists; the content is static and not sensitive.
 - `ui.theme` is the server default. An id that is not in the registry logs a warning at start and falls back to
   `larry`; the server still starts.
-- `UserSettings.Theme` (string, default empty) is added by AutoMigrate when `go-cubemail migrate` runs. Empty means
-  "follow the server default".
+- `UserSettings.Theme` (string) is added by AutoMigrate when `go-cubemail migrate` runs. Empty means "follow the
+  server default". The column must **not** carry a GORM `default:` tag: the settings upsert is a `Create` with
+  `UpdateAll`, and GORM replaces a zero value with the tagged default on create, so a tagged column could never be
+  cleared (checked in a scratch program; the same mechanism is why `compose_html = false` does not survive a save
+  today, a separate bug noted under Open Questions).
 - `GET /api/v1/settings` returns `theme`: the stored id, or `""` when the user follows the default or the stored id
   is no longer in the registry.
 - `PUT /api/v1/settings` accepts an optional `theme`: a registry id, or `""` to follow the default. Any other value
-  is `400` and nothing is saved. The field is a pointer like the others, so clients that do not send it are
+  is `400` and nothing is saved: the handler binds and validates the body before it loads the user's settings
+  (today it loads first, and loading creates the row). The field is a pointer like the others, so clients that do
+  not send it are
   unaffected.
 
 *Alternative considered:* one global theme set by the administrator, as in ad-manager. A webmail has many users with
@@ -210,9 +227,16 @@ The component lint rejects literal colors and palette utilities outside the cont
 and are listed, with the reason, in an allowlist next to the test:
 
 - the composer's text-color and highlight swatches (colors the user applies to the document);
-- calendar colors chosen by the user and stored per calendar;
-- the file-type icon tints in `extColor()`, which become status roles (`err`, `ok`, `accent`) and leave the allowlist
-  if the inventory shows that no categorical color is needed.
+- the inline colors of the quote header and `blockquote` that `ComposerModal.vue` builds for replies: this markup is
+  sent as `body_html`, and the recipient's mail client has none of our custom properties, so it must keep literal
+  colors and must never reference a role;
+- calendar colors chosen by the user and stored per calendar, with their literal fallback.
+
+The file-type icon tints in `extColor()` move to status roles (`err`, `ok`, `accent`) and need no entry.
+
+A user-chosen calendar color is also a background: event labels are drawn over it in fixed white today, which is
+unreadable on a light calendar color in any theme. The label ink becomes black or white, whichever contrasts more
+with the calendar color (one small helper), so the contrast guarantee does not stop at the allowlist.
 
 An allowlist entry names a file and a pattern; an entry that no longer matches anything fails the test, so the list
 cannot rot.
@@ -238,7 +262,9 @@ The tests read source files only; they need no browser and no backend.
 
 Settings gains an "Appearance" tab: one row per theme with its label and a light/dark tag, plus "Use the server
 default". Choosing a row applies the theme at once and saves it with one `PUT`; if the save fails the previous theme
-is restored and a toast explains. No thumbnails: a faithful thumbnail needs each theme's values outside the
+(and the cached one) is restored and a toast explains. The existing `saveSettings()` swallows errors and returns
+nothing, so the tab uses a theme save that reports success or failure, and the list is disabled while a save is in
+flight so two choices cannot race. No thumbnails: a faithful thumbnail needs each theme's values outside the
 cascade, which the `:root`-scoped files do not offer, and the live preview is the whole application.
 
 ### D13. Outlook and Apple Mail are "inspired by"
@@ -247,6 +273,14 @@ Both use public system colors and system font stacks only (`"Segoe UI", ...` and
 product names in the interface beyond the theme label, icons or bundled fonts. Each theme file's header comment
 names its reference and every value changed for contrast, as ad-manager's files do. The docs carry a
 "no affiliation" note.
+
+### D14. One focus recipe for every control
+
+A single `:focus-visible` rule in `style.css` draws `--shadow-focus` on buttons, fields, checkboxes, list rows, menu
+items and the theme list; the per-field `focus:ring-*` utilities are removed. Larry's value reproduces today's field
+ring, so fields look the same and buttons gain a focus mark they lacked (a deliberate, visible accessibility fix,
+applied after the gate of D2). High contrast sets a solid 3 px yellow ring. The contrast matrix has a recipe for
+the focus color against each background a focused control sits on (3:1).
 
 ## Risks / Trade-offs
 
@@ -258,6 +292,8 @@ names its reference and every value changed for contrast, as ad-manager's files 
   unaffected. The contract is expected to grow by a few roles while the first themes are written.
 - **Reference colors fail contrast** (system blues on white, secondary labels) → Adjust lightness, keep hue, note the
   original in the file. The test decides, not the reference.
+- **Larry cannot be both pixel-identical and AA** → Identity is the gate for tokenizing only; the corrections are a
+  separate, listed step (D2).
 - **Dark theme, white message paper** → Intended (D9); the reading pane's paper gets the theme's line around it so
   it reads as a sheet. A dark paper for plain-text mail already follows from the roles.
 - **`localStorage` blocked or cleared** → The theme still comes from the server after login; only the pre-paint
@@ -269,18 +305,23 @@ names its reference and every value changed for contrast, as ad-manager's files 
 ## Migration Plan
 
 1. Ship groups 1 and 2 (tokenize) on their own: no visible change, easy to revert.
-2. Ship the registry, the endpoint, the setting and the picker with only `larry` selectable (groups 3 and 4).
-3. Add the themes (group 5) and the tests (group 6).
+2. Ship the two visible fixes to the base look (group 3) and the registry, the endpoint, the setting and the picker
+   with only `larry` selectable (groups 4 and 5).
+3. Add the tests, Larry's contrast corrections and the themes (group 6).
 
 Deployment follows the usual order for a schema change: run `go-cubemail migrate` (it adds the `theme` column), then
-start the new binary. Saving settings with the new binary on a database that was not migrated fails, because the
-settings upsert writes every column; reading still works. Existing users have an empty `theme` and keep Larry unless
-the administrator sets another `ui.theme`.
+start the new binary. Without the migration the settings endpoints fail (the upsert and the create-on-first-read
+both write every column), so the migration is mandatory, as for earlier schema changes. Existing users have an
+empty `theme` and keep Larry unless the administrator sets another `ui.theme`.
 
 Rollback: an older binary ignores the extra column and the cached `gorc_theme` key; nothing has to be undone.
 
 ## Open Questions
 
 - **Starter set.** Nine themes are proposed. Is the ported set right (`breeze`, `breeze-dark`, `graphite`,
-  `high-contrast`), or should others come in the first round?
+  `high-contrast`), or should others come in the first round? The review of this proposal suggested deferring the
+  three Breeze/Graphite ports: they are not needed to prove the contract, and each theme adds a full manual
+  walkthrough in task group 7.
+- **`compose_html` cannot be saved as `false`** (existing bug, see D6). Not caused by this change and not fixed by
+  it; it should get its own fix.
 - **Server-rendered default.** Is the first-visit limit in D7 acceptable for deployments whose default is not Larry?

@@ -42,7 +42,8 @@ the server default. `PUT /api/v1/settings` SHALL accept an optional `theme` and 
 
 #### Scenario: Unknown theme
 - **WHEN** a user sends `PUT /api/v1/settings` with `{"theme": "nope"}`
-- **THEN** the response is `400` with an error that names the value, and none of the user's settings change
+- **THEN** the response is `400` with an error that names the value, none of the user's settings change, and no
+  settings record is created for a user who had none
 
 #### Scenario: Request without the field
 - **WHEN** a user sends `PUT /api/v1/settings` without `theme`
@@ -66,8 +67,13 @@ the active one, and offers "Use the server default". Choosing an entry SHALL app
   is saved to the user's settings
 
 #### Scenario: Save fails
-- **WHEN** the user chooses a theme and the server rejects or does not answer the save
-- **THEN** the interface returns to the previous theme and an error message is shown
+- **WHEN** the user chooses a theme and the save request fails
+- **THEN** the interface and the theme remembered by the browser return to the previous theme, and an error message
+  is shown
+
+#### Scenario: Choosing while a save is in flight
+- **WHEN** the user has chosen a theme and its save has not finished
+- **THEN** the theme list does not accept another choice until it finishes
 
 #### Scenario: Use the server default
 - **WHEN** the user chooses "Use the server default"
@@ -91,7 +97,8 @@ only script files served by the application itself.
 
 #### Scenario: Storage unavailable
 - **WHEN** the browser blocks local storage
-- **THEN** the page loads with the default theme, no error is shown, and the user's theme is applied after sign-in
+- **THEN** the page first paints with the Larry look, switches to the server default once the theme list has loaded,
+  shows no error, and applies the user's theme after sign-in
 
 ### Requirement: Theme on the login screen and across browsers
 The login screen SHALL use the last theme applied in that browser, or the server default when there is none. After
@@ -99,7 +106,8 @@ sign-in, the user's saved theme SHALL replace it.
 
 #### Scenario: First visit
 - **WHEN** a browser with no remembered theme opens the login screen and the server default is `outlook`
-- **THEN** the login screen uses the Outlook theme once the theme list has loaded
+- **THEN** the login screen first paints with the Larry look and uses the Outlook theme once the theme list has
+  loaded
 
 #### Scenario: Sign in on another browser
 - **WHEN** a user who saved `graphite` signs in on a browser that remembers another theme

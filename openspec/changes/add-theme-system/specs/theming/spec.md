@@ -15,10 +15,9 @@ contract in the main stylesheet. The contract's default values SHALL be the Larr
 - **WHEN** the page loads with no theme attribute on the root element
 - **THEN** the interface renders with the contract's defaults, which is the Larry look
 
-#### Scenario: Larry is unchanged by the contract
-- **WHEN** the computed styles of the login screen, the mail view, the composer, the contacts view, the calendar view
-  and the settings view are compared before and after the contract is introduced, with the Larry theme
-- **THEN** color, background, border, radius, shadow, outline and font family are equal on every element
+#### Scenario: Default theme selected
+- **WHEN** the root element's theme attribute is `larry`
+- **THEN** the interface renders exactly as it does with no theme attribute
 
 ### Requirement: Components use roles only
 Components and component classes SHALL NOT contain literal colors, color-palette utilities, literal corner radii or
@@ -30,7 +29,8 @@ that names the file, the pattern and the reason.
 - **THEN** the theme tests fail and name the file and the line
 
 #### Scenario: Content colors are allowed
-- **WHEN** the theme tests run over the composer's text-color swatches and the user-chosen calendar colors
+- **WHEN** the theme tests run over the composer's text-color swatches, the user-chosen calendar colors and the
+  quote markup built for replies
 - **THEN** those colors are accepted because the allowlist names them
 
 #### Scenario: Stale allowlist entry
@@ -90,12 +90,47 @@ paper to a light background with dark text. The interface around the paper SHALL
 
 #### Scenario: Composing in a dark theme
 - **WHEN** a dark theme is active and the user writes a message
-- **THEN** the editing area has the same light background and dark text the recipient will see, and the composer's
-  header fields and toolbar use the dark theme's roles
+- **THEN** the editing area, in rich-text and in HTML-source mode, has a light background with dark text, and the
+  composer's header fields and toolbar use the dark theme's roles
 
 #### Scenario: Plain-text message in a dark theme
 - **WHEN** a dark theme is active and the user opens a message that has only a plain-text body
 - **THEN** the text is shown with the theme's surface and text roles
+
+### Requirement: Outgoing mail carries no theme
+Markup the application adds to an outgoing message (the quote header and quote block of a reply or forward) SHALL
+use fixed colors and SHALL NOT reference a role, so the message looks the same to the recipient whatever theme the
+sender uses.
+
+#### Scenario: Reply written in a dark theme
+- **WHEN** a user with a dark theme replies to a message and sends it
+- **THEN** the HTML body that is sent contains no reference to a custom property and the same quote colors as a
+  reply sent with the Larry theme
+
+### Requirement: Text over user-chosen colors
+Text drawn over a color the user chose (a calendar's color behind an event label) SHALL use black or white ink,
+whichever has the higher contrast with that color.
+
+#### Scenario: Light calendar color
+- **WHEN** a calendar's color is white or pale yellow and one of its events is shown
+- **THEN** the event's label is drawn in black
+
+#### Scenario: Dark calendar color
+- **WHEN** a calendar's color is navy and one of its events is shown
+- **THEN** the event's label is drawn in white
+
+### Requirement: Visible keyboard focus
+Every control that can take keyboard focus (buttons, fields, checkboxes, list rows, menu items, tabs) SHALL show a
+focus indicator drawn from the theme's focus roles when it is focused with the keyboard, with at least 3:1 contrast
+against the background it sits on.
+
+#### Scenario: Tab to a toolbar button
+- **WHEN** the user moves focus to a toolbar button with the Tab key, in any theme
+- **THEN** the button shows the theme's focus indicator
+
+#### Scenario: Mouse click
+- **WHEN** the user clicks a button with the mouse
+- **THEN** no focus indicator stays on it
 
 ### Requirement: Contrast of every theme
 Every theme SHALL meet WCAG AA contrast in each listed pairing of a text or component role with the backgrounds it

@@ -2,8 +2,8 @@
 
 The webmail has one hard-wired look (Larry: navy, square corners). Its colors are spread over three places: a
 `@theme` block of literal values in `frontend/src/style.css`, about 48 literals inside that file's component classes
-and about 130 hex literals plus 60 `white`/`black` utilities in the components. Nothing can be re-skinned without
-editing components, there is no dark look, and the "accent picker" the SDD describes is dead code: `applyAccent()`
+and about 130 hex literals plus 60 `white`/`black`/`gray-*` utilities in the components. Nothing can be re-skinned
+without editing components, there is no dark look, and the "accent picker" the SDD describes is dead code: `applyAccent()`
 recolors six variables from a store value no component can change.
 
 The sibling project `ad-manager` already solved this with a role-token contract, one CSS file per theme, a theme
@@ -14,12 +14,14 @@ two looks mail users know best, Outlook and Apple Mail.
 
 - **Role-token contract.** `frontend/src/style.css` declares every color, radius, shadow and font the interface uses
   as a named role (`--color-fg`, `--color-surface`, `--color-header`, `--color-selection`, `--radius-control`, ...).
-  The contract's default values are Larry's, so Larry is the default theme and looks exactly as it does today.
+  The contract's default values are Larry's, so Larry is the default theme and keeps its look; the only visible
+  change to it is a handful of documented contrast corrections (its faintest gray text is 3.1:1 today).
   Role names follow ad-manager's vocabulary where the two interfaces overlap, so its palettes port with few edits;
   mail-only roles are added (sidebar, unread mark, star, message paper).
 - **Components use roles only.** Literal colors and `white`/`black` utilities leave the components and the component
   classes of `style.css`. A short, justified allowlist keeps the colors that are content, not interface: the
-  composer's text and highlight swatches, user-chosen calendar colors and the message paper.
+  composer's text and highlight swatches, user-chosen calendar colors and the inline colors of the quote markup
+  that is sent inside replies.
 - **One file per theme family** under `frontend/src/themes/`, holding only `:root[data-theme='id'] { --role: value }`
   blocks: no selectors, no component rules.
 - **Starter catalog of nine themes:** `larry` (default), `outlook`, `outlook-dark`, `apple-mail`, `apple-mail-dark`,
@@ -34,6 +36,8 @@ two looks mail users know best, Outlook and Apple Mail.
 - **Appearance tab in Settings:** the list of themes; choosing one applies it at once and saves it.
 - **No theme flash on reload:** the last theme used in the browser is cached and applied by a small script file in
   `<head>` before first paint (an external file: the CSP forbids inline scripts).
+- **A visible keyboard focus in every theme**, drawn from roles by one `:focus-visible` rule instead of per-field
+  utilities.
 - **BREAKING (internal only):** `applyAccent()`, the `accent` store value and the unused `.gw-tweaks-*` classes are
   removed; the theme owns the accent. No user-visible feature is lost, because no component could change the accent.
 - **Message content keeps a light "paper"** in every theme: the HTML message iframe and the composer's editing area
@@ -69,12 +73,15 @@ None. The repository has no specs yet; this change adds the first three.
   `frontend/src/themes/contrast.json`, `frontend/src/utils/theme.ts`, `frontend/public/theme-boot.js`,
   `frontend/tests/unit/{themelib,themes.test}.mjs`, `frontend/scripts/style-dump.js`.
 - **Frontend, changed:** `frontend/src/style.css` (contract, component classes, radius reset, dead classes removed),
-  `frontend/index.html` (boot script, `color-scheme` meta), `frontend/src/main.ts`, every component with a literal
-  color (`RichTextToolbar`, `ReadingPane`, `LoginView`, `AppBar`, `EnvelopeIllustration`, `ComposerModal`,
-  `SourceViewer`, `ContactsPane`, `ContactModal`, `CalendarPane`, `CalendarSidebar`, `ToastContainer`,
+  `frontend/index.html` (boot script, `color-scheme` meta), `frontend/src/App.vue` (loading screen), every component
+  with a literal or palette color (`AppBar`, `AppSidebar`, `AppToolbar`, `MailList`, `ReadingPane`, `ComposerModal`,
+  `editor/RichTextToolbar`, `editor/TipTapEditor`, `LoginView`, `EnvelopeIllustration`, `SourceViewer`,
+  `ContactsPane`, `ContactModal`, `CalendarPane`, `CalendarSidebar`, `EventEditorModal`, `ToastContainer`,
   `DialogModal`, `SpinnerIcon`) and every component using the renamed utilities, `SettingsPane.vue` (Appearance
-  tab), `frontend/src/utils/helpers.ts` (`applyAccent` removed, `extColor` on roles),
-  `frontend/src/stores/mail/index.ts` (`accent` removed), `frontend/src/stores/mail/settingsActions.ts`,
+  tab, `prefs` initializer), `frontend/src/utils/helpers.ts` (`applyAccent` removed, `extColor` on roles, readable
+  ink over a calendar color),
+  `frontend/src/stores/mail/index.ts` (`accent` removed), `frontend/src/stores/mail/settingsActions.ts` (a theme
+  save that reports failure),
   `frontend/src/stores/auth.ts`, `frontend/src/types.ts`, `frontend/package.json` (`test` script).
 - **Backend, new:** `internal/theme/theme.go` (registry) with its test, `internal/handler/themes.go`.
 - **Backend, changed:** `internal/model/user_settings.go` (`Theme` column, added by AutoMigrate),

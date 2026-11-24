@@ -22,12 +22,17 @@ The registry SHALL contain, in this order: `larry`, `outlook`, `outlook-dark`, `
 
 ### Requirement: Larry theme
 The registry SHALL include `larry` ("Larry", light) as the first entry: the Roundcube Larry look the application has
-today, with a navy `#1B3A6B` header and primary action, square corners and the `"Segoe UI"` font stack.
+today, with a navy `#1B3A6B` header and primary action, square corners and the `"Segoe UI"` font stack. Normal text
+reaches 4.5:1; values darkened to get there are noted next to the role.
 
 #### Scenario: Choose Larry
 - **WHEN** the user chooses "Larry"
 - **THEN** the header is navy with white text, the primary button is navy, every corner is square and the selected
   message has the 3 px navy bar on its left
+
+#### Scenario: Faint text is readable
+- **WHEN** the Larry theme is active and the mail list shows a message snippet
+- **THEN** the snippet's text reaches 4.5:1 against the row's background, at rest, hovered and selected
 
 ### Requirement: Outlook theme
 The registry SHALL include `outlook` ("Outlook", light), inspired by Outlook on the web: a brand-blue `#0F6CBD`
@@ -50,8 +55,8 @@ focus. Normal text reaches 4.5:1.
 
 #### Scenario: Choose Outlook dark
 - **WHEN** the user chooses "Outlook (dark)"
-- **THEN** the mail view, the sidebar, the dialogs and the login screen have dark surfaces with light text and no
-  white area except the message paper
+- **THEN** the mail view, the sidebar, the dialogs and the login screen have dark surfaces with light text, and the
+  only light area is the message paper
 
 ### Requirement: Apple Mail theme
 The registry SHALL include `apple-mail` ("Apple Mail", light), inspired by Mail on macOS: a light toolbar header with
@@ -99,14 +104,14 @@ Normal text reaches 4.5:1.
 - **THEN** the interface is dark, the primary button is blue with white text and the current tab's mark is orange
 
 ### Requirement: High contrast theme
-The registry SHALL include `high-contrast` ("High contrast (dark)", dark), an accessibility theme: black surfaces,
-white text, yellow `#FFFF00` as the only accent, no shadows used for depth and a solid 3 px focus ring. It SHALL
-meet the enhanced contrast level: 7:1 for normal text, 4.5:1 for large text and 3:1 for interface components.
+The registry SHALL include `high-contrast` ("High contrast (dark)", dark), an accessibility theme: black interface
+surfaces, white text, yellow `#FFFF00` as the only accent, no shadows used for depth and a solid 3 px focus ring.
+It SHALL meet the enhanced contrast level: 7:1 for normal text, 4.5:1 for large text and 3:1 for components.
 
 #### Scenario: Choose High contrast
 - **WHEN** the user chooses "High contrast (dark)"
-- **THEN** every surface is black with white text, and the primary button, links, the selected message (with black
-  text) and the current tab use yellow
+- **THEN** every surface of the interface is black with white text (the message paper stays white with black
+  text), and the primary button, links, the selected message (with black text) and the current tab use yellow
 
 #### Scenario: Keyboard focus
 - **WHEN** the High contrast theme is active and a control receives keyboard focus
