@@ -54,12 +54,7 @@ const editorOptions = computed<TipTapEditorOptions>(() => ({
 }))
 
 /** The reactive editor + helpers from the composable */
-const {
-  editor: editorRef,
-  setContent: setEditorContent,
-  getHTML,
-  getWordCount,
-} = useTipTapEditor(editorOptions.value)
+const { editor: editorRef, setContent: setEditorContent, getHTML, getWordCount } = useTipTapEditor(editorOptions.value)
 
 /** Raw instance for components that expect Editor (not Ref).
  *  Cast as any to bridge ShallowRef<Editor|undefined> vs typed prop expectations.
@@ -71,8 +66,8 @@ const suppressUpdate = ref(false)
 
 /** Current content height style (matches legacy 433px editor area) */
 const contentStyle = computed(() => ({
-  minHeight: typeof props.minHeight === 'number' ? `${props.minHeight}px` : (props.minHeight || '380px'),
-  maxHeight: typeof props.maxHeight === 'number' ? `${props.maxHeight}px` : (props.maxHeight || '520px'),
+  minHeight: typeof props.minHeight === 'number' ? `${props.minHeight}px` : props.minHeight || '380px',
+  maxHeight: typeof props.maxHeight === 'number' ? `${props.maxHeight}px` : props.maxHeight || '520px',
 }))
 
 /**
@@ -92,7 +87,7 @@ watch(
       if (showSource.value) sourceHtml.value = newVal
     }
   },
-  { immediate: false }
+  { immediate: false },
 )
 
 /** Toggle between rich editor and raw HTML source */
@@ -123,18 +118,11 @@ defineExpose({
 <template>
   <div class="composer-field composer-rich" style="grid-template-columns: 1fr">
     <!-- Toolbar (always visible when editable) -->
-    <RichTextToolbar
-      :editor="editor"
-      @toggle-source="toggleSource"
-    />
+    <RichTextToolbar :editor="editor" @toggle-source="toggleSource" />
 
     <!-- Rich contenteditable area -->
     <div v-if="!showSource" class="rte-content" :style="contentStyle">
-      <EditorContent
-        v-if="editor"
-        :editor="editor"
-        :style="{ minHeight: contentStyle.minHeight }"
-      />
+      <EditorContent v-if="editor" :editor="editor" :style="{ minHeight: contentStyle.minHeight }" />
       <div v-else class="text-ink-mute p-3 text-sm">Loading editor…</div>
     </div>
 
@@ -150,6 +138,5 @@ defineExpose({
         Editing raw HTML. Use with caution — invalid markup may be sanitized on send.
       </div>
     </div>
-
   </div>
 </template>

@@ -16,85 +16,95 @@ const dialog = useDialogStore()
 /** Input text value for prompts */
 const inputValue = ref('')
 /** Reference to prompt text input field */
-const inputRef   = ref<HTMLInputElement | null>(null)
+const inputRef = ref<HTMLInputElement | null>(null)
 /** Reference to OK confirm button */
-const okRef      = ref<HTMLButtonElement | null>(null)
+const okRef = ref<HTMLButtonElement | null>(null)
 
 /** Computes true if active dialog is a text prompt input box */
-const isPrompt  = computed(() => dialog.state?.type === 'prompt')
+const isPrompt = computed(() => dialog.state?.type === 'prompt')
 /** Computes true if active dialog is a binary confirmation question */
 const isConfirm = computed(() => dialog.state?.type === 'confirm')
 /** Computes true if active dialog is a simple alert notification box */
-const isAlert   = computed(() => dialog.state?.type === 'alert')
+const isAlert = computed(() => dialog.state?.type === 'alert')
 
 /**
- * Monitors the dialog store state, setting default values and autofocusing 
+ * Monitors the dialog store state, setting default values and autofocusing
  * either the text input field or the default action button upon render.
  */
-watch(() => dialog.state, async (s) => {
-  if (!s) return
-  inputValue.value = s.defaultValue ?? ''
-  await nextTick()
-  if (s.type === 'prompt') inputRef.value?.focus()
-  else okRef.value?.focus()
-})
+watch(
+  () => dialog.state,
+  async (s) => {
+    if (!s) return
+    inputValue.value = s.defaultValue ?? ''
+    await nextTick()
+    if (s.type === 'prompt') inputRef.value?.focus()
+    else okRef.value?.focus()
+  },
+)
 
 /** Resolves the active dialog with positive value (true, input text, or void) */
 function onOk() {
-  if (isPrompt.value)  dialog.respond(inputValue.value.trim() || null)
+  if (isPrompt.value) dialog.respond(inputValue.value.trim() || null)
   else if (isConfirm.value) dialog.respond(true)
-  else                      dialog.respond()
+  else dialog.respond()
 }
 
 /** Resolves the active dialog with a negative or default cancel value (false, null, or void) */
 function onCancel() {
   if (isAlert.value) dialog.respond()
-  else if (isPrompt.value)  dialog.respond(null)
-  else                      dialog.respond(false)
+  else if (isPrompt.value) dialog.respond(null)
+  else dialog.respond(false)
 }
 
 /**
  * Handles global keydown listening for Escape to cancel or Enter to confirm.
- * 
+ *
  * @param e - The keyboard event.
  */
 function onKey(e: KeyboardEvent) {
-  if (e.key === 'Escape') { e.preventDefault(); onCancel() }
-  if (e.key === 'Enter' && !isPrompt.value) { e.preventDefault(); onOk() }
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    onCancel()
+  }
+  if (e.key === 'Enter' && !isPrompt.value) {
+    e.preventDefault()
+    onOk()
+  }
 }
 
 /**
  * Handles keyboard events inside the text prompt input box.
- * 
+ *
  * @param e - The keyboard event.
  */
 function onInputKey(e: KeyboardEvent) {
-  if (e.key === 'Enter') { e.preventDefault(); onOk() }
-  if (e.key === 'Escape') { e.preventDefault(); onCancel() }
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    onOk()
+  }
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    onCancel()
+  }
 }
 </script>
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="dialog.state"
-      class="dlg-backdrop"
-      @keydown="onKey"
-      @click.self="onCancel"
-    >
+    <div v-if="dialog.state" class="dlg-backdrop" @keydown="onKey" @click.self="onCancel">
       <div class="dlg-shell" role="dialog" aria-modal="true">
         <!-- Icon + message -->
         <div class="dlg-body">
           <div class="dlg-icon" :class="{ 'dlg-icon--danger': isConfirm }">
             <svg v-if="isAlert || isConfirm" width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M10 6v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              <circle cx="10" cy="14" r=".75" fill="currentColor"/>
+              <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5" />
+              <path d="M10 6v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <circle cx="10" cy="14" r=".75" fill="currentColor" />
             </svg>
             <svg v-else width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M10 6v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              <circle cx="10" cy="14" r=".75" fill="currentColor"/>
+              <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5" />
+              <path d="M10 6v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              <circle cx="10" cy="14" r=".75" fill="currentColor" />
             </svg>
           </div>
           <p class="dlg-message">{{ dialog.state.message }}</p>
@@ -102,23 +112,13 @@ function onInputKey(e: KeyboardEvent) {
 
         <!-- Input for prompt -->
         <div v-if="isPrompt" class="dlg-input-wrap">
-          <input
-            ref="inputRef"
-            v-model="inputValue"
-            class="dlg-input"
-            type="text"
-            @keydown="onInputKey"
-          />
+          <input ref="inputRef" v-model="inputValue" class="dlg-input" type="text" @keydown="onInputKey" />
         </div>
 
         <!-- Buttons -->
         <div class="dlg-footer">
-          <button v-if="!isAlert" class="dlg-btn dlg-btn--cancel" @click="onCancel">
-            Cancel
-          </button>
-          <button ref="okRef" class="dlg-btn dlg-btn--ok" @click="onOk">
-            OK
-          </button>
+          <button v-if="!isAlert" class="dlg-btn dlg-btn--cancel" @click="onCancel">Cancel</button>
+          <button ref="okRef" class="dlg-btn dlg-btn--ok" @click="onOk">OK</button>
         </div>
       </div>
     </div>
@@ -132,7 +132,7 @@ function onInputKey(e: KeyboardEvent) {
   z-index: 200;
   display: grid;
   place-items: center;
-  background: rgba(11, 31, 64, .40);
+  background: rgba(11, 31, 64, 0.4);
 }
 
 .dlg-shell {
@@ -140,7 +140,7 @@ function onInputKey(e: KeyboardEvent) {
   max-width: calc(100vw - 32px);
   background: var(--color-panel);
   border: 1px solid var(--accent-bar);
-  box-shadow: 0 8px 32px rgba(11, 31, 64, .22);
+  box-shadow: 0 8px 32px rgba(11, 31, 64, 0.22);
   display: flex;
   flex-direction: column;
 }

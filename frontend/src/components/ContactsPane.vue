@@ -20,12 +20,14 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const importing = ref(false)
 
 /** Triggers click programmatically on hidden file input selector */
-function openImport() { fileInputRef.value?.click() }
+function openImport() {
+  fileInputRef.value?.click()
+}
 
 /**
  * Handles CSV/VCF file selection events, uploading the file payload via
  * contacts API importing triggers.
- * 
+ *
  * @param e - The HTML DOM file selection event.
  */
 async function onFileSelected(e: Event) {
@@ -67,7 +69,10 @@ function exportContacts() {
     </div>
 
     <!-- Contact grid -->
-    <div class="grid bg-white border-t border-l border-line" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));align-content:start">
+    <div
+      class="grid bg-white border-t border-l border-line"
+      style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); align-content: start"
+    >
       <div
         v-for="c in mail.contacts"
         :key="c.email"
@@ -94,7 +99,8 @@ function exportContacts() {
             href="#"
             class="text-[11.5px] mt-0.5 block text-accent-2 no-underline hover:underline truncate"
             @click.prevent="mail.composer = { to: c.email }"
-          >{{ c.email }}</a>
+            >{{ c.email }}</a
+          >
           <div class="text-[11px] text-ink-mute mt-1 truncate">
             {{ [c.title, c.company].filter(Boolean).join(' · ') }}
           </div>

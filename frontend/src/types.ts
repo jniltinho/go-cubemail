@@ -65,14 +65,14 @@ export interface MailMessage {
  * Parsed iCalendar (RFC 5545) event data attached to a meeting invitation email.
  */
 export interface CalendarInfo {
-  method:     string
-  summary:    string
-  organizer:  string
+  method: string
+  summary: string
+  organizer: string
   start_time: string
-  end_time:   string
-  location:   string
-  uid:        string
-  attendees:  string[]
+  end_time: string
+  location: string
+  uid: string
+  attendees: string[]
 }
 
 /**

@@ -7,7 +7,7 @@
 
 import axios from 'axios'
 
-const SW_PATH  = '/sw.js'
+const SW_PATH = '/sw.js'
 const API_BASE_PUSH = typeof API_BASE !== 'undefined' ? API_BASE : '/api/v1'
 
 let swReg: ServiceWorkerRegistration | null = null

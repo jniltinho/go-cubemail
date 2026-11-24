@@ -15,26 +15,26 @@ export const useAuthStore = defineStore('auth', () => {
   /** True if the user is currently authenticated */
   const isAuthenticated = ref(false)
   /** True if the API backend server is active/reachable */
-  const isApiOnline     = ref(false)
+  const isApiOnline = ref(false)
   /** Active user profile data (email address and disk quota metrics) */
-  const currentUser     = ref({ email: 'user@webmail.test', quotaUsedBytes: 0, quotaTotalBytes: 0 })
+  const currentUser = ref({ email: 'user@webmail.test', quotaUsedBytes: 0, quotaTotalBytes: 0 })
   /** Preferred date and time layout format (Go reference syntax) */
-  const datetimeFormat  = ref('02/01/2006 15:04')
+  const datetimeFormat = ref('02/01/2006 15:04')
   /** Active backend application version string */
-  const appVersion      = ref('')
+  const appVersion = ref('')
 
   /** Username field model in the login form view */
-  const loginUser    = ref('')
+  const loginUser = ref('')
   /** Password field model in the login form view */
-  const loginPwd     = ref('')
+  const loginPwd = ref('')
   /** True if the login network transaction is active */
-  const loginBusy    = ref(false)
+  const loginBusy = ref(false)
   /** Stores the active validation or login transaction error string */
-  const loginErr     = ref<string | null>(null)
+  const loginErr = ref<string | null>(null)
   /** True if the username input has formatting errors */
   const loginUserBad = ref(false)
   /** True if the password input has formatting errors */
-  const loginPwdBad  = ref(false)
+  const loginPwdBad = ref(false)
 
   /**
    * Fetches active user disk quota metrics (used space and maximum limit)
@@ -43,7 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchQuota(): Promise<void> {
     try {
       const res = await axios.get(`${API_BASE}/auth/quota`)
-      currentUser.value.quotaUsedBytes  = res.data.used  || 0
+      currentUser.value.quotaUsedBytes = res.data.used || 0
       currentUser.value.quotaTotalBytes = res.data.limit || 0
     } catch (e) {
       console.error('[quota] fetch failed:', e)
@@ -57,7 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function checkSession(): Promise<void> {
     axios.defaults.xsrfCookieName = 'csrf_token'
     axios.defaults.xsrfHeaderName = 'X-CSRF-Token'
-    axios.interceptors.request.use(cfg => {
+    axios.interceptors.request.use((cfg) => {
       const val = `; ${document.cookie}`.split('; csrf_token=').pop()!.split(';').shift()
       if (val) cfg.headers['X-CSRF-Token'] = val
       return cfg
@@ -90,7 +90,9 @@ export const useAuthStore = defineStore('auth', () => {
    * On success, initializes authorized states and retrieves profile parameters.
    */
   async function handleLogin(): Promise<void> {
-    loginErr.value = null; loginUserBad.value = false; loginPwdBad.value = false
+    loginErr.value = null
+    loginUserBad.value = false
+    loginPwdBad.value = false
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRe.test(loginUser.value.trim())) {
       loginUserBad.value = true
@@ -110,15 +112,16 @@ export const useAuthStore = defineStore('auth', () => {
       await axios.post(`${API_BASE}/auth/login`, params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
-      currentUser.value.email = loginUser.value.includes('@')
-        ? loginUser.value
-        : loginUser.value + '@go-webmail.test'
+      currentUser.value.email = loginUser.value.includes('@') ? loginUser.value : loginUser.value + '@go-webmail.test'
       isAuthenticated.value = true
       isApiOnline.value = true
       fetchQuota()
-      axios.get(`${API_BASE}/auth/me`).then(r => {
-        if (r.data.datetime_format) datetimeFormat.value = r.data.datetime_format
-      }).catch(() => {})
+      axios
+        .get(`${API_BASE}/auth/me`)
+        .then((r) => {
+          if (r.data.datetime_format) datetimeFormat.value = r.data.datetime_format
+        })
+        .catch(() => {})
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'response' in e) {
         loginPwdBad.value = true
@@ -136,13 +139,29 @@ export const useAuthStore = defineStore('auth', () => {
    * authentication records and session credentials.
    */
   async function handleLogout(): Promise<void> {
-    if (isApiOnline.value) { try { await axios.post(`${API_BASE}/auth/logout`) } catch { } }
+    if (isApiOnline.value) {
+      try {
+        await axios.post(`${API_BASE}/auth/logout`)
+      } catch {}
+    }
     isAuthenticated.value = false
   }
 
   return {
-    isAuthenticated, isApiOnline, currentUser, appVersion,
-    loginUser, loginPwd, loginBusy, loginErr, loginUserBad, loginPwdBad,
-    checkSession, handleLogin, handleLogout, fetchQuota, datetimeFormat,
+    isAuthenticated,
+    isApiOnline,
+    currentUser,
+    appVersion,
+    loginUser,
+    loginPwd,
+    loginBusy,
+    loginErr,
+    loginUserBad,
+    loginPwdBad,
+    checkSession,
+    handleLogin,
+    handleLogout,
+    fetchQuota,
+    datetimeFormat,
   }
 })

@@ -49,29 +49,33 @@ export const Indent = Extension.create({
 
   addCommands() {
     return {
-      indent: () => ({ tr, state, dispatch }) => {
-        const { from, to } = state.selection
-        state.doc.nodesBetween(from, to, (node: Node, pos: number) => {
-          if (!BLOCK_TYPES.includes(node.type.name)) return
-          const cur = (node.attrs.indent as number) || 0
-          const next = Math.min(cur + 1, MAX_LEVEL)
-          if (next !== cur) tr.setNodeMarkup(pos, undefined, { ...node.attrs, indent: next })
-        })
-        if (dispatch) dispatch(tr)
-        return true
-      },
+      indent:
+        () =>
+        ({ tr, state, dispatch }) => {
+          const { from, to } = state.selection
+          state.doc.nodesBetween(from, to, (node: Node, pos: number) => {
+            if (!BLOCK_TYPES.includes(node.type.name)) return
+            const cur = (node.attrs.indent as number) || 0
+            const next = Math.min(cur + 1, MAX_LEVEL)
+            if (next !== cur) tr.setNodeMarkup(pos, undefined, { ...node.attrs, indent: next })
+          })
+          if (dispatch) dispatch(tr)
+          return true
+        },
 
-      outdent: () => ({ tr, state, dispatch }) => {
-        const { from, to } = state.selection
-        state.doc.nodesBetween(from, to, (node: Node, pos: number) => {
-          if (!BLOCK_TYPES.includes(node.type.name)) return
-          const cur = (node.attrs.indent as number) || 0
-          const next = Math.max(cur - 1, 0)
-          if (next !== cur) tr.setNodeMarkup(pos, undefined, { ...node.attrs, indent: next })
-        })
-        if (dispatch) dispatch(tr)
-        return true
-      },
+      outdent:
+        () =>
+        ({ tr, state, dispatch }) => {
+          const { from, to } = state.selection
+          state.doc.nodesBetween(from, to, (node: Node, pos: number) => {
+            if (!BLOCK_TYPES.includes(node.type.name)) return
+            const cur = (node.attrs.indent as number) || 0
+            const next = Math.max(cur - 1, 0)
+            if (next !== cur) tr.setNodeMarkup(pos, undefined, { ...node.attrs, indent: next })
+          })
+          if (dispatch) dispatch(tr)
+          return true
+        },
     }
   },
 })

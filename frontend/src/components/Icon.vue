@@ -23,17 +23,12 @@ const props = defineProps<{
 const IconComp = computed(() => {
   const pascal = props.name
     .split('-')
-    .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
     .join('')
   return (Icons as any)[pascal] || Icons['HelpCircle']
 })
 </script>
 
 <template>
-  <component
-    :is="IconComp"
-    :size="Number(size)"
-    :stroke-width="Number(stroke)"
-    class="inline-block align-[-2px]"
-  />
+  <component :is="IconComp" :size="Number(size)" :stroke-width="Number(stroke)" class="inline-block align-[-2px]" />
 </template>

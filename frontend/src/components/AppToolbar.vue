@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
  * @component AppToolbar
- * @description The secondary operations toolbar. Houses primary actions like 
- * creating messages, fetching folders, replying, deleting, marking as read/unread, 
+ * @description The secondary operations toolbar. Houses primary actions like
+ * creating messages, fetching folders, replying, deleting, marking as read/unread,
  * moving selected messages to another folder, and displaying visible item counts.
  */
 
@@ -19,15 +19,13 @@ const auth = useAuthStore()
 /** Whether the Move to dropdown is currently expanded */
 const moveOpen = ref(false)
 /** Reference element of the Move to dropdown button */
-const moveBtn  = ref<HTMLElement | null>(null)
+const moveBtn = ref<HTMLElement | null>(null)
 
 /** Computes true if the current view is not the core Mail list pane */
 const notMail = computed(() => mail.view !== 'mail')
 
 /** List of target folders excluding the folder currently viewed */
-const moveFolders = computed(() =>
-  mail.folders.filter(f => f.id !== mail.folder)
-)
+const moveFolders = computed(() => mail.folders.filter((f) => f.id !== mail.folder))
 
 /**
  * Refreshes the currently viewed mailbox folder list and updates quota information.
@@ -38,11 +36,13 @@ function refresh() {
 }
 
 /** Toggles expansion state of the Move to dropdown */
-function toggleMove() { moveOpen.value = !moveOpen.value }
+function toggleMove() {
+  moveOpen.value = !moveOpen.value
+}
 
 /**
  * Dispatcher to move chosen mail(s) to a folder and closes the dropdown menu.
- * 
+ *
  * @param folderId - ID of the destination folder.
  */
 function pickFolder(folderId) {
@@ -52,7 +52,7 @@ function pickFolder(folderId) {
 
 /**
  * Closes the Move to dropdown if the user clicks anywhere outside the trigger button.
- * 
+ *
  * @param e - The document click event payload.
  */
 function onDocClick(e) {
@@ -60,7 +60,7 @@ function onDocClick(e) {
 }
 
 /** Registers click listeners on mount to support closing the dropdown on outside clicks */
-onMounted(()  => document.addEventListener('click', onDocClick))
+onMounted(() => document.addEventListener('click', onDocClick))
 /** Tears down the document level click listener */
 onUnmounted(() => document.removeEventListener('click', onDocClick))
 </script>
@@ -85,10 +85,20 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
       <Icon name="forward" :size="14" /> Forward
     </button>
     <div class="w-px h-[18px] bg-line mx-1"></div>
-    <button class="tbtn tbtn-danger" type="button" :disabled="notMail || (!mail.selected && !mail.selectedIds.size)" @click="mail.deleteMail()">
+    <button
+      class="tbtn tbtn-danger"
+      type="button"
+      :disabled="notMail || (!mail.selected && !mail.selectedIds.size)"
+      @click="mail.deleteMail()"
+    >
       <Icon name="trash-2" :size="14" /> Delete
     </button>
-    <button class="tbtn" type="button" :disabled="notMail || (!mail.selected && !mail.selectedIds.size)" @click="mail.toggleRead()">
+    <button
+      class="tbtn"
+      type="button"
+      :disabled="notMail || (!mail.selected && !mail.selectedIds.size)"
+      @click="mail.toggleRead()"
+    >
       <Icon name="circle-dot" :size="14" /> Mark read/unread
     </button>
     <div class="w-px h-[18px] bg-line mx-1"></div>

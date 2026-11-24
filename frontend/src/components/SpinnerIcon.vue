@@ -5,7 +5,7 @@
  * Rotates dynamically (via animate-spin) to indicate background loading or saving actions.
  */
 export default {
-  name: 'SpinnerIcon'
+  name: 'SpinnerIcon',
 }
 </script>
 

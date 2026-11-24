@@ -23,14 +23,10 @@ const props = defineProps<{
 const ed = computed(() => props.editor)
 
 /** Current font family at the cursor position (empty string = default) */
-const currentFontFamily = computed<string>(() =>
-  ed.value?.getAttributes('textStyle').fontFamily ?? ''
-)
+const currentFontFamily = computed<string>(() => ed.value?.getAttributes('textStyle').fontFamily ?? '')
 
 /** Current font size at the cursor position (empty string = default) */
-const currentFontSize = computed<string>(() =>
-  ed.value?.getAttributes('textStyle').fontSize ?? ''
-)
+const currentFontSize = computed<string>(() => ed.value?.getAttributes('textStyle').fontSize ?? '')
 
 /** Apply or clear font family on the selected text */
 function onFontFamilyChange(e: Event) {
@@ -79,10 +75,18 @@ function run(cmd: () => void) {
 }
 
 /** Core formatting */
-function toggleBold() { ed.value?.chain().focus().toggleBold().run() }
-function toggleItalic() { ed.value?.chain().focus().toggleItalic().run() }
-function toggleUnderline() { ed.value?.chain().focus().toggleUnderline().run() }
-function toggleStrike() { ed.value?.chain().focus().toggleStrike().run() }
+function toggleBold() {
+  ed.value?.chain().focus().toggleBold().run()
+}
+function toggleItalic() {
+  ed.value?.chain().focus().toggleItalic().run()
+}
+function toggleUnderline() {
+  ed.value?.chain().focus().toggleUnderline().run()
+}
+function toggleStrike() {
+  ed.value?.chain().focus().toggleStrike().run()
+}
 
 /** Alignment — handles both regular text selection and NodeSelection (e.g. clicking an image).
  *  When a NodeSelection is active (inline image clicked), ProseMirror selects the node
@@ -99,20 +103,33 @@ function applyAlign(alignment: string) {
     chain.setTextAlign(alignment).run()
   }
 }
-function alignLeft()   { applyAlign('left') }
-function alignCenter() { applyAlign('center') }
-function alignRight()  { applyAlign('right') }
+function alignLeft() {
+  applyAlign('left')
+}
+function alignCenter() {
+  applyAlign('center')
+}
+function alignRight() {
+  applyAlign('right')
+}
 
 /** Lists & structure */
-function toggleBullet() { ed.value?.chain().focus().toggleBulletList().run() }
-function toggleOrdered() { ed.value?.chain().focus().toggleOrderedList().run() }
+function toggleBullet() {
+  ed.value?.chain().focus().toggleBulletList().run()
+}
+function toggleOrdered() {
+  ed.value?.chain().focus().toggleOrderedList().run()
+}
 
 function isInList(): boolean {
   if (!ed.value) return false
   const { from, to } = ed.value.state.selection
   let found = false
   ed.value.state.doc.nodesBetween(from, to, (node) => {
-    if (node.type.name === 'listItem') { found = true; return false }
+    if (node.type.name === 'listItem') {
+      found = true
+      return false
+    }
   })
   return found
 }
@@ -193,7 +210,7 @@ function insertTable() {
 }
 
 /** Emoji / special chars (basic set for v1) */
-const emojiList = ['😀','😉','🙂','😢','👍','👎','❤️','✅','❌','🔥','📎','📅']
+const emojiList = ['😀', '😉', '🙂', '😢', '👍', '👎', '❤️', '✅', '❌', '🔥', '📎', '📅']
 function insertEmoji(e: string) {
   ed.value?.chain().focus().insertContent(e).run()
   showEmoji.value = false
@@ -221,16 +238,44 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
 <template>
   <div class="rte-toolbar" role="toolbar" aria-label="Rich text formatting">
     <!-- Text style -->
-    <button type="button" class="tbtn" :class="{ 'rte-active': isActive('bold') }" :disabled="disabled" @click="toggleBold" title="Bold">
+    <button
+      type="button"
+      class="tbtn"
+      :class="{ 'rte-active': isActive('bold') }"
+      :disabled="disabled"
+      @click="toggleBold"
+      title="Bold"
+    >
       <Icon name="bold" :size="13" />
     </button>
-    <button type="button" class="tbtn" :class="{ 'rte-active': isActive('italic') }" :disabled="disabled" @click="toggleItalic" title="Italic">
+    <button
+      type="button"
+      class="tbtn"
+      :class="{ 'rte-active': isActive('italic') }"
+      :disabled="disabled"
+      @click="toggleItalic"
+      title="Italic"
+    >
       <Icon name="italic" :size="13" />
     </button>
-    <button type="button" class="tbtn" :class="{ 'rte-active': isActive('underline') }" :disabled="disabled" @click="toggleUnderline" title="Underline">
+    <button
+      type="button"
+      class="tbtn"
+      :class="{ 'rte-active': isActive('underline') }"
+      :disabled="disabled"
+      @click="toggleUnderline"
+      title="Underline"
+    >
       <Icon name="underline" :size="13" />
     </button>
-    <button type="button" class="tbtn" :class="{ 'rte-active': isActive('strike') }" :disabled="disabled" @click="toggleStrike" title="Strikethrough">
+    <button
+      type="button"
+      class="tbtn"
+      :class="{ 'rte-active': isActive('strike') }"
+      :disabled="disabled"
+      @click="toggleStrike"
+      title="Strikethrough"
+    >
       <Icon name="strikethrough" :size="13" />
     </button>
 
@@ -253,13 +298,7 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
       <option value="Verdana, Geneva, sans-serif">Verdana</option>
     </select>
-    <select
-      class="tbtn"
-      :disabled="disabled"
-      :value="currentFontSize"
-      title="Font size"
-      @change="onFontSizeChange"
-    >
+    <select class="tbtn" :disabled="disabled" :value="currentFontSize" title="Font size" @change="onFontSizeChange">
       <option value="">Size</option>
       <option value="10px">10</option>
       <option value="12px">12</option>
@@ -277,40 +316,113 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       <button type="button" class="tbtn" :disabled="disabled" @click="showColor = !showColor" title="Text color">
         <Icon name="palette" :size="13" />
       </button>
-      <div v-if="showColor" class="absolute z-50 mt-1 bg-white border border-line p-2 shadow" style="min-width:216px">
+      <div v-if="showColor" class="absolute z-50 mt-1 bg-white border border-line p-2 shadow" style="min-width: 216px">
         <div class="grid grid-cols-8 gap-1">
-          <button v-for="c in [
-            '#000000','#434343','#666666','#999999','#CCCCCC','#D9D9D9','#F3F3F3','#FFFFFF',
-            '#FF0000','#E53935','#B22B2B','#880E4F','#9C27B0','#673AB7','#3F51B5','#1A237E',
-            '#1565C0','#1B3A6B','#0277BD','#006064','#1F7A45','#2E7D32','#33691E','#827717',
-            '#F57F17','#E65100','#E0A40C','#BF360C','#795548','#6b7280','#546E7A','#37474F',
-          ]" :key="c"
-              class="w-6 h-6 border border-line hover:scale-110 transition-transform"
-              :style="{background:c}"
-              :title="c"
-              @click="setTextColor(c)" />
+          <button
+            v-for="c in [
+              '#000000',
+              '#434343',
+              '#666666',
+              '#999999',
+              '#CCCCCC',
+              '#D9D9D9',
+              '#F3F3F3',
+              '#FFFFFF',
+              '#FF0000',
+              '#E53935',
+              '#B22B2B',
+              '#880E4F',
+              '#9C27B0',
+              '#673AB7',
+              '#3F51B5',
+              '#1A237E',
+              '#1565C0',
+              '#1B3A6B',
+              '#0277BD',
+              '#006064',
+              '#1F7A45',
+              '#2E7D32',
+              '#33691E',
+              '#827717',
+              '#F57F17',
+              '#E65100',
+              '#E0A40C',
+              '#BF360C',
+              '#795548',
+              '#6b7280',
+              '#546E7A',
+              '#37474F',
+            ]"
+            :key="c"
+            class="w-6 h-6 border border-line hover:scale-110 transition-transform"
+            :style="{ background: c }"
+            :title="c"
+            @click="setTextColor(c)"
+          />
         </div>
-        <input type="color" class="mt-2 w-full h-6 cursor-pointer" @input="(e) => setTextColor((e.target as HTMLInputElement).value)" />
+        <input
+          type="color"
+          class="mt-2 w-full h-6 cursor-pointer"
+          @input="(e) => setTextColor((e.target as HTMLInputElement).value)"
+        />
       </div>
     </div>
 
     <div class="relative">
-      <button type="button" class="tbtn" :disabled="disabled" @click="showBgColor = !showBgColor" title="Highlight color">
+      <button
+        type="button"
+        class="tbtn"
+        :disabled="disabled"
+        @click="showBgColor = !showBgColor"
+        title="Highlight color"
+      >
         <Icon name="highlighter" :size="13" />
       </button>
-      <div v-if="showBgColor" class="absolute z-50 mt-1 bg-white border border-line p-2 shadow" style="min-width:216px">
+      <div
+        v-if="showBgColor"
+        class="absolute z-50 mt-1 bg-white border border-line p-2 shadow"
+        style="min-width: 216px"
+      >
         <div class="grid grid-cols-8 gap-1">
-          <button v-for="c in [
-            '#FFFF00','#fff59d','#FFE082','#FFCC80','#FFAB91','#EF9A9A','#F48FB1','#CE93D8',
-            '#B39DDB','#90CAF9','#a5f3fc','#80DEEA','#A5D6A7','#bbf7d0','#E6EE9C','#FFFFFF',
-            '#fecaca','#e0e7ff','#f3e8ff','#DCEDC8','#B2EBF2','#B2DFDB','#F0F4C3','#FCE4EC',
-          ]" :key="c"
-              class="w-6 h-6 border border-line hover:scale-110 transition-transform"
-              :style="{background:c}"
-              :title="c"
-              @click="setHighlight(c)" />
+          <button
+            v-for="c in [
+              '#FFFF00',
+              '#fff59d',
+              '#FFE082',
+              '#FFCC80',
+              '#FFAB91',
+              '#EF9A9A',
+              '#F48FB1',
+              '#CE93D8',
+              '#B39DDB',
+              '#90CAF9',
+              '#a5f3fc',
+              '#80DEEA',
+              '#A5D6A7',
+              '#bbf7d0',
+              '#E6EE9C',
+              '#FFFFFF',
+              '#fecaca',
+              '#e0e7ff',
+              '#f3e8ff',
+              '#DCEDC8',
+              '#B2EBF2',
+              '#B2DFDB',
+              '#F0F4C3',
+              '#FCE4EC',
+            ]"
+            :key="c"
+            class="w-6 h-6 border border-line hover:scale-110 transition-transform"
+            :style="{ background: c }"
+            :title="c"
+            @click="setHighlight(c)"
+          />
         </div>
-        <input type="color" class="mt-2 w-full h-6 cursor-pointer" @input="(e) => setHighlight((e.target as HTMLInputElement).value)" />
+        <input
+          type="color"
+          class="mt-2 w-full h-6 cursor-pointer"
+          @input="(e) => setHighlight((e.target as HTMLInputElement).value)"
+        />
       </div>
     </div>
 
@@ -330,10 +442,24 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
     <span class="rte-separator" />
 
     <!-- Lists -->
-    <button type="button" class="tbtn" :class="{ 'rte-active': isActive('bulletList') }" :disabled="disabled" @click="toggleBullet" title="Bullet list">
+    <button
+      type="button"
+      class="tbtn"
+      :class="{ 'rte-active': isActive('bulletList') }"
+      :disabled="disabled"
+      @click="toggleBullet"
+      title="Bullet list"
+    >
       <Icon name="list" :size="13" />
     </button>
-    <button type="button" class="tbtn" :class="{ 'rte-active': isActive('orderedList') }" :disabled="disabled" @click="toggleOrdered" title="Numbered list">
+    <button
+      type="button"
+      class="tbtn"
+      :class="{ 'rte-active': isActive('orderedList') }"
+      :disabled="disabled"
+      @click="toggleOrdered"
+      title="Numbered list"
+    >
       <Icon name="list-ordered" :size="13" />
     </button>
     <button type="button" class="tbtn" :disabled="disabled" @click="outdent" title="Decrease indent">
@@ -347,10 +473,21 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
 
     <!-- Link -->
     <div class="relative">
-      <button type="button" class="tbtn" :class="{ 'rte-active': isActive('link') }" :disabled="disabled" @click="openLinkDialog" title="Insert or edit link">
+      <button
+        type="button"
+        class="tbtn"
+        :class="{ 'rte-active': isActive('link') }"
+        :disabled="disabled"
+        @click="openLinkDialog"
+        title="Insert or edit link"
+      >
         <Icon name="link" :size="13" />
       </button>
-      <div v-if="showLink" class="absolute z-50 bg-white border border-line p-2 shadow flex gap-2" style="top:100%; left:0; min-width:360px">
+      <div
+        v-if="showLink"
+        class="absolute z-50 bg-white border border-line p-2 shadow flex gap-2"
+        style="top: 100%; left: 0; min-width: 360px"
+      >
         <input
           ref="linkInputRef"
           v-model="linkUrl"
@@ -370,7 +507,11 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       <button type="button" class="tbtn" :disabled="disabled" @click="openImageDialog" title="Insert image">
         <Icon name="image" :size="13" />
       </button>
-      <div v-if="showImage" class="absolute z-50 bg-white border border-line p-2 shadow flex gap-2" style="top:100%; left:0; min-width:380px">
+      <div
+        v-if="showImage"
+        class="absolute z-50 bg-white border border-line p-2 shadow flex gap-2"
+        style="top: 100%; left: 0; min-width: 380px"
+      >
         <input
           ref="imageInputRef"
           v-model="imageUrl"
@@ -400,8 +541,14 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
       <button type="button" class="tbtn" :disabled="disabled" @click="showEmoji = !showEmoji" title="Insert emoji">
         <Icon name="smile" :size="13" />
       </button>
-      <div v-if="showEmoji" class="absolute z-50 mt-1 bg-white border border-line p-2 shadow grid grid-cols-6 gap-1 text-lg" style="min-width: 220px">
-        <button v-for="e in emojiList" :key="e" class="hover:bg-accent-soft p-1" @click="insertEmoji(e)">{{ e }}</button>
+      <div
+        v-if="showEmoji"
+        class="absolute z-50 mt-1 bg-white border border-line p-2 shadow grid grid-cols-6 gap-1 text-lg"
+        style="min-width: 220px"
+      >
+        <button v-for="e in emojiList" :key="e" class="hover:bg-accent-soft p-1" @click="insertEmoji(e)">
+          {{ e }}
+        </button>
       </div>
     </div>
 
@@ -421,6 +568,5 @@ const disabled = computed(() => !ed.value || !ed.value.isEditable)
     <span class="ml-auto text-[10.5px] text-ink-mute px-2 tabular-nums" title="Word count">
       {{ wordCount }} words
     </span>
-
   </div>
 </template>

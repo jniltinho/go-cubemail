@@ -7,16 +7,16 @@ import type { CalendarEvent } from '../types'
 const mail = useMailStore()
 
 const form = ref({
-  summary:        '',
-  description:    '',
-  location:       '',
-  start_at:       '',
-  end_at:         '',
-  is_all_day:     false,
-  calendar_id:    0,
-  rrule:          '',
+  summary: '',
+  description: '',
+  location: '',
+  start_at: '',
+  end_at: '',
+  is_all_day: false,
+  calendar_id: 0,
+  rrule: '',
   organizer_name: '',
-  organizer_email:'',
+  organizer_email: '',
 })
 
 const saving = ref(false)
@@ -26,7 +26,7 @@ function toLocalInput(iso: string): string {
   const d = new Date(iso)
   if (isNaN(d.getTime())) return ''
   const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 function fromLocalInput(val: string): string {
@@ -34,40 +34,44 @@ function fromLocalInput(val: string): string {
   return new Date(val).toISOString()
 }
 
-watch(() => mail.selectedEvent, (ev) => {
-  if (!ev) return
-  const defaultCal = mail.calendars.find(c => c.is_default) ?? mail.calendars[0]
-  form.value = {
-    summary:         ev.summary ?? '',
-    description:     ev.description ?? '',
-    location:        ev.location ?? '',
-    start_at:        toLocalInput(ev.start_at),
-    end_at:          toLocalInput(ev.end_at),
-    is_all_day:      ev.is_all_day ?? false,
-    calendar_id:     ev.calendar_id || defaultCal?.id || 0,
-    rrule:           ev.rrule ?? '',
-    organizer_name:  ev.organizer_name ?? '',
-    organizer_email: ev.organizer_email ?? '',
-  }
-}, { immediate: true })
+watch(
+  () => mail.selectedEvent,
+  (ev) => {
+    if (!ev) return
+    const defaultCal = mail.calendars.find((c) => c.is_default) ?? mail.calendars[0]
+    form.value = {
+      summary: ev.summary ?? '',
+      description: ev.description ?? '',
+      location: ev.location ?? '',
+      start_at: toLocalInput(ev.start_at),
+      end_at: toLocalInput(ev.end_at),
+      is_all_day: ev.is_all_day ?? false,
+      calendar_id: ev.calendar_id || defaultCal?.id || 0,
+      rrule: ev.rrule ?? '',
+      organizer_name: ev.organizer_name ?? '',
+      organizer_email: ev.organizer_email ?? '',
+    }
+  },
+  { immediate: true },
+)
 
 const isNew = computed(() => !mail.selectedEvent?.id)
-const title = computed(() => isNew.value ? 'New Event' : 'Edit Event')
+const title = computed(() => (isNew.value ? 'New Event' : 'Edit Event'))
 
 async function save() {
   if (!form.value.summary.trim()) return
   saving.value = true
   try {
     const payload: Partial<CalendarEvent> = {
-      calendar_id:     form.value.calendar_id,
-      summary:         form.value.summary.trim(),
-      description:     form.value.description,
-      location:        form.value.location,
-      start_at:        fromLocalInput(form.value.start_at),
-      end_at:          fromLocalInput(form.value.end_at),
-      is_all_day:      form.value.is_all_day,
-      rrule:           form.value.rrule || undefined,
-      organizer_name:  form.value.organizer_name || undefined,
+      calendar_id: form.value.calendar_id,
+      summary: form.value.summary.trim(),
+      description: form.value.description,
+      location: form.value.location,
+      start_at: fromLocalInput(form.value.start_at),
+      end_at: fromLocalInput(form.value.end_at),
+      is_all_day: form.value.is_all_day,
+      rrule: form.value.rrule || undefined,
+      organizer_name: form.value.organizer_name || undefined,
       organizer_email: form.value.organizer_email || undefined,
     }
     if (isNew.value) {
@@ -198,21 +202,13 @@ async function remove() {
 
       <!-- Footer -->
       <div class="flex items-center justify-between px-5 py-3 border-t border-line">
-        <button
-          v-if="!isNew"
-          class="tbtn text-red-600 hover:bg-red-50"
-          @click="remove"
-        >
+        <button v-if="!isNew" class="tbtn text-red-600 hover:bg-red-50" @click="remove">
           <Icon name="trash-2" :size="13" class="mr-1" /> Delete
         </button>
         <div v-else />
         <div class="flex gap-2">
           <button class="tbtn" @click="mail.closeEditor()">Cancel</button>
-          <button
-            class="tbtn tbtn-primary"
-            :disabled="saving || !form.summary.trim()"
-            @click="save"
-          >
+          <button class="tbtn tbtn-primary" :disabled="saving || !form.summary.trim()" @click="save">
             <Icon v-if="saving" name="loader-circle" :size="13" class="animate-spin mr-1" />
             {{ isNew ? 'Create' : 'Save' }}
           </button>

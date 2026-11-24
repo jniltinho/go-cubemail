@@ -28,7 +28,12 @@ async function onSubmit() {
 <template>
   <div
     class="min-h-full flex flex-col items-center pt-[100px] px-6 pb-10"
-    style="background-color:#C9CDD3;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.18) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(0,0,0,.05) 0 1px,transparent 1px 3px)"
+    style="
+      background-color: #c9cdd3;
+      background-image:
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 3px),
+        repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px);
+    "
   >
     <form
       class="w-full max-w-[620px] bg-accent border border-[#0B1F40] text-white login-shadow"
@@ -37,9 +42,13 @@ async function onSubmit() {
     >
       <!-- Card header -->
       <div class="flex items-center gap-3 px-5 py-3.5 bg-accent-bar border-b border-[#2A4978]">
-        <div class="w-7 h-7 bg-[#66A0FF] text-accent-bar grid place-items-center font-mono font-extrabold text-[13px]">W</div>
+        <div class="w-7 h-7 bg-[#66A0FF] text-accent-bar grid place-items-center font-mono font-extrabold text-[13px]">
+          W
+        </div>
         <div class="text-[17px] font-bold tracking-tight">
-          <b>Web</b>mail<span v-if="auth.appVersion" class="ml-1.5 text-[11px] font-normal text-[#BFD0EA] font-mono">{{ auth.appVersion }}</span>
+          <b>Web</b>mail<span v-if="auth.appVersion" class="ml-1.5 text-[11px] font-normal text-[#BFD0EA] font-mono">{{
+            auth.appVersion
+          }}</span>
         </div>
       </div>
 
@@ -55,7 +64,7 @@ async function onSubmit() {
         </div>
 
         <!-- Username -->
-        <div class="grid items-center gap-3.5" style="grid-template-columns:110px 1fr">
+        <div class="grid items-center gap-3.5" style="grid-template-columns: 110px 1fr">
           <label for="lgn-u" class="text-[12.5px] text-[#BFD0EA] tracking-tight">Username</label>
           <input
             id="lgn-u"
@@ -64,13 +73,16 @@ async function onSubmit() {
             autofocus
             :class="['login-input', { bad: auth.loginUserBad }]"
             v-model="auth.loginUser"
-            @input="auth.loginUserBad = false; auth.loginErr = null"
+            @input="
+              auth.loginUserBad = false;
+              auth.loginErr = null
+            "
             :disabled="auth.loginBusy"
           />
         </div>
 
         <!-- Password -->
-        <div class="grid items-center gap-3.5" style="grid-template-columns:110px 1fr">
+        <div class="grid items-center gap-3.5" style="grid-template-columns: 110px 1fr">
           <label for="lgn-p" class="text-[12.5px] text-[#BFD0EA] tracking-tight">Password</label>
           <input
             id="lgn-p"
@@ -78,7 +90,10 @@ async function onSubmit() {
             autocomplete="current-password"
             :class="['login-input', { bad: auth.loginPwdBad }]"
             v-model="auth.loginPwd"
-            @input="auth.loginPwdBad = false; auth.loginErr = null"
+            @input="
+              auth.loginPwdBad = false;
+              auth.loginErr = null
+            "
             :disabled="auth.loginBusy"
           />
         </div>

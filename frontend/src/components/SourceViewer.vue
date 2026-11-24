@@ -16,16 +16,18 @@ const mail = useMailStore()
 const sizeLabel = computed(() => {
   const n = mail.sourceMail?.size || mail.sourceRaw.length
   if (!n) return ''
-  return n >= 1_048_576
-    ? (n / 1_048_576).toFixed(2) + ' MB'
-    : n.toLocaleString() + ' bytes'
+  return n >= 1_048_576 ? (n / 1_048_576).toFixed(2) + ' MB' : n.toLocaleString() + ' bytes'
 })
 
 /** Copies the raw MIME message source content directly into the clipboard */
-function copy() { mail.copySource(mail.sourceRaw) }
+function copy() {
+  mail.copySource(mail.sourceRaw)
+}
 
 /** Closes the modal viewport if the user clicks on the outer background mask */
-function backdrop(e) { if (e.target === e.currentTarget) mail.closeSource() }
+function backdrop(e) {
+  if (e.target === e.currentTarget) mail.closeSource()
+}
 
 /**
  * Packs the raw RFC 822 source text inside a browser Blob structure and
@@ -45,7 +47,7 @@ function download() {
 
 <template>
   <div class="modal-wrap" @click="backdrop">
-    <div class="composer-shell" style="width:820px" role="dialog" aria-label="View Source">
+    <div class="composer-shell" style="width: 820px" role="dialog" aria-label="View Source">
       <!-- Header -->
       <div class="bg-accent-bar text-white py-2 px-3 flex items-center gap-2 text-[13px] font-semibold">
         <Icon name="code-2" :size="14" />
@@ -60,9 +62,21 @@ function download() {
       </div>
 
       <!-- Raw body -->
-      <div class="bg-[#0E1A2E] text-[#D5E0F2] font-mono text-[12px] leading-snug py-3.5 px-4 max-h-[calc(100vh-200px)] overflow-auto whitespace-pre-wrap break-words scroll-y">
+      <div
+        class="bg-[#0E1A2E] text-[#D5E0F2] font-mono text-[12px] leading-snug py-3.5 px-4 max-h-[calc(100vh-200px)] overflow-auto whitespace-pre-wrap break-words scroll-y"
+      >
         <div v-if="!mail.sourceRaw" class="flex flex-col items-center justify-center py-12 gap-3">
-          <svg class="animate-spin text-[#4A6FA0]" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            class="animate-spin text-[#4A6FA0]"
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M21 12a9 9 0 1 1-6.219-8.56" />
           </svg>
           <span class="text-[#6A82A0] text-[12px]">Loading source…</span>
@@ -72,14 +86,14 @@ function download() {
 
       <!-- Footer -->
       <div class="py-2 px-2.5 bg-panel-2 border-t border-line flex items-center gap-1.5">
-        <span class="text-[12px] text-ink-sub px-1.5">{{ sizeLabel ? sizeLabel + ' · ' : '' }}Raw RFC 822 source · read-only</span>
+        <span class="text-[12px] text-ink-sub px-1.5"
+          >{{ sizeLabel ? sizeLabel + ' · ' : '' }}Raw RFC 822 source · read-only</span
+        >
         <div class="ml-auto flex gap-1.5">
           <button class="tbtn" type="button" @click="download" :disabled="!mail.sourceRaw">
             <Icon name="download" :size="13" /> Download .eml
           </button>
-          <button class="tbtn" type="button" @click="copy">
-            <Icon name="copy" :size="13" /> Copy
-          </button>
+          <button class="tbtn" type="button" @click="copy"><Icon name="copy" :size="13" /> Copy</button>
           <button class="tbtn tbtn-primary" type="button" @click="mail.closeSource()">Close</button>
         </div>
       </div>

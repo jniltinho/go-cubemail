@@ -18,7 +18,7 @@ const mail = useMailStore()
  * Handles the drag start event for message rows.
  * Serializes the dragged message ID, or the complete set of selected message UIDs
  * if the dragged message is part of the batch selection.
- * 
+ *
  * @param event - The HTML5 drag event.
  * @param message - The mail message row being dragged.
  */
@@ -81,35 +81,35 @@ function onDragStart(event: DragEvent, message: MailMessage) {
         @click="mail.selectMsg(m.id)"
       >
         <!-- Checkbox -->
-        <div
-          :class="['checkbox', { on: mail.selectedIds.has(m.id) }]"
-          @click.stop="mail.toggleSelect(m.id)"
-        ></div>
+        <div :class="['checkbox', { on: mail.selectedIds.has(m.id) }]" @click.stop="mail.toggleSelect(m.id)"></div>
 
         <!-- From / Subject / Snippet -->
-        <div class="min-w-0" style="grid-column:2;grid-row:1/4">
+        <div class="min-w-0" style="grid-column: 2; grid-row: 1/4">
           <div
             class="from text-[12.5px] overflow-hidden whitespace-nowrap text-ellipsis"
             :class="m.unread ? 'text-ink font-semibold' : 'text-ink-sub'"
-          >{{ m.from?.name || m.from?.addr || '(unknown)' }}</div>
+          >
+            {{ m.from?.name || m.from?.addr || '(unknown)' }}
+          </div>
           <div
             class="subject text-[12.5px] text-ink overflow-hidden whitespace-nowrap text-ellipsis mt-px"
             :class="{ 'font-semibold': m.unread }"
-          >{{ m.subject }}</div>
+          >
+            {{ m.subject }}
+          </div>
           <div class="snippet text-[11.5px] text-ink-mute overflow-hidden whitespace-nowrap text-ellipsis mt-0.5">
             {{ m.snippet }}
           </div>
         </div>
 
         <!-- Date -->
-        <div
-          class="date text-[11px] text-ink-sub tabular-nums pt-0.5 text-right"
-          style="grid-column:3;grid-row:1"
-        >{{ formatDate(m.rawDate || m.date) }}</div>
+        <div class="date text-[11px] text-ink-sub tabular-nums pt-0.5 text-right" style="grid-column: 3; grid-row: 1">
+          {{ formatDate(m.rawDate || m.date) }}
+        </div>
 
         <!-- Flags -->
-        <div class="flex flex-col items-end gap-1 mt-0.5" style="grid-column:3;grid-row:2/4">
-          <Icon v-if="m.starred" name="star" :size="12" class="text-star" style="fill:currentColor" />
+        <div class="flex flex-col items-end gap-1 mt-0.5" style="grid-column: 3; grid-row: 2/4">
+          <Icon v-if="m.starred" name="star" :size="12" class="text-star" style="fill: currentColor" />
           <Icon v-if="m.attachments?.length" name="paperclip" :size="12" class="text-ink-mute" />
         </div>
       </div>

@@ -38,11 +38,15 @@ const activeTab = ref<Tab>('identities')
 
 // ── Identity editor state ──────────────────────────────────────────────────
 const identityForm = reactive<Identity>({
-  display_name: '', email: '', reply_to: '', signature: '', is_default: false,
+  display_name: '',
+  email: '',
+  reply_to: '',
+  signature: '',
+  is_default: false,
 })
-const editingId   = ref<number | null>(null)
+const editingId = ref<number | null>(null)
 const identityOpen = ref(false)
-const savingId    = ref(false)
+const savingId = ref(false)
 
 function openNewIdentity() {
   Object.assign(identityForm, { display_name: '', email: '', reply_to: '', signature: '', is_default: false })
@@ -53,10 +57,10 @@ function openNewIdentity() {
 function openEditIdentity(id: Identity) {
   Object.assign(identityForm, {
     display_name: id.display_name,
-    email:        id.email,
-    reply_to:     id.reply_to ?? '',
-    signature:    id.signature ?? '',
-    is_default:   id.is_default ?? false,
+    email: id.email,
+    reply_to: id.reply_to ?? '',
+    signature: id.signature ?? '',
+    is_default: id.is_default ?? false,
   })
   editingId.value = id.id ?? null
   identityOpen.value = true
@@ -68,10 +72,10 @@ async function saveIdentity() {
   try {
     const payload = {
       display_name: identityForm.display_name,
-      email:        identityForm.email,
-      reply_to:     identityForm.reply_to,
-      signature:    identityForm.signature,
-      is_default:   identityForm.is_default,
+      email: identityForm.email,
+      reply_to: identityForm.reply_to,
+      signature: identityForm.signature,
+      is_default: identityForm.is_default,
     }
     if (editingId.value) {
       await mail.updateIdentity(editingId.value, payload)
@@ -79,32 +83,57 @@ async function saveIdentity() {
       await mail.createIdentity(payload)
     }
     identityOpen.value = false
-  } catch { /* toast shown by action */ }
-  finally { savingId.value = false }
+  } catch {
+    /* toast shown by action */
+  } finally {
+    savingId.value = false
+  }
 }
 
 // ── Preferences form state ─────────────────────────────────────────────────
 const prefs = reactive<UserSettings>({
   rows_per_page: 50,
-  timezone:      'UTC',
-  compose_html:  true,
-  date_format:   '02/01/2006 15:04',
+  timezone: 'UTC',
+  compose_html: true,
+  date_format: '02/01/2006 15:04',
   signature_pos: 'below',
-  oof_enabled:   false,
-  oof_message:   '',
+  oof_enabled: false,
+  oof_message: '',
 })
 const savingPrefs = ref(false)
 
-watch(() => mail.settings, (s) => {
-  if (s) Object.assign(prefs, s)
-}, { immediate: true })
+watch(
+  () => mail.settings,
+  (s) => {
+    if (s) Object.assign(prefs, s)
+  },
+  { immediate: true },
+)
 
 const TIMEZONES = [
-  'UTC','America/Sao_Paulo','America/New_York','America/Chicago','America/Los_Angeles',
-  'America/Toronto','America/Buenos_Aires','America/Lima','America/Bogota',
-  'Europe/London','Europe/Paris','Europe/Berlin','Europe/Madrid','Europe/Rome',
-  'Europe/Lisbon','Europe/Moscow','Asia/Tokyo','Asia/Shanghai','Asia/Kolkata',
-  'Asia/Dubai','Asia/Singapore','Australia/Sydney','Pacific/Auckland',
+  'UTC',
+  'America/Sao_Paulo',
+  'America/New_York',
+  'America/Chicago',
+  'America/Los_Angeles',
+  'America/Toronto',
+  'America/Buenos_Aires',
+  'America/Lima',
+  'America/Bogota',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Europe/Madrid',
+  'Europe/Rome',
+  'Europe/Lisbon',
+  'Europe/Moscow',
+  'Asia/Tokyo',
+  'Asia/Shanghai',
+  'Asia/Kolkata',
+  'Asia/Dubai',
+  'Asia/Singapore',
+  'Australia/Sydney',
+  'Pacific/Auckland',
 ]
 
 const DATE_FORMATS = [
@@ -116,30 +145,37 @@ const DATE_FORMATS = [
 
 async function savePrefs() {
   savingPrefs.value = true
-  try { await mail.saveSettings({ ...prefs }) }
-  finally { savingPrefs.value = false }
+  try {
+    await mail.saveSettings({ ...prefs })
+  } finally {
+    savingPrefs.value = false
+  }
 }
 </script>
 
 <template>
-  <div class="bg-white flex flex-col overflow-hidden" style="grid-column:2/4">
+  <div class="bg-white flex flex-col overflow-hidden" style="grid-column: 2/4">
     <!-- Header -->
     <div class="h-10 px-4 bg-panel-2 border-b border-line flex items-center gap-4 flex-shrink-0">
       <span class="font-semibold text-ink text-[13px]">Settings</span>
       <div class="flex gap-1 ml-4">
         <button
-          :class="['tbtn text-[12px]', activeTab==='identities' ? 'tbtn-primary' : '']"
-          @click="activeTab='identities'"
-        >Identities</button>
+          :class="['tbtn text-[12px]', activeTab === 'identities' ? 'tbtn-primary' : '']"
+          @click="activeTab = 'identities'"
+        >
+          Identities
+        </button>
         <button
-          :class="['tbtn text-[12px]', activeTab==='preferences' ? 'tbtn-primary' : '']"
-          @click="activeTab='preferences'"
-        >Preferences</button>
+          :class="['tbtn text-[12px]', activeTab === 'preferences' ? 'tbtn-primary' : '']"
+          @click="activeTab = 'preferences'"
+        >
+          Preferences
+        </button>
       </div>
     </div>
 
     <!-- ── IDENTITIES TAB ───────────────────────────────────────────────── -->
-    <div v-if="activeTab==='identities'" class="flex-1 overflow-y-auto p-5">
+    <div v-if="activeTab === 'identities'" class="flex-1 overflow-y-auto p-5">
       <div class="max-w-2xl">
         <div class="flex items-center justify-between mb-4">
           <p class="text-[13px] text-ink-sub">
@@ -204,12 +240,13 @@ async function savePrefs() {
     <!-- ── PREFERENCES TAB ─────────────────────────────────────────────── -->
     <div v-else class="flex-1 overflow-y-auto p-5">
       <div class="max-w-lg space-y-5">
-
         <!-- Rows per page -->
         <div>
           <label class="block text-[12px] font-semibold text-ink mb-1">Messages per page</label>
-          <select v-model.number="prefs.rows_per_page"
-            class="border border-line rounded px-2.5 py-1.5 text-[13px] w-full focus:outline-none focus:ring-1 focus:ring-accent">
+          <select
+            v-model.number="prefs.rows_per_page"
+            class="border border-line rounded px-2.5 py-1.5 text-[13px] w-full focus:outline-none focus:ring-1 focus:ring-accent"
+          >
             <option :value="25">25</option>
             <option :value="50">50</option>
             <option :value="100">100</option>
@@ -220,8 +257,10 @@ async function savePrefs() {
         <!-- Timezone -->
         <div>
           <label class="block text-[12px] font-semibold text-ink mb-1">Timezone</label>
-          <select v-model="prefs.timezone"
-            class="border border-line rounded px-2.5 py-1.5 text-[13px] w-full focus:outline-none focus:ring-1 focus:ring-accent">
+          <select
+            v-model="prefs.timezone"
+            class="border border-line rounded px-2.5 py-1.5 text-[13px] w-full focus:outline-none focus:ring-1 focus:ring-accent"
+          >
             <option v-for="tz in TIMEZONES" :key="tz" :value="tz">{{ tz }}</option>
           </select>
         </div>
@@ -229,8 +268,10 @@ async function savePrefs() {
         <!-- Date format -->
         <div>
           <label class="block text-[12px] font-semibold text-ink mb-1">Date format</label>
-          <select v-model="prefs.date_format"
-            class="border border-line rounded px-2.5 py-1.5 text-[13px] w-full focus:outline-none focus:ring-1 focus:ring-accent">
+          <select
+            v-model="prefs.date_format"
+            class="border border-line rounded px-2.5 py-1.5 text-[13px] w-full focus:outline-none focus:ring-1 focus:ring-accent"
+          >
             <option v-for="df in DATE_FORMATS" :key="df.value" :value="df.value">{{ df.label }}</option>
           </select>
         </div>
@@ -291,11 +332,7 @@ async function savePrefs() {
 
         <!-- Save -->
         <div class="pt-2">
-          <button
-            class="tbtn tbtn-primary"
-            :disabled="savingPrefs"
-            @click="savePrefs"
-          >
+          <button class="tbtn tbtn-primary" :disabled="savingPrefs" @click="savePrefs">
             <Icon v-if="savingPrefs" name="loader-circle" :size="13" class="animate-spin mr-1" />
             Save Preferences
           </button>
@@ -321,33 +358,44 @@ async function savePrefs() {
         </button>
       </div>
       <div class="px-5 py-4 space-y-3">
-
         <div>
           <label class="block text-[12px] text-ink-sub mb-1">Display name</label>
-          <input v-model="identityForm.display_name"
+          <input
+            v-model="identityForm.display_name"
             class="w-full border border-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-1 focus:ring-accent"
-            placeholder="Your Name" autofocus />
+            placeholder="Your Name"
+            autofocus
+          />
         </div>
 
         <div>
           <label class="block text-[12px] text-ink-sub mb-1">Email address *</label>
-          <input v-model="identityForm.email" type="email"
+          <input
+            v-model="identityForm.email"
+            type="email"
             class="w-full border border-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-1 focus:ring-accent"
-            placeholder="you@example.com" />
+            placeholder="you@example.com"
+          />
         </div>
 
         <div>
           <label class="block text-[12px] text-ink-sub mb-1">Reply-To (optional)</label>
-          <input v-model="identityForm.reply_to" type="email"
+          <input
+            v-model="identityForm.reply_to"
+            type="email"
             class="w-full border border-line rounded px-2.5 py-1.5 text-[13px] focus:outline-none focus:ring-1 focus:ring-accent"
-            placeholder="replies@example.com" />
+            placeholder="replies@example.com"
+          />
         </div>
 
         <div>
           <label class="block text-[12px] text-ink-sub mb-1">Signature</label>
-          <textarea v-model="identityForm.signature" rows="4"
+          <textarea
+            v-model="identityForm.signature"
+            rows="4"
             class="w-full border border-line rounded px-2.5 py-1.5 text-[13px] resize-none focus:outline-none focus:ring-1 focus:ring-accent"
-            placeholder="-- &#10;Your signature" />
+            placeholder="-- &#10;Your signature"
+          />
         </div>
 
         <label class="flex items-center gap-2 text-[13px] cursor-pointer">
@@ -357,11 +405,7 @@ async function savePrefs() {
       </div>
       <div class="flex justify-end gap-2 px-5 py-3 border-t border-line">
         <button class="tbtn" @click="identityOpen = false">Cancel</button>
-        <button
-          class="tbtn tbtn-primary"
-          :disabled="savingId || !identityForm.email.trim()"
-          @click="saveIdentity"
-        >
+        <button class="tbtn tbtn-primary" :disabled="savingId || !identityForm.email.trim()" @click="saveIdentity">
           <Icon v-if="savingId" name="loader-circle" :size="13" class="animate-spin mr-1" />
           {{ editingId ? 'Save' : 'Create' }}
         </button>

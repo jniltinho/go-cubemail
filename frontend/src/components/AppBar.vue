@@ -17,18 +17,22 @@ const mail = useMailStore()
 
 /** Navigation tabs metadata */
 const TABS = [
-  { id: 'mail',      label: 'Mail',     icon: 'mail' },
-  { id: 'contacts',  label: 'Contacts', icon: 'users' },
-  { id: 'calendar',  label: 'Calendar', icon: 'calendar' },
-  { id: 'settings',  label: 'Settings', icon: 'settings' },
+  { id: 'mail', label: 'Mail', icon: 'mail' },
+  { id: 'contacts', label: 'Contacts', icon: 'users' },
+  { id: 'calendar', label: 'Calendar', icon: 'calendar' },
+  { id: 'settings', label: 'Settings', icon: 'settings' },
 ]
 </script>
 
 <template>
   <div class="h-11 flex items-stretch bg-accent-bar text-white border-b border-[#0B1F40] select-none flex-shrink-0">
     <!-- Brand -->
-    <div class="flex items-center gap-2.5 px-4 font-bold text-[14px] tracking-[0.3px] bg-accent border-r border-[#0B1F40] min-w-[220px]">
-      <div class="w-[22px] h-[22px] bg-white text-accent font-mono font-extrabold grid place-items-center text-[13px]">W</div>
+    <div
+      class="flex items-center gap-2.5 px-4 font-bold text-[14px] tracking-[0.3px] bg-accent border-r border-[#0B1F40] min-w-[220px]"
+    >
+      <div class="w-[22px] h-[22px] bg-white text-accent font-mono font-extrabold grid place-items-center text-[13px]">
+        W
+      </div>
       <div><b>Web</b>mail</div>
     </div>
 

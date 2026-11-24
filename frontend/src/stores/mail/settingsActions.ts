@@ -4,14 +4,14 @@ import type { Identity, UserSettings } from '../../types'
 import type { useAuthStore } from '../auth'
 import type { useToastStore } from '../toast'
 
-type AuthStore  = ReturnType<typeof useAuthStore>
+type AuthStore = ReturnType<typeof useAuthStore>
 type ToastStore = ReturnType<typeof useToastStore>
 
 interface SettingsActionsContext {
-  auth:       AuthStore
-  toast:      ToastStore
+  auth: AuthStore
+  toast: ToastStore
   identities: Ref<Identity[]>
-  settings:   Ref<UserSettings | null>
+  settings: Ref<UserSettings | null>
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -25,7 +25,6 @@ const DEFAULT_SETTINGS: UserSettings = {
 }
 
 export function useSettingsActions({ auth, toast, identities, settings }: SettingsActionsContext) {
-
   async function fetchSettings(): Promise<void> {
     if (!auth.isApiOnline) return
     try {
@@ -69,7 +68,7 @@ export function useSettingsActions({ auth, toast, identities, settings }: Settin
     try {
       const res = await axios.put(`${API_BASE}/identities/${id}`, data)
       const updated = res.data as Identity
-      identities.value = identities.value.map(i => i.id === id ? updated : i)
+      identities.value = identities.value.map((i) => (i.id === id ? updated : i))
       toast.success('Identity updated.')
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Failed to update identity.')
@@ -80,7 +79,7 @@ export function useSettingsActions({ auth, toast, identities, settings }: Settin
   async function deleteIdentity(id: number): Promise<void> {
     try {
       await axios.delete(`${API_BASE}/identities/${id}`)
-      identities.value = identities.value.filter(i => i.id !== id)
+      identities.value = identities.value.filter((i) => i.id !== id)
       toast.success('Identity deleted.')
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Failed to delete identity.')
@@ -90,16 +89,20 @@ export function useSettingsActions({ auth, toast, identities, settings }: Settin
   async function setDefaultIdentity(id: number): Promise<void> {
     try {
       await axios.post(`${API_BASE}/identities/${id}/default`)
-      identities.value = identities.value.map(i => ({ ...i, is_default: i.id === id }))
+      identities.value = identities.value.map((i) => ({ ...i, is_default: i.id === id }))
     } catch {}
   }
 
-  const defaultIdentity = () =>
-    identities.value.find(i => i.is_default) ?? identities.value[0] ?? null
+  const defaultIdentity = () => identities.value.find((i) => i.is_default) ?? identities.value[0] ?? null
 
   return {
-    fetchSettings, saveSettings,
-    fetchIdentities, createIdentity, updateIdentity, deleteIdentity, setDefaultIdentity,
+    fetchSettings,
+    saveSettings,
+    fetchIdentities,
+    createIdentity,
+    updateIdentity,
+    deleteIdentity,
+    setDefaultIdentity,
     defaultIdentity,
   }
 }

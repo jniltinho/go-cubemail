@@ -9,9 +9,9 @@ import type { CalEvent } from '../../types'
  * Mock calendar events, keyed by day of the month.
  */
 export const CAL_EVENTS: Record<number, CalEvent[]> = {
-  4:  [{ t: 'Sprint kickoff', k: 'alt' }],
-  6:  [{ t: 'Design review' }],
-  7:  [{ t: '1:1 Helena', k: 'ghost' }],
+  4: [{ t: 'Sprint kickoff', k: 'alt' }],
+  6: [{ t: 'Design review' }],
+  7: [{ t: '1:1 Helena', k: 'ghost' }],
   11: [{ t: 'All-hands' }, { t: 'Vendor call', k: 'alt' }],
   13: [{ t: 'Q3 budget prep' }],
   15: [{ t: 'Offsite planning', k: 'warn' }],

@@ -20,12 +20,12 @@ const isEdit = () => !!mail.editingContact
 
 /** The reactive form fields payload object */
 const form = reactive({
-  name:    '',
-  email:   '',
-  title:   '',
+  name: '',
+  email: '',
+  title: '',
   company: '',
-  phone:   '',
-  notes:   '',
+  phone: '',
+  notes: '',
 })
 
 /**
@@ -35,22 +35,22 @@ const form = reactive({
 watch(
   () => mail.editingContact,
   (c) => {
-    form.name    = c?.name    ?? ''
-    form.email   = c?.email   ?? ''
-    form.title   = c?.title   ?? ''
+    form.name = c?.name ?? ''
+    form.email = c?.email ?? ''
+    form.title = c?.title ?? ''
     form.company = c?.company ?? ''
-    form.phone   = c?.phone   ?? ''
-    form.notes   = c?.notes   ?? ''
+    form.phone = c?.phone ?? ''
+    form.notes = c?.notes ?? ''
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 /** True if the contact payload save request is in progress */
-const saving  = ref(false)
+const saving = ref(false)
 /** True if the contact deletion request is in progress */
 const deleting = ref(false)
 /** Holds validation or API error messages */
-const error   = ref('')
+const error = ref('')
 
 /** Closes the modal if user clicks on the backdrop grey mask */
 function backdrop(e: MouseEvent) {
@@ -92,7 +92,12 @@ async function remove() {
 
 <template>
   <div class="modal-wrap" @click="backdrop">
-    <div class="composer-shell" style="width:540px" role="dialog" :aria-label="isEdit() ? 'Edit Contact' : 'New Contact'">
+    <div
+      class="composer-shell"
+      style="width: 540px"
+      role="dialog"
+      :aria-label="isEdit() ? 'Edit Contact' : 'New Contact'"
+    >
       <!-- Header -->
       <div class="bg-accent-bar text-white py-2 px-3 flex items-center gap-2 text-[13px] font-semibold">
         <Icon :name="isEdit() ? 'user-pen' : 'user-plus'" :size="14" />
@@ -112,8 +117,20 @@ async function remove() {
         <div class="flex items-center border-b border-line px-3">
           <span class="w-[80px] text-[12px] font-semibold text-ink-sub flex-shrink-0">Name</span>
           <div class="flex items-center gap-2 flex-1 py-2">
-            <div class="w-[34px] h-[34px] bg-accent-bar text-white grid place-items-center font-bold text-[13px] flex-shrink-0">
-              {{ form.name ? form.name.trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() : '?' }}
+            <div
+              class="w-[34px] h-[34px] bg-accent-bar text-white grid place-items-center font-bold text-[13px] flex-shrink-0"
+            >
+              {{
+                form.name
+                  ? form.name
+                      .trim()
+                      .split(' ')
+                      .map((w) => w[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase()
+                  : '?'
+              }}
             </div>
             <input
               v-model="form.name"
@@ -200,7 +217,7 @@ async function remove() {
         <div class="ml-auto flex gap-1.5">
           <button class="tbtn" type="button" @click="mail.closeContactModal()">Cancel</button>
           <button class="tbtn tbtn-primary" type="button" :disabled="saving" @click="submit">
-            <Icon name="check" :size="13" /> {{ saving ? 'Saving…' : (isEdit() ? 'Save changes' : 'Save contact') }}
+            <Icon name="check" :size="13" /> {{ saving ? 'Saving…' : isEdit() ? 'Save changes' : 'Save contact' }}
           </button>
         </div>
       </div>

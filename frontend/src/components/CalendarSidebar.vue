@@ -5,16 +5,16 @@ import { useMailStore } from '../stores/mail'
 
 const mail = useMailStore()
 
-const newCalName  = ref('')
+const newCalName = ref('')
 const newCalColor = ref('#3788d8')
-const showNew     = ref(false)
+const showNew = ref(false)
 
 async function addCalendar() {
   const name = newCalName.value.trim()
   if (!name) return
   await mail.createCalendar(name, newCalColor.value)
   newCalName.value = ''
-  showNew.value    = false
+  showNew.value = false
 }
 </script>
 
@@ -61,10 +61,7 @@ async function addCalendar() {
           <Icon v-if="cal.is_active" name="check" :size="8" class="text-white" />
         </button>
 
-        <span
-          class="flex-1 truncate text-ink"
-          :class="{ 'opacity-50': !cal.is_active }"
-        >{{ cal.name }}</span>
+        <span class="flex-1 truncate text-ink" :class="{ 'opacity-50': !cal.is_active }">{{ cal.name }}</span>
 
         <!-- Actions shown on hover -->
         <div class="hidden group-hover:flex gap-0.5">
@@ -79,9 +76,7 @@ async function addCalendar() {
         </div>
       </div>
 
-      <div v-if="mail.calendars.length === 0" class="px-3 py-2 text-xs text-ink-sub italic">
-        No calendars yet.
-      </div>
+      <div v-if="mail.calendars.length === 0" class="px-3 py-2 text-xs text-ink-sub italic">No calendars yet.</div>
     </div>
   </div>
 </template>

@@ -19,7 +19,7 @@ const mail = useMailStore()
 
 /**
  * Formats a raw number of bytes to a human-readable size string (MB or GB).
- * 
+ *
  * @param bytes - The raw byte size value.
  * @returns The formatted string representation (e.g. "256 MB", "1.24 GB").
  */
@@ -29,13 +29,13 @@ function formatBytes(bytes) {
 }
 
 /** Computed string representation of used bytes */
-const quotaUsedLabel  = computed(() => formatBytes(auth.currentUser.quotaUsedBytes))
+const quotaUsedLabel = computed(() => formatBytes(auth.currentUser.quotaUsedBytes))
 /** Computed string representation of total bytes */
 const quotaTotalLabel = computed(() => formatBytes(auth.currentUser.quotaTotalBytes))
 /** Computed percentage of total quota currently consumed */
-const quotaPercent    = computed(() => {
+const quotaPercent = computed(() => {
   if (!auth.currentUser.quotaTotalBytes) return 0
-  return Math.min(auth.currentUser.quotaUsedBytes / auth.currentUser.quotaTotalBytes * 100, 100).toFixed(1)
+  return Math.min((auth.currentUser.quotaUsedBytes / auth.currentUser.quotaTotalBytes) * 100, 100).toFixed(1)
 })
 </script>
 
@@ -67,7 +67,10 @@ const quotaPercent    = computed(() => {
     </div>
 
     <!-- Quota -->
-    <div v-if="auth.currentUser.quotaTotalBytes > 0" class="px-3.5 py-2.5 text-[11px] text-ink-mute border-t border-line-soft flex-shrink-0">
+    <div
+      v-if="auth.currentUser.quotaTotalBytes > 0"
+      class="px-3.5 py-2.5 text-[11px] text-ink-mute border-t border-line-soft flex-shrink-0"
+    >
       Quota
       <b class="text-ink-sub">{{ quotaUsedLabel }} / {{ quotaTotalLabel }}</b>
       <div class="h-1.5 bg-line-soft mt-1 border border-line">

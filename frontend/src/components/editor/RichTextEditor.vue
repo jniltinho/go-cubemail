@@ -50,8 +50,12 @@ defineExpose<RichTextEditorExpose>({
 })
 
 /** Forward focus/blur if needed by parent */
-function onFocus() { emit('focus') }
-function onBlur() { emit('blur') }
+function onFocus() {
+  emit('focus')
+}
+function onBlur() {
+  emit('blur')
+}
 </script>
 
 <template>

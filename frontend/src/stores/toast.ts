@@ -23,7 +23,7 @@ export const useToastStore = defineStore('toast', () => {
   /**
    * Appends a new notification to the active queue list and programs its
    * automatic dismissal timer.
-   * 
+   *
    * @param message - The notification message text.
    * @param type - The feedback type status of the message ('info', 'success', 'error', 'warning').
    * @param duration - Time to display in milliseconds. If <= 0, the toast stays until dismissed.
@@ -38,21 +38,21 @@ export const useToastStore = defineStore('toast', () => {
 
   /**
    * Dismisses and removes a notification toast from the queue by its unique ID.
-   * 
+   *
    * @param id - The unique ID of the notification to remove.
    */
   function remove(id: number): void {
-    toasts.value = toasts.value.filter(t => t.id !== id)
+    toasts.value = toasts.value.filter((t) => t.id !== id)
   }
 
   /** Shortcut helper to dispatch success notification toasts */
   const success = (msg: string, duration?: number) => add(msg, 'success', duration)
   /** Shortcut helper to dispatch error notification toasts */
-  const error   = (msg: string, duration?: number) => add(msg, 'error',   duration)
+  const error = (msg: string, duration?: number) => add(msg, 'error', duration)
   /** Shortcut helper to dispatch warning notification toasts */
   const warning = (msg: string, duration?: number) => add(msg, 'warning', duration)
   /** Shortcut helper to dispatch info notification toasts */
-  const info    = (msg: string, duration?: number) => add(msg, 'info',    duration)
+  const info = (msg: string, duration?: number) => add(msg, 'info', duration)
 
   return { toasts, add, remove, success, error, warning, info }
 })

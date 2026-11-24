@@ -23,7 +23,7 @@ function playNotificationSound(): void {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
     osc.start(ctx.currentTime)
     osc.stop(ctx.currentTime + 0.8)
-  } catch { }
+  } catch {}
 }
 
 /**

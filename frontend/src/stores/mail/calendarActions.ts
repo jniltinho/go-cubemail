@@ -4,26 +4,34 @@ import type { Calendar, CalendarEvent, CalendarView } from '../../types'
 import type { useAuthStore } from '../auth'
 import type { useToastStore } from '../toast'
 
-type AuthStore  = ReturnType<typeof useAuthStore>
+type AuthStore = ReturnType<typeof useAuthStore>
 type ToastStore = ReturnType<typeof useToastStore>
 
 interface CalendarActionsContext {
-  auth:            AuthStore
-  toast:           ToastStore
-  calendars:       Ref<Calendar[]>
-  events:          Ref<CalendarEvent[]>
-  calView:         Ref<CalendarView>
-  calCurrentDate:  Ref<Date>
-  selectedEvent:   Ref<CalendarEvent | null>
-  editorOpen:      Ref<boolean>
+  auth: AuthStore
+  toast: ToastStore
+  calendars: Ref<Calendar[]>
+  events: Ref<CalendarEvent[]>
+  calView: Ref<CalendarView>
+  calCurrentDate: Ref<Date>
+  selectedEvent: Ref<CalendarEvent | null>
+  editorOpen: Ref<boolean>
 }
 
 export function useCalendarActions({
-  auth, toast, calendars, events, calView, calCurrentDate, selectedEvent, editorOpen,
+  auth,
+  toast,
+  calendars,
+  events,
+  calView,
+  calCurrentDate,
+  selectedEvent,
+  editorOpen,
 }: CalendarActionsContext) {
-
   function calRangeForView(date: Date, view: CalendarView): { start: Date; end: Date } {
-    const y = date.getFullYear(), m = date.getMonth(), d = date.getDate()
+    const y = date.getFullYear(),
+      m = date.getMonth(),
+      d = date.getDate()
     if (view === 'month') {
       const start = new Date(y, m, 1)
       // include up to 6 weeks: shift back to Sunday of week containing day 1
@@ -40,7 +48,7 @@ export function useCalendarActions({
     }
     // day
     const start = new Date(y, m, d)
-    const end   = new Date(y, m, d + 1)
+    const end = new Date(y, m, d + 1)
     return { start, end }
   }
 
@@ -55,10 +63,10 @@ export function useCalendarActions({
   async function fetchEvents(): Promise<void> {
     if (!auth.isApiOnline) return
     const { start, end } = calRangeForView(calCurrentDate.value, calView.value)
-    const activeIds = calendars.value.filter(c => c.is_active).map(c => c.id)
+    const activeIds = calendars.value.filter((c) => c.is_active).map((c) => c.id)
     const params: Record<string, string> = {
       start: start.toISOString(),
-      end:   end.toISOString(),
+      end: end.toISOString(),
     }
     if (activeIds.length > 0) {
       params.calendar_ids = activeIds.join(',')
@@ -84,7 +92,7 @@ export function useCalendarActions({
     try {
       const res = await axios.put(`${API_BASE}/events/${id}`, data)
       const updated = res.data as CalendarEvent
-      events.value = events.value.map(e => e.id === id ? updated : e)
+      events.value = events.value.map((e) => (e.id === id ? updated : e))
       toast.success('Event updated.')
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Failed to update event.')
@@ -95,7 +103,7 @@ export function useCalendarActions({
   async function deleteEvent(id: number): Promise<void> {
     try {
       await axios.delete(`${API_BASE}/events/${id}`)
-      events.value = events.value.filter(e => e.id !== id)
+      events.value = events.value.filter((e) => e.id !== id)
       if (selectedEvent.value?.id === id) selectedEvent.value = null
       toast.success('Event deleted.')
     } catch (e: any) {
@@ -109,7 +117,7 @@ export function useCalendarActions({
       if (calendar_id !== undefined) payload.calendar_id = calendar_id
       const res = await axios.post(`${API_BASE}/events/${id}/move`, payload)
       const updated = res.data as CalendarEvent
-      events.value = events.value.map(e => e.id === id ? updated : e)
+      events.value = events.value.map((e) => (e.id === id ? updated : e))
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Failed to move event.')
     }
@@ -128,7 +136,7 @@ export function useCalendarActions({
     try {
       const res = await axios.put(`${API_BASE}/calendar/${id}`, data)
       const updated = res.data as Calendar
-      calendars.value = calendars.value.map(c => c.id === id ? updated : c)
+      calendars.value = calendars.value.map((c) => (c.id === id ? updated : c))
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Failed to update calendar.')
     }
@@ -137,7 +145,7 @@ export function useCalendarActions({
   async function deleteCalendar(id: number): Promise<void> {
     try {
       await axios.delete(`${API_BASE}/calendar/${id}`)
-      calendars.value = calendars.value.filter(c => c.id !== id)
+      calendars.value = calendars.value.filter((c) => c.id !== id)
       await fetchEvents()
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Failed to delete calendar.')
@@ -147,22 +155,22 @@ export function useCalendarActions({
   async function toggleCalendar(id: number, active: boolean): Promise<void> {
     try {
       await axios.post(`${API_BASE}/calendar/activation`, { ids: [id], active })
-      calendars.value = calendars.value.map(c => c.id === id ? { ...c, is_active: active } : c)
+      calendars.value = calendars.value.map((c) => (c.id === id ? { ...c, is_active: active } : c))
       await fetchEvents()
     } catch {}
   }
 
   function openNewEvent(startAt?: Date): void {
     const start = startAt ?? calCurrentDate.value
-    const end   = new Date(start.getTime() + 60 * 60 * 1000)
-    const defaultCal = calendars.value.find(c => c.is_default) ?? calendars.value[0]
+    const end = new Date(start.getTime() + 60 * 60 * 1000)
+    const defaultCal = calendars.value.find((c) => c.is_default) ?? calendars.value[0]
     selectedEvent.value = {
       id: 0,
       calendar_id: defaultCal?.id ?? 0,
       uid: '',
       summary: '',
       start_at: start.toISOString(),
-      end_at:   end.toISOString(),
+      end_at: end.toISOString(),
       is_all_day: false,
       status: 'CONFIRMED',
     }
@@ -200,10 +208,21 @@ export function useCalendarActions({
   }
 
   return {
-    fetchCalendars, fetchEvents,
-    createEvent, updateEvent, deleteEvent, moveEvent,
-    createCalendar, updateCalendar, deleteCalendar, toggleCalendar,
-    openNewEvent, openEditEvent, closeEditor,
-    navigatePrev, navigateNext, navigateToday,
+    fetchCalendars,
+    fetchEvents,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    moveEvent,
+    createCalendar,
+    updateCalendar,
+    deleteCalendar,
+    toggleCalendar,
+    openNewEvent,
+    openEditEvent,
+    closeEditor,
+    navigatePrev,
+    navigateNext,
+    navigateToday,
   }
 }

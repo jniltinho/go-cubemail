@@ -9,13 +9,13 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil(
     self.registration.showNotification(data.title || 'New mail', {
-      body:    data.body || 'You have new messages in your inbox.',
-      icon:    '/favicon.svg',
-      badge:   '/favicon.svg',
-      tag:     'new-mail',
+      body: data.body || 'You have new messages in your inbox.',
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
+      tag: 'new-mail',
       renotify: true,
-      data:    { url: '/' },
-    })
+      data: { url: '/' },
+    }),
   )
 })
 
@@ -31,6 +31,6 @@ self.addEventListener('notificationclick', (event) => {
         }
       }
       return clients.openWindow(url)
-    })
+    }),
   )
 })

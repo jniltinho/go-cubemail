@@ -11,23 +11,23 @@ import { useAuthStore } from './stores/auth'
 import { useMailStore } from './stores/mail'
 import { startNewMailPolling, stopNewMailPolling } from './utils/sse'
 import { initWebPush, stopWebPush } from './utils/webpush'
-import LoginView     from './components/LoginView.vue'
-import AppBar        from './components/AppBar.vue'
-import AppToolbar    from './components/AppToolbar.vue'
-import AppSidebar    from './components/AppSidebar.vue'
-import MailList      from './components/MailList.vue'
-import ReadingPane   from './components/ReadingPane.vue'
-import ContactsPane  from './components/ContactsPane.vue'
-import CalendarPane  from './components/CalendarPane.vue'
+import LoginView from './components/LoginView.vue'
+import AppBar from './components/AppBar.vue'
+import AppToolbar from './components/AppToolbar.vue'
+import AppSidebar from './components/AppSidebar.vue'
+import MailList from './components/MailList.vue'
+import ReadingPane from './components/ReadingPane.vue'
+import ContactsPane from './components/ContactsPane.vue'
+import CalendarPane from './components/CalendarPane.vue'
 import ComposerModal from './components/ComposerModal.vue'
-import SourceViewer  from './components/SourceViewer.vue'
-import ContactModal      from './components/ContactModal.vue'
-import EventEditorModal  from './components/EventEditorModal.vue'
-import CalendarSidebar   from './components/CalendarSidebar.vue'
-import SettingsPane      from './components/SettingsPane.vue'
-import DialogModal       from './components/DialogModal.vue'
-import ToastContainer    from './components/ToastContainer.vue'
-import SpinnerIcon       from './components/SpinnerIcon.vue'
+import SourceViewer from './components/SourceViewer.vue'
+import ContactModal from './components/ContactModal.vue'
+import EventEditorModal from './components/EventEditorModal.vue'
+import CalendarSidebar from './components/CalendarSidebar.vue'
+import SettingsPane from './components/SettingsPane.vue'
+import DialogModal from './components/DialogModal.vue'
+import ToastContainer from './components/ToastContainer.vue'
+import SpinnerIcon from './components/SpinnerIcon.vue'
 
 /** Authentication state store instance */
 const auth = useAuthStore()
@@ -38,35 +38,38 @@ const mail = useMailStore()
  * Handles global keydown shortcuts when input fields are not focused and
  * the mail composer is closed. Supports Vim-like J/K keys for navigation,
  * R for reply, E for archiving, #/Delete for deleting, and C for composing.
- * 
+ *
  * @param e - The keyboard event payload.
  */
 function onKey(e) {
   if (['INPUT', 'TEXTAREA'].includes(e.target.tagName) || mail.composer !== null) return
   const list = mail.visibleMails
-  const i = list.findIndex(m => m.id === mail.selectedId)
-  if      (e.key === 'j')                      mail.selectedId = list[Math.min(i + 1, list.length - 1)]?.id ?? mail.selectedId
-  else if (e.key === 'k')                      mail.selectedId = list[Math.max(i - 1, 0)]?.id ?? mail.selectedId
-  else if (e.key === 'r')                      mail.reply()
-  else if (e.key === 'e')                      mail.archiveMail()
+  const i = list.findIndex((m) => m.id === mail.selectedId)
+  if (e.key === 'j') mail.selectedId = list[Math.min(i + 1, list.length - 1)]?.id ?? mail.selectedId
+  else if (e.key === 'k') mail.selectedId = list[Math.max(i - 1, 0)]?.id ?? mail.selectedId
+  else if (e.key === 'r') mail.reply()
+  else if (e.key === 'e') mail.archiveMail()
   else if (e.key === '#' || e.key === 'Delete') mail.deleteMail()
-  else if (e.key === 'c')                      mail.compose()
+  else if (e.key === 'c') mail.compose()
 }
 
 /**
  * Watches the user authentication state to establish or tear down
  * the background new-mail polling connection and load inbox data from the API.
  */
-watch(() => auth.isAuthenticated, async (authed) => {
-  if (authed) {
-    await mail.loadFromApi()
-    startNewMailPolling(mail, auth)
-    initWebPush() // non-blocking; silently skipped if push not configured
-  } else {
-    stopNewMailPolling()
-    stopWebPush()
-  }
-})
+watch(
+  () => auth.isAuthenticated,
+  async (authed) => {
+    if (authed) {
+      await mail.loadFromApi()
+      startNewMailPolling(mail, auth)
+      initWebPush() // non-blocking; silently skipped if push not configured
+    } else {
+      stopNewMailPolling()
+      stopWebPush()
+    }
+  },
+)
 
 /**
  * Registers global keyboard listeners and initiates the session checks
@@ -103,17 +106,16 @@ onBeforeUnmount(() => {
     <AppToolbar />
 
     <!-- 3-column layout -->
-    <div
-      class="grid flex-1 bg-app-bg min-h-0"
-      style="grid-template-columns: 220px 380px 1fr"
-    >
-      <AppSidebar v-if="mail.view === 'mail' || mail.view === 'contacts' || mail.view === 'calendar' || mail.view === 'settings'" />
+    <div class="grid flex-1 bg-app-bg min-h-0" style="grid-template-columns: 220px 380px 1fr">
+      <AppSidebar
+        v-if="mail.view === 'mail' || mail.view === 'contacts' || mail.view === 'calendar' || mail.view === 'settings'"
+      />
 
       <template v-if="mail.view === 'mail'">
         <MailList />
         <ReadingPane />
       </template>
-      <ContactsPane  v-else-if="mail.view === 'contacts'" style="grid-column:2/4" />
+      <ContactsPane v-else-if="mail.view === 'contacts'" style="grid-column: 2/4" />
       <template v-else-if="mail.view === 'calendar'">
         <div class="border-r border-line overflow-y-auto bg-panel-1 text-sm">
           <CalendarSidebar />
@@ -126,8 +128,8 @@ onBeforeUnmount(() => {
 
   <!-- Modals (outside layout flow) -->
   <ComposerModal v-if="mail.composer !== null" :prefill="mail.composer" @close="mail.closeComposer()" />
-  <SourceViewer  v-if="mail.sourceMail" />
-  <ContactModal  v-if="mail.contactModal" />
+  <SourceViewer v-if="mail.sourceMail" />
+  <ContactModal v-if="mail.contactModal" />
   <EventEditorModal />
   <DialogModal />
   <ToastContainer />

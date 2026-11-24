@@ -20,78 +20,88 @@ import { useComposerActions } from './composerActions'
 import { useContactActions } from './contactActions'
 import { useCalendarActions } from './calendarActions'
 import { useSettingsActions } from './settingsActions'
-import type { MailMessage, Folder, Contact, CalCell, Calendar, CalendarEvent, CalendarView, Identity, UserSettings } from '../../types'
+import type {
+  MailMessage,
+  Folder,
+  Contact,
+  CalCell,
+  Calendar,
+  CalendarEvent,
+  CalendarView,
+  Identity,
+  UserSettings,
+} from '../../types'
 
 /**
  * Global unified mail, folders, and contacts controller store (`useMailStore`).
  */
 export const useMailStore = defineStore('mail', () => {
-  const auth   = useAuthStore()
+  const auth = useAuthStore()
   const dialog = useDialogStore()
-  const toast  = useToastStore()
+  const toast = useToastStore()
 
   // ── State ──────────────────────────────────────────────────────────────────
-  
+
   /** Primary hex layout theme color key (defaults to deep navy blue) */
-  const accent         = ref('#1B3A6B')
+  const accent = ref('#1B3A6B')
   /** True if background loading API queries are active */
-  const loading        = ref(false)
+  const loading = ref(false)
   /** True while the selected message body is being fetched from the server */
-  const bodyLoading    = ref(false)
+  const bodyLoading = ref(false)
   /** Roster list of all email messages downloaded in local memory */
-  const mails          = ref<MailMessage[]>([])
+  const mails = ref<MailMessage[]>([])
   /** Roster list of system or custom folders synced from backend */
-  const folders        = ref<Folder[]>([])
+  const folders = ref<Folder[]>([])
   /** Roster list of address book contacts synced from backend */
-  const contacts       = ref<Contact[]>([])
+  const contacts = ref<Contact[]>([])
   /** True if contacts addition/modification form modal is open */
-  const contactModal   = ref(false)
+  const contactModal = ref(false)
   /** Active contact being modified, or null if drafting new profile */
   const editingContact = ref<Contact | null>(null)
   /** Computed cell days representing monthly calendar grids (legacy mock, kept for compat) */
-  const calCells       = ref<CalCell[]>(buildCalCells(CAL_EVENTS))
+  const calCells = ref<CalCell[]>(buildCalCells(CAL_EVENTS))
   /** Abbreviated weekdays array used to draw column headers */
-  const calDow         = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const calDow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   // ── Settings state ─────────────────────────────────────────────────────────
   /** User preferences loaded from server */
-  const settings    = ref<UserSettings | null>(null)
+  const settings = ref<UserSettings | null>(null)
   /** List of sender identities */
-  const identities  = ref<Identity[]>([])
+  const identities = ref<Identity[]>([])
 
   // ── Calendar state ─────────────────────────────────────────────────────────
   /** User's calendars list */
-  const calendars      = ref<Calendar[]>([])
+  const calendars = ref<Calendar[]>([])
   /** Events loaded for the current view range */
-  const calEvents      = ref<CalendarEvent[]>([])
+  const calEvents = ref<CalendarEvent[]>([])
   /** Active calendar view mode */
-  const calView        = ref<CalendarView>('month')
+  const calView = ref<CalendarView>('month')
   /** Anchor date for calendar navigation */
   const calCurrentDate = ref<Date>(new Date())
   /** Event being created or edited in the editor modal */
-  const selectedEvent  = ref<CalendarEvent | null>(null)
+  const selectedEvent = ref<CalendarEvent | null>(null)
   /** True when the event editor modal is open */
-  const editorOpen     = ref(false)
+  const editorOpen = ref(false)
   /** Active primary layout panel view (e.g. 'mail', 'contacts', 'calendar') */
-  const view           = ref('mail')
+  const view = ref('mail')
   /** Frontend ID key of the active folder viewed (e.g. 'inbox') */
-  const folder         = ref('inbox')
+  const folder = ref('inbox')
   /** IMAP UID key of the active open email read on the viewport */
-  const selectedId     = ref<string | null>(null)
+  const selectedId = ref<string | null>(null)
   /** Set of email UIDs checked for batch/lote operations */
-  const selectedIds    = ref<Set<string>>(new Set())
+  const selectedIds = ref<Set<string>>(new Set())
   /** Active query text entered in global search inputs */
-  const query          = ref('')
+  const query = ref('')
   /** State of active email draft under composition, or null if closed */
-  const composer       = ref<Record<string, unknown> | null>(null)
+  const composer = ref<Record<string, unknown> | null>(null)
   /** Message whose raw source MIME text is viewed */
-  const sourceMail     = ref<MailMessage | null>(null)
+  const sourceMail = ref<MailMessage | null>(null)
   /** Raw MIME RFC 822 source text loaded from backend */
-  const sourceRaw      = ref('')
+  const sourceRaw = ref('')
   /** Active sort field for the mail list */
-  const sortBy         = ref<'date' | 'from' | 'subject' | 'size'>('date')
+  const sortBy = ref<'date' | 'from' | 'subject' | 'size'>('date')
   /** Active sort direction for the mail list */
-  const sortDir        = ref<'asc' | 'desc'>('desc')
+  const sortDir = ref<'asc' | 'desc'>('desc')
 
   /**
    * Watches base layout theme accent hex modifications to automatically
@@ -100,26 +110,28 @@ export const useMailStore = defineStore('mail', () => {
   watchEffect(() => applyAccent(accent.value))
 
   // ── Computed ───────────────────────────────────────────────────────────────
-  
+
   /**
    * Filters and returns emails eligible to show under the active folder,
    * applying search queries dynamically if the user entered search keys.
    */
   const visibleMails = computed(() => {
-    let xs = folder.value === 'starred'
-      ? mails.value.filter(m => m.starred)
-      : mails.value.filter(m => m.folder === folder.value)
+    let xs =
+      folder.value === 'starred'
+        ? mails.value.filter((m) => m.starred)
+        : mails.value.filter((m) => m.folder === folder.value)
     const q = query.value.trim().toLowerCase()
-    if (q) xs = xs.filter(m =>
-      m.from?.name?.toLowerCase().includes(q) ||
-      m.from?.addr?.toLowerCase().includes(q) ||
-      m.subject?.toLowerCase().includes(q) ||
-      m.snippet?.toLowerCase().includes(q) ||
-      (m.attachments || []).some(a => a.name?.toLowerCase().includes(q))
-    )
+    if (q)
+      xs = xs.filter(
+        (m) =>
+          m.from?.name?.toLowerCase().includes(q) ||
+          m.from?.addr?.toLowerCase().includes(q) ||
+          m.subject?.toLowerCase().includes(q) ||
+          m.snippet?.toLowerCase().includes(q) ||
+          (m.attachments || []).some((a) => a.name?.toLowerCase().includes(q)),
+      )
     const dir = sortDir.value === 'asc' ? 1 : -1
-    const byDate = (a: MailMessage, b: MailMessage) =>
-      parseMailDate(b.rawDate) - parseMailDate(a.rawDate)
+    const byDate = (a: MailMessage, b: MailMessage) => parseMailDate(b.rawDate) - parseMailDate(a.rawDate)
     return [...xs].sort((a, b) => {
       switch (sortBy.value) {
         case 'from': {
@@ -128,8 +140,12 @@ export const useMailStore = defineStore('mail', () => {
           return dir * fa.localeCompare(fb) || byDate(a, b)
         }
         case 'subject': {
-          const cmp = dir * (a.subject || '').trim().toLowerCase()
-            .localeCompare((b.subject || '').trim().toLowerCase())
+          const cmp =
+            dir *
+            (a.subject || '')
+              .trim()
+              .toLowerCase()
+              .localeCompare((b.subject || '').trim().toLowerCase())
           return cmp || byDate(a, b)
         }
         case 'size':
@@ -145,31 +161,28 @@ export const useMailStore = defineStore('mail', () => {
    * Computes simple total and unread email counters quickly.
    */
   const counts = computed(() => {
-    const inbox = mails.value.filter(m => m.folder === 'inbox')
+    const inbox = mails.value.filter((m) => m.folder === 'inbox')
     return {
-      inboxTotal:  inbox.length,
-      inboxUnread: inbox.filter(m => m.unread).length,
-      starred:     mails.value.filter(m => m.starred).length,
+      inboxTotal: inbox.length,
+      inboxUnread: inbox.filter((m) => m.unread).length,
+      starred: mails.value.filter((m) => m.starred).length,
     }
   })
 
   /** Resolves the complete MailMessage model for the selected open email */
-  const selected = computed(() => mails.value.find(m => m.id === selectedId.value) ?? null)
+  const selected = computed(() => mails.value.find((m) => m.id === selectedId.value) ?? null)
 
   /** Resolves text display label for the viewed folder (e.g. "Inbox") */
-  const currentFolderLabel = computed(() =>
-    folders.value.find(f => f.id === folder.value)?.label || 'Inbox'
-  )
+  const currentFolderLabel = computed(() => folders.value.find((f) => f.id === folder.value)?.label || 'Inbox')
 
   // ── Watchers ───────────────────────────────────────────────────────────────
-  
+
   /**
    * Assures that an active email focuses automatically when switching folders,
    * selecting the first visible row if the previously viewed message is no longer present.
    */
   watch([folder, visibleMails], () => {
-    if (!visibleMails.value.find(m => m.id === selectedId.value))
-      selectedId.value = visibleMails.value[0]?.id ?? null
+    if (!visibleMails.value.find((m) => m.id === selectedId.value)) selectedId.value = visibleMails.value[0]?.id ?? null
   })
 
   /** Resets sort direction to a sensible default when the sort field changes. */
@@ -183,24 +196,33 @@ export const useMailStore = defineStore('mail', () => {
    */
   watch(selectedId, () => {
     const s = selected.value
-    if (s?.unread) setTimeout(() => {
-      const m = mails.value.find(x => x.id === s.id)
-      if (m) {
-        m.unread = false
-        const f = folders.value.find(x => x.id === m.folder)
-        if (f) {
-          const parts  = String(f.count).split('/')
-          const total  = parts.length > 1 ? parseInt(parts[1]) : parseInt(parts[0])
-          const unread = Math.max(0, (parts.length > 1 ? parseInt(parts[0]) : 0) - 1)
-          f.count = unread > 0 ? `${unread}/${total}` : String(total)
+    if (s?.unread)
+      setTimeout(() => {
+        const m = mails.value.find((x) => x.id === s.id)
+        if (m) {
+          m.unread = false
+          const f = folders.value.find((x) => x.id === m.folder)
+          if (f) {
+            const parts = String(f.count).split('/')
+            const total = parts.length > 1 ? parseInt(parts[1]) : parseInt(parts[0])
+            const unread = Math.max(0, (parts.length > 1 ? parseInt(parts[0]) : 0) - 1)
+            f.count = unread > 0 ? `${unread}/${total}` : String(total)
+          }
         }
-      }
-    }, 400)
+      }, 400)
   })
 
   // ── Composables ────────────────────────────────────────────────────────────
-  const { fetchFolderMessages, loadFromApi: _loadFromApi, fetchMessageBody: _fetchMessageBody } = useMailApi({
-    auth, folders, mails, folder, selectedId,
+  const {
+    fetchFolderMessages,
+    loadFromApi: _loadFromApi,
+    fetchMessageBody: _fetchMessageBody,
+  } = useMailApi({
+    auth,
+    folders,
+    mails,
+    folder,
+    selectedId,
   })
 
   async function fetchMessageBody(id: string): Promise<void> {
@@ -220,27 +242,48 @@ export const useMailStore = defineStore('mail', () => {
     loading.value = true
     try {
       await _loadFromApi()
-      await Promise.all([
-        contactApi.fetchContacts(),
-        settingsApi.fetchSettings(),
-        settingsApi.fetchIdentities(),
-      ])
+      await Promise.all([contactApi.fetchContacts(), settingsApi.fetchSettings(), settingsApi.fetchIdentities()])
     } finally {
       loading.value = false
     }
   }
 
-  const folderApi   = useFolderActions({ auth, dialog, folders, mails, folder, view, selectedId, selectedIds, fetchFolderMessages })
-  const mailApi     = useMailActions({
-    auth, toast, mails, folders, folder, selectedId, selectedIds, visibleMails, fetchMessageBody,
+  const folderApi = useFolderActions({
+    auth,
+    dialog,
+    folders,
+    mails,
+    folder,
+    view,
+    selectedId,
+    selectedIds,
+    fetchFolderMessages,
+  })
+  const mailApi = useMailActions({
+    auth,
+    toast,
+    mails,
+    folders,
+    folder,
+    selectedId,
+    selectedIds,
+    visibleMails,
+    fetchMessageBody,
     reloadFolders: folderApi.reloadFolders,
   })
   const composerApi = useComposerActions({ auth, folders, selected, composer, sourceMail, sourceRaw })
-  const contactApi  = useContactActions({ auth, toast, contacts, contactModal, editingContact })
-  const calendarApi  = useCalendarActions({
-    auth, toast, calendars, events: calEvents, calView, calCurrentDate, selectedEvent, editorOpen,
+  const contactApi = useContactActions({ auth, toast, contacts, contactModal, editingContact })
+  const calendarApi = useCalendarActions({
+    auth,
+    toast,
+    calendars,
+    events: calEvents,
+    calView,
+    calCurrentDate,
+    selectedEvent,
+    editorOpen,
   })
-  const settingsApi  = useSettingsActions({ auth, toast, identities, settings })
+  const settingsApi = useSettingsActions({ auth, toast, identities, settings })
 
   // ── Calendar invitation actions ────────────────────────────────────────────
   async function calendarRsvp(status: 'ACCEPTED' | 'DECLINED' | 'TENTATIVE'): Promise<void> {
@@ -248,7 +291,9 @@ export const useMailStore = defineStore('mail', () => {
     const uid = msg?.calendarInfo?.uid
     if (!uid || !auth.isApiOnline) {
       const labels: Record<string, string> = {
-        ACCEPTED: 'Invitation accepted.', DECLINED: 'Invitation declined.', TENTATIVE: 'Marked as tentative.',
+        ACCEPTED: 'Invitation accepted.',
+        DECLINED: 'Invitation declined.',
+        TENTATIVE: 'Marked as tentative.',
       }
       toast.success(labels[status] ?? 'Response sent.')
       return
@@ -256,14 +301,16 @@ export const useMailStore = defineStore('mail', () => {
     try {
       await axios.post(`${API_BASE}/events/rsvp-from-mail`, {
         uid,
-        partstat:  status,
-        summary:   msg.calendarInfo?.summary ?? '',
-        start_at:  msg.calendarInfo?.start_time ?? '',
-        end_at:    msg.calendarInfo?.end_time ?? '',
-        location:  msg.calendarInfo?.location ?? '',
+        partstat: status,
+        summary: msg.calendarInfo?.summary ?? '',
+        start_at: msg.calendarInfo?.start_time ?? '',
+        end_at: msg.calendarInfo?.end_time ?? '',
+        location: msg.calendarInfo?.location ?? '',
       })
       const labels: Record<string, string> = {
-        ACCEPTED: 'Invitation accepted.', DECLINED: 'Invitation declined.', TENTATIVE: 'Marked as tentative.',
+        ACCEPTED: 'Invitation accepted.',
+        DECLINED: 'Invitation declined.',
+        TENTATIVE: 'Marked as tentative.',
       }
       toast.success(labels[status] ?? 'Response sent.')
       if (calEvents.value.length > 0) await calendarApi.fetchEvents()
@@ -279,7 +326,7 @@ export const useMailStore = defineStore('mail', () => {
   function calendarAddToCalendar(): void {
     const msg = selected.value
     if (!msg) return
-    const ics = msg.attachments?.find(a => a.content_type === 'text/calendar' || a.name?.endsWith('.ics'))
+    const ics = msg.attachments?.find((a) => a.content_type === 'text/calendar' || a.name?.endsWith('.ics'))
     if (ics) {
       window.open(`/api/v1/mail/${encodeURIComponent(msg.folder)}/${msg.id}/attachment/${ics.part}`, '_blank')
     } else {
@@ -288,32 +335,66 @@ export const useMailStore = defineStore('mail', () => {
   }
 
   // Reload calendar data whenever the view or navigation date changes
-  watch([calView, calCurrentDate, calendars], () => {
-    if (view.value === 'calendar') {
-      calendarApi.fetchEvents()
-    }
-  }, { deep: false })
+  watch(
+    [calView, calCurrentDate, calendars],
+    () => {
+      if (view.value === 'calendar') {
+        calendarApi.fetchEvents()
+      }
+    },
+    { deep: false },
+  )
 
   // ── Return ─────────────────────────────────────────────────────────────────
   return {
     // state
-    accent, loading, bodyLoading, mails, folders, contacts, contactModal, editingContact, calCells, calDow,
-    view, folder, selectedId, selectedIds, query, composer, sourceMail, sourceRaw,
-    sortBy, sortDir,
+    accent,
+    loading,
+    bodyLoading,
+    mails,
+    folders,
+    contacts,
+    contactModal,
+    editingContact,
+    calCells,
+    calDow,
+    view,
+    folder,
+    selectedId,
+    selectedIds,
+    query,
+    composer,
+    sourceMail,
+    sourceRaw,
+    sortBy,
+    sortDir,
     // settings state
-    settings, identities,
+    settings,
+    identities,
     // calendar state
-    calendars, calEvents, calView, calCurrentDate, selectedEvent, editorOpen,
+    calendars,
+    calEvents,
+    calView,
+    calCurrentDate,
+    selectedEvent,
+    editorOpen,
     // computed
-    visibleMails, counts, selected, currentFolderLabel,
+    visibleMails,
+    counts,
+    selected,
+    currentFolderLabel,
     // api
-    loadFromApi, fetchFolderMessages, fetchMessageBody,
+    loadFromApi,
+    fetchFolderMessages,
+    fetchMessageBody,
     ...folderApi,
     ...mailApi,
     ...composerApi,
     ...contactApi,
     ...calendarApi,
     ...settingsApi,
-    calendarRsvp, calendarDelegate, calendarAddToCalendar,
+    calendarRsvp,
+    calendarDelegate,
+    calendarAddToCalendar,
   }
 })
