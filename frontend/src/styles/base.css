@@ -2,10 +2,13 @@
 /*
  * Large screens. The interface is drawn for viewports of about 1280 to 1920 px (Full HD); on wider ones it is
  * scaled up as a whole, so QHD and 4K monitors at 100% do not get small text in a sea of space. Sizes written in
- * viewport units divide by --ui-zoom, because a length inside a zoomed element is multiplied by the zoom.
+ * viewport units divide by --page-zoom, because a length inside a zoomed element is multiplied by the zoom.
+ * A theme can also set its own size (--theme-scale: Windows XP is drawn smaller, as the original was); the page
+ * zoom is the product of the two.
  */
 :root {
   --ui-zoom: 1;
+  --page-zoom: calc(var(--ui-zoom) * var(--theme-scale));
 }
 @media (min-width: 2400px) {
   :root {
@@ -29,7 +32,7 @@ body {
   font-size: 13px;
   color: var(--color-fg);
   background: var(--color-page);
-  zoom: var(--ui-zoom);
+  zoom: var(--page-zoom);
   -webkit-font-smoothing: antialiased;
 }
 *,

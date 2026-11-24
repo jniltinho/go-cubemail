@@ -177,6 +177,9 @@ export function typeErrors(roles) {
     else if (prop.startsWith('--font-')) err = value.length ? null : 'empty font list'
     else if (prop === '--theme-label') err = /^(['"]).+\1$/.test(value) ? null : `not a quoted label: ${value}`
     else if (prop === '--theme-scheme') err = /^(light|dark)$/.test(value) ? null : `not light or dark: ${value}`
+    else if (prop === '--theme-scale')
+      err =
+        /^\d*\.?\d+$/.test(value) && value >= 0.75 && value <= 1.25 ? null : `not a scale from 0.75 to 1.25: ${value}`
     else if (prop === '--theme-order') err = /^\d+$/.test(value) ? null : `not a whole number: ${value}`
     else continue // Tailwind's own theme keys
     if (err) errors.push(`${prop}: ${err}`)

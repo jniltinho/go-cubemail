@@ -63,7 +63,7 @@ function download() {
 
       <!-- Raw body -->
       <div
-        class="bg-code text-on-code font-mono text-[12px] leading-snug py-3.5 px-4 max-h-[calc(100vh/var(--ui-zoom)-200px)] overflow-auto whitespace-pre-wrap break-words scroll-y"
+        class="bg-code text-on-code font-mono text-[12px] leading-snug py-3.5 px-4 max-h-[calc(100vh/var(--page-zoom)-200px)] overflow-auto whitespace-pre-wrap break-words scroll-y"
       >
         <div v-if="!mail.sourceRaw" class="flex flex-col items-center justify-center py-12 gap-3">
           <svg

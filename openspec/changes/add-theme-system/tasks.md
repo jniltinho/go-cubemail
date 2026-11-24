@@ -167,6 +167,12 @@
       and 3840 px (no overflow, composer inside the viewport); rendered contrast audited at 4.5:1 on eleven screens
       in the ten themes (only icons sit between 3:1 and 4.5:1, which is their level).
 
+- [x] 9.8 Give themes their own size (`--theme-scale`, multiplied into the large-screen scaling as `--page-zoom`);
+      Windows XP is drawn at 0.85 with lighter button relief.
+- [x] 9.9 Bundle Inter (variable, OFL, self-hosted) as the interface font behind each theme's system font, and as
+      Windows XP's first choice.
+- [x] 9.10 Draw the brand mark straight on the header, without a plate behind it.
+
 ## Verification notes
 
 Two environments were used on localhost: a seeded in-memory IMAP mailbox with an SMTP sink (driven with

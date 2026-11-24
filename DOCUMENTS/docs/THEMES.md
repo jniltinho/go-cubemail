@@ -14,15 +14,20 @@ account, so it follows the user to other browsers. The administrator sets the de
 | Breeze (dark) | `breeze-dark` | dark | KDE Breeze Dark, ported from ad-manager |
 | Graphite (dark) | `graphite` | dark | Grafana 11's dark palette with the orange accent, ported from ad-manager |
 | High contrast (dark) | `high-contrast` | dark | accessibility: black, white and one yellow accent, 3 px focus ring |
-| Windows XP | `windows-xp` | light | the Luna blue style: gradient title bars, Start-green action, XP push buttons, Tahoma |
+| Windows XP | `windows-xp` | light | the Luna blue style: gradient title bars, Start-green action, XP push buttons, drawn at XP's small size |
 
 **Every theme meets WCAG AAA**: normal text 7:1, large text 4.5:1 and interface components 3:1, in every pairing
 listed in `frontend/src/themes/contrast.json`. A reference color that fell short was moved in lightness only; the
 theme file says what it was.
 
 Outlook, Apple Mail and Windows XP are "inspired by" looks with **no affiliation** to Microsoft or Apple: they use
-public system colors and system font stacks only. No logo, icon or font of those products is used, and the
-application keeps its own brand mark in every theme.
+public system colors only. No logo, icon or font of those products is used, and the application keeps its own
+brand mark in every theme.
+
+**Type.** Each theme names the system font of its look first (`"Segoe UI"`, `-apple-system`, `"Noto Sans"`), and
+the application bundles **Inter** (variable, OFL, self-hosted: no request leaves the server) right behind it, so a
+machine without that system font still gets a crisp interface face instead of whatever the browser falls back to.
+Windows XP uses Inter first, with Tahoma behind it. Message content keeps its own stack (`--font-paper`).
 
 ## Adding a theme
 
@@ -98,7 +103,7 @@ internal/theme/registry_gen.go the server's list of themes, generated from the f
 | Message content | `paper`, `paper-2`, `on-paper`, `paper-muted`, `paper-subtle`, `paper-link`, `paper-line`, `--font-paper` |
 | Depth and relief | `--shadow-menu`, `--shadow-dialog`, `--shadow-toast`, `--shadow-card`, `--shadow-focus`, `--shadow-focus-header`, `--shadow-tab-on`, `--shadow-action`, `--shadow-action-2`, `--shadow-field` |
 | Gradient fills | `--bg-header`, `--bg-tab-on`, `--bg-action`, `--bg-action-hover`, `--bg-action-2`, `--bg-action-2-hover`, `--bg-strip`, `--bg-backdrop` |
-| Shape | `--radius-control`, `--radius-surface`, `--radius-row`, `--row-inset-x`, `--selection-mark-w` |
+| Shape and size | `--radius-control`, `--radius-surface`, `--radius-row`, `--row-inset-x`, `--selection-mark-w`, `--theme-scale` |
 | Type | `--font-sans`, `--font-mono` |
 
 A role describes a job, not a color: `--color-action` is "the fill of a primary button", whatever its hue. An `on-*`
@@ -127,7 +132,9 @@ contrasts more (`inkOn` in `frontend/src/utils/helpers.ts`).
 
 The interface is drawn for viewports of about 1280 to 1920 px (Full HD). Wider viewports scale it as a whole
 (`styles/base.css`): 1.25 from 2400 px (QHD at 100%), 1.6 from 3200 px (4K at 100%). A 4K monitor at 150% system
-scaling reports 2560 px and gets 1.25. Sizes written in viewport units divide by `--ui-zoom`.
+scaling reports 2560 px and gets 1.25. A theme can set its own size with `--theme-scale` (Windows XP is drawn at
+0.85, the original's 11 px Tahoma); the two multiply into `--page-zoom`, and sizes written in viewport
+units divide by it.
 
 ## What the tests guarantee
 

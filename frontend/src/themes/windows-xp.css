@@ -4,7 +4,7 @@
  * the current view is a pressed taskbar button with the orange tab top, the primary action is the Start green,
  * secondary buttons are XP push buttons (white to the dialog face #ECE9D8, navy frame, orange on hover), pane
  * headers are list-view headers, the folder list is the task pane blue, dialogs get the blue window frame, fields
- * are sunken, Tahoma. No affiliation with Microsoft; no logo, icon or font of the product is used.
+ * are sunken. The type is the bundled Inter, drawn at XP's size, with Tahoma behind it. No affiliation with Microsoft; no logo, icon or font of the product is used.
  * Gradients keep a thin light band at the top; from 20% down every stop holds its text at 7:1.
  * Held to WCAG AAA (text 7:1, large text 4.5:1, components 3:1): a value moved for it keeps its hue and says
  * what it was.
@@ -128,7 +128,7 @@
   --radius-row: 0px;
 
   /* type */
-  --font-sans: Tahoma, Verdana, 'Segoe UI', Arial, sans-serif;
+  --font-sans: 'Inter Variable', Tahoma, Verdana, 'Segoe UI', Arial, sans-serif;
 
   /* depth, relief and the selected row's shape */
   --shadow-menu: 2px 2px 3px rgba(0, 0, 0, 0.5);
@@ -139,9 +139,8 @@
   --shadow-focus-header: inset 0 0 0 2px var(--color-tab-mark);
   --shadow-tab-on:
     inset 0 1px 0 #a65e00, inset 0 3px 0 #e68b2c, inset 0 4px 0 #ffc73c, inset 0 0 6px rgba(0, 0, 0, 0.35);
-  --shadow-action:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.22), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-action-2: inset 0 1px 0 #ffffff, inset 0 -2px 0 rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-action: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+  --shadow-action-2: inset 0 1px 0 #ffffff, inset 0 -1px 0 rgba(0, 0, 0, 0.1);
   --shadow-field: inset 0 1px 2px rgba(0, 0, 0, 0.14);
   --bg-header: linear-gradient(
     to bottom,
@@ -187,5 +186,7 @@
   );
   --bg-strip: linear-gradient(to bottom, #fcfbf8 0%, #f6f4ec 40%, #ece9d8 75%, #e2dec9 100%);
   --selection-mark-w: 0px;
+  /* XP was drawn small (Tahoma 11 px, 22 px buttons): the whole interface at that size, 11/13 */
+  --theme-scale: 0.85;
   --bg-backdrop: none;
 }

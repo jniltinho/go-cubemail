@@ -124,7 +124,8 @@
 
   /* type */
   --font-sans:
-    'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+    'Segoe UI', 'Segoe UI Web (West European)', 'Inter Variable', -apple-system, BlinkMacSystemFont, Roboto,
+    'Helvetica Neue', sans-serif;
 
   /* depth, relief and the selected row's shape */
   --shadow-menu: 0 0 2px rgba(0, 0, 0, 0.24), 0 4px 8px rgba(0, 0, 0, 0.28);

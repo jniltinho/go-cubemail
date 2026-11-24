@@ -125,7 +125,8 @@ It SHALL meet the enhanced contrast level: 7:1 for normal text, 4.5:1 for large 
 ### Requirement: Windows XP theme
 The registry SHALL include `windows-xp` ("Windows XP", light), after ad-manager's "Classic blue (XP)": the Luna blue
 title-bar gradient on the app bar and dialog title bars, a Start-green primary action, XP push buttons with a raised
-bevel, list-view pane headers, the task-pane blue folder list, sunken fields and the Tahoma font stack.
+bevel, list-view pane headers, the task-pane blue folder list, sunken fields, and the whole interface drawn at the
+original's small size.
 
 #### Scenario: Choose Windows XP
 - **WHEN** the user chooses "Windows XP"
@@ -145,10 +146,11 @@ and 3:1 for interface components, including the outlines of fields and of second
 - **THEN** the theme uses a value moved in lightness only, and the theme file notes the original value
 
 ### Requirement: No third-party brand assets
-Themes inspired by other products (Outlook, Apple Mail, Windows XP) SHALL use only colors and system font stacks. They SHALL NOT add that product's
+Themes inspired by other products (Outlook, Apple Mail, Windows XP) SHALL use only colors and font stacks made of
+system fonts and the application's own bundled font. They SHALL NOT add that product's
 logo, icons, bundled fonts or name anywhere except the theme's label.
 
 #### Scenario: Brand mark is unchanged
 - **WHEN** the Outlook or the Apple Mail theme is active
-- **THEN** the application shows its own brand mark and name in the header and on the login screen, and no font file
-  is downloaded for the theme
+- **THEN** the application shows its own brand mark and name in the header and on the login screen, and no font of
+  that product is bundled or downloaded

@@ -10,14 +10,14 @@
   }
   .composer-shell {
     width: 1530px;
-    max-width: calc(100vw / var(--ui-zoom) - 40px);
+    max-width: calc(100vw / var(--page-zoom) - 40px);
     background: var(--color-surface);
     border: 1px solid var(--color-popup-line);
     border-radius: var(--radius-surface);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh / var(--ui-zoom) - 60px);
+    max-height: calc(100vh / var(--page-zoom) - 60px);
   }
   .composer-field {
     display: grid;

@@ -119,7 +119,7 @@
   --radius-row: 0px;
 
   /* type */
-  --font-sans: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-sans: 'Segoe UI', 'Inter Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-mono: 'Consolas', 'Menlo', monospace;
 }
 
@@ -153,6 +153,8 @@
   --bg-strip: none;
   --row-inset-x: 0px;
   --selection-mark-w: 3px;
+  /* size of the whole interface in this theme (1 = as drawn); multiplied into the large-screen scaling */
+  --theme-scale: 1;
   --bg-backdrop:
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 3px),
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px);

@@ -125,7 +125,8 @@
   --radius-row: 6px;
 
   /* type */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-mono: 'SF Mono', Menlo, Monaco, monospace;
 
   /* depth, relief and the selected row's shape */

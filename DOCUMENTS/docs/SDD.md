@@ -835,6 +835,7 @@ golang.org/x/time                    (rate limiting)
     "vue": "^3.5.34"
   },
   "devDependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
     "@tailwindcss/vite": "^4.3.0",
     "@vitejs/plugin-vue": "^6.0.6",
     "autoprefixer": "^10.5.0",

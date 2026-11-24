@@ -7,6 +7,9 @@
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+// Inter, bundled (OFL): the interface's own font where a theme's native one is missing, and Windows XP's first
+// choice. Only the weight axis, upright; the browser fetches just the subsets a page uses.
+import '@fontsource-variable/inter/wght.css'
 import './style.css'
 
 // every theme file of ./themes: adding a theme is adding a file there (its roles win over the contract's by
