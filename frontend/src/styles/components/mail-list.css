@@ -1,0 +1,86 @@
+@layer components {
+  /* Mail row */
+  .mail-row {
+    display: grid;
+    gap: 8px;
+    margin-inline: var(--row-inset-x);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-line-soft);
+    border-radius: var(--radius-row);
+    cursor: pointer;
+    position: relative;
+    align-items: start;
+    grid-template-columns: 22px 1fr auto;
+  }
+  .mail-row:hover {
+    background: var(--color-row-hover);
+  }
+  .mail-row .from,
+  .mail-row .date {
+    color: var(--color-fg-muted);
+  }
+  .mail-row .subject {
+    color: var(--color-fg);
+  }
+  .mail-row .snippet,
+  .mail-row .flag {
+    color: var(--color-fg-subtle);
+  }
+  .mail-row .star {
+    color: var(--color-star);
+    fill: currentColor;
+  }
+  .mail-row.unread .from,
+  .mail-row.unread .subject {
+    color: var(--color-unread);
+    font-weight: 600;
+  }
+  .mail-row.unread .date {
+    color: var(--color-unread-mark);
+    font-weight: 700;
+  }
+  .mail-row.selected {
+    background: var(--color-selection);
+    box-shadow: inset var(--selection-mark-w) 0 0 var(--color-selection-mark);
+    outline: 1px solid var(--color-selection-line);
+    outline-offset: -1px;
+  }
+  .mail-row.selected .from,
+  .mail-row.selected .date {
+    color: var(--color-on-selection-muted);
+  }
+  .mail-row.selected .subject,
+  .mail-row.selected.unread .from {
+    color: var(--color-on-selection);
+  }
+  .mail-row.selected .snippet,
+  .mail-row.selected .flag {
+    color: var(--color-on-selection-subtle);
+  }
+  .mail-row.selected .star {
+    color: var(--color-on-selection-star);
+  }
+
+  .checkbox {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--color-field-line);
+    border-radius: var(--radius-control);
+    background: var(--color-field);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .checkbox.on {
+    background: var(--color-action);
+    border-color: var(--color-action-line);
+    color: var(--color-on-action);
+  }
+  .checkbox.on::after {
+    content: '✓';
+    font-size: 10px;
+    line-height: 1;
+  }
+}

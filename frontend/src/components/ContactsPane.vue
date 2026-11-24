@@ -50,7 +50,7 @@ function exportContacts() {
 <template>
   <div class="bg-surface overflow-auto flex flex-col scroll-y">
     <!-- Header -->
-    <div class="h-10 px-3 bg-surface-2 border-b border-line flex items-center gap-3 flex-shrink-0">
+    <div class="strip h-10 px-3 bg-surface-2 border-b border-line flex items-center gap-3 flex-shrink-0">
       <h2 class="m-0 text-[15px] text-heading font-bold">Contacts</h2>
       <span class="text-[12px] text-fg-muted">{{ mail.contacts.length }} entries · sorted by name</span>
       <div class="ml-auto flex gap-1.5">

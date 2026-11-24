@@ -8,21 +8,26 @@ import {
   contract,
   contrastOf,
   files,
+  gradientStops,
   lint,
   lintSources,
   luminance,
   parseColor,
+  ratio,
   read,
   registry,
+  resolve,
   themeFile,
   typeErrors,
 } from './themelib.mjs'
 import { inkOn } from '../../src/utils/helpers.ts'
+import { REGISTRY, registrySource } from '../../scripts/themes.mjs'
 
 const { values } = contract()
 const known = new Set(values.keys())
 const themeFiles = files(join(SRC, 'themes')).filter((f) => f.endsWith('.css'))
-const blocks = new Map(themeFiles.flatMap((f) => [...themeFile(read(f), known).blocks]))
+const parsed = themeFiles.map((f) => ({ f, ...themeFile(read(f), known) }))
+const blocks = new Map(parsed.flatMap((p) => [...p.blocks]))
 const merged = (id) => new Map([...values, ...(blocks.get(id) || [])])
 const themes = registry()
 const matrix = JSON.parse(read(join(SRC, 'themes/contrast.json')))
@@ -48,7 +53,20 @@ const ALLOW = [
 
 describe('theme files', () => {
   test('only role declarations under :root[data-theme]', () => {
-    for (const f of themeFiles) expect(themeFile(read(f), known).errors, f).toEqual([])
+    for (const p of parsed) expect(p.errors, p.f).toEqual([])
+  })
+  test('one theme per file, named after its id, with its label, scheme and order', () => {
+    for (const p of parsed) {
+      const ids = [...p.blocks.keys()]
+      expect(ids, p.f).toEqual([
+        p.f
+          .split('/')
+          .pop()
+          .replace(/\.css$/, ''),
+      ])
+      for (const role of ['--theme-label', '--theme-scheme', '--theme-order'])
+        expect(p.blocks.get(ids[0]).has(role), `${ids[0]} ${role}`).toBe(true)
+    }
   })
   test('the structure rule catches component rules, unknown roles and plain properties', () => {
     const bad = themeFile(
@@ -103,18 +121,10 @@ describe('components use roles only', () => {
 })
 
 describe('registry', () => {
-  test('the registry is read from internal/theme/theme.go', () => {
-    expect(themes.map((t) => t.id)).toEqual([
-      'larry',
-      'outlook',
-      'outlook-dark',
-      'apple-mail',
-      'apple-mail-dark',
-      'breeze',
-      'breeze-dark',
-      'graphite',
-      'high-contrast',
-    ])
+  test('the registry is generated from the theme files and is up to date', () => {
+    // a failure here means: run `npm run themes` in frontend/
+    expect(read(REGISTRY)).toBe(registrySource())
+    expect(themes[0].id, 'the contract is the first and default theme').toBe('larry')
   })
   test('every registered theme but the first has one block, and every block is registered', () => {
     expect(new Set(blocks.keys())).toEqual(new Set(themes.slice(1).map((t) => t.id)))
@@ -146,22 +156,19 @@ describe('registry', () => {
   })
 })
 
-describe('contrast', () => {
-  const need = (size, aaa) => (size === 'normal' ? (aaa ? 7 : 4.5) : size === 'large' ? (aaa ? 4.5 : 3) : 3)
-  const failures = (id, roles = merged(id)) => {
-    const aaa = matrix.aaa.includes(id)
-    return matrix.recipes
-      .filter((r) => aaa || !r.aaaOnly)
+describe('contrast (WCAG AAA in every theme)', () => {
+  const need = (size) => (size === 'normal' ? 7 : size === 'large' ? 4.5 : 3)
+  const failures = (id, roles = merged(id)) =>
+    matrix.recipes
       .map((r) => ({ r, got: contrastOf(r, roles) }))
-      .filter(({ r, got }) => got < need(r.size, aaa))
-      .map(({ r, got }) => `${id} ${r.id}: ${got.toFixed(2)}:1, needs ${need(r.size, aaa)}:1`)
-  }
+      .filter(({ r, got }) => got < need(r.size))
+      .map(({ r, got }) => `${id} ${r.id}: ${got.toFixed(2)}:1, needs ${need(r.size)}:1`)
   test('every theme meets every recipe', () => {
     expect(themes.flatMap(({ id }) => failures(id))).toEqual([])
   })
   test('a failing pairing is reported with theme, recipe and ratio', () => {
     const roles = new Map([...values, ['--color-fg-muted', '#999999']])
-    expect(failures('larry', roles)).toContain('larry muted/surface: 2.85:1, needs 4.5:1')
+    expect(failures('larry', roles)).toContain('larry muted/surface: 2.85:1, needs 7:1')
   })
   test('translucent colors are composited over their backgrounds', () => {
     const roles = new Map([
@@ -171,6 +178,39 @@ describe('contrast', () => {
     expect(contrastOf({ fg: 'a', bg: ['b'] }, roles)).toBeCloseTo(3.98, 1)
     expect(parseColor('rgb(255 0 0 / 50%)')).toEqual([255, 0, 0, 0.5])
     expect(parseColor('linear-gradient(red, blue)')).toBe(null)
+  })
+  // A gradient fill is drawn over the color role of the same name. Its top fifth and bottom fifth may hold a
+  // highlight or a shade (text is centered in a bar or a button); every stop in between must keep the text at 7:1.
+  const FILLS = {
+    '--bg-header': ['on-header', 'on-header-muted'],
+    '--bg-tab-on': ['on-tab-on'],
+    '--bg-action': ['on-action'],
+    '--bg-action-hover': ['on-action'],
+    '--bg-action-2': ['on-action-2', 'danger'],
+    '--bg-action-2-hover': ['on-action-2', 'danger'],
+    '--bg-strip': ['fg', 'fg-muted', 'heading'],
+  }
+  test('text stays readable across the stops of every gradient fill', () => {
+    const bad = []
+    for (const { id } of themes) {
+      const roles = merged(id)
+      for (const [fill, inks] of Object.entries(FILLS)) {
+        for (const stop of gradientStops(resolve(roles.get(fill), roles))) {
+          if (stop.at < 20 || stop.at > 80) continue
+          for (const ink of inks) {
+            const got = ratio(colorOf(ink, roles), stop.color)
+            if (got < 7) bad.push(`${id} ${fill} at ${stop.at}%: ${ink} ${got.toFixed(2)}:1`)
+          }
+        }
+      }
+    }
+    expect(bad).toEqual([])
+  })
+  test('gradient stops are read with their positions', () => {
+    const stops = gradientStops('linear-gradient(to bottom, #ffffff 0%, rgba(0, 0, 0, 0.5) 40%, #000000 100%)')
+    expect(stops.map((s) => s.at)).toEqual([0, 40, 100])
+    expect(stops[1].color).toEqual([0, 0, 0, 0.5])
+    expect(gradientStops('none')).toEqual([])
   })
 })
 

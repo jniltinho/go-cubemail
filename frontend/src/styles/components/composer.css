@@ -1,0 +1,53 @@
+@layer components {
+  /* Composer modal */
+  .modal-wrap {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    z-index: 50;
+    background: var(--color-overlay);
+  }
+  .composer-shell {
+    width: 1530px;
+    max-width: calc(100vw / var(--ui-zoom) - 40px);
+    background: var(--color-surface);
+    border: 1px solid var(--color-popup-line);
+    border-radius: var(--radius-surface);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh / var(--ui-zoom) - 60px);
+  }
+  .composer-field {
+    display: grid;
+    align-items: stretch;
+    border-bottom: 1px solid var(--color-line-soft);
+    grid-template-columns: 70px 1fr;
+  }
+  .composer-field > label {
+    background: var(--color-surface-2);
+    border-right: 1px solid var(--color-line-soft);
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--color-fg-muted);
+    font-weight: 600;
+  }
+  .composer-field input,
+  .composer-field textarea {
+    border: 0;
+    border-radius: 0;
+    outline: none;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--color-fg);
+    resize: vertical;
+  }
+  .composer-field textarea {
+    min-height: 220px;
+    line-height: 1.625;
+  }
+  .composer-rich {
+    padding: 0;
+  }
+}

@@ -37,7 +37,7 @@ function onDragStart(event: DragEvent, message: MailMessage) {
 <template>
   <div class="bg-surface border-r border-line flex flex-col min-h-0">
     <!-- Header -->
-    <div class="h-10 px-3 bg-surface-2 border-b border-line flex items-center justify-between flex-shrink-0">
+    <div class="strip h-10 px-3 bg-surface-2 border-b border-line flex items-center justify-between flex-shrink-0">
       <h2 class="m-0 text-[13px] text-heading font-bold tracking-tight">
         {{ mail.currentFolderLabel }}
       </h2>

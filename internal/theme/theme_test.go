@@ -38,17 +38,19 @@ func TestByIDAndValid(t *testing.T) {
 }
 
 func TestListOrderAndCopy(t *testing.T) {
-	want := []string{
-		"larry", "outlook", "outlook-dark", "apple-mail", "apple-mail-dark",
-		"breeze", "breeze-dark", "graphite", "high-contrast",
-	}
+	// The list is generated (registry_gen.go): check its shape, not its length.
 	got := List()
-	if len(got) != len(want) {
-		t.Fatalf("List() has %d themes, want %d", len(got), len(want))
+	if len(got) == 0 || got[0].ID != "larry" {
+		t.Fatalf("List() must start with larry, got %+v", got)
 	}
-	for i, id := range want {
-		if got[i].ID != id {
-			t.Errorf("List()[%d].ID = %q, want %q", i, got[i].ID, id)
+	seen := map[string]bool{}
+	for _, th := range got {
+		if seen[th.ID] {
+			t.Errorf("theme %q is listed twice", th.ID)
+		}
+		seen[th.ID] = true
+		if th.Label == "" || (th.Scheme != "light" && th.Scheme != "dark") {
+			t.Errorf("theme %q has label %q and scheme %q", th.ID, th.Label, th.Scheme)
 		}
 	}
 

@@ -9,6 +9,8 @@
     "check": "vp check && vue-tsc --noEmit",
     "fmt": "vp fmt",
     "test": "vp test run",
+    "themes": "node scripts/themes.mjs sync",
+    "theme:new": "node scripts/themes.mjs new",
     "type-check": "vue-tsc --noEmit",
     "preview": "vp preview"
   },

@@ -8,6 +8,10 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import './style.css'
+
+// every theme file of ./themes: adding a theme is adding a file there (its roles win over the contract's by
+// specificity, so the order they load in does not matter)
+import.meta.glob('./themes/*.css', { eager: true })
 import App from './App.vue'
 
 const app = createApp(App)

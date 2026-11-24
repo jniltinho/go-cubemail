@@ -137,7 +137,7 @@ function onInputKey(e: KeyboardEvent) {
 
 .dlg-shell {
   width: 380px;
-  max-width: calc(100vw - 32px);
+  max-width: calc(100vw / var(--ui-zoom) - 32px);
   background: var(--color-surface);
   border: 1px solid var(--color-popup-line);
   border-radius: var(--radius-surface);

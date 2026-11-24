@@ -1,0 +1,88 @@
+/* Document defaults, scrollbars and the single keyboard-focus recipe. */
+/*
+ * Large screens. The interface is drawn for viewports of about 1280 to 1920 px (Full HD); on wider ones it is
+ * scaled up as a whole, so QHD and 4K monitors at 100% do not get small text in a sea of space. Sizes written in
+ * viewport units divide by --ui-zoom, because a length inside a zoomed element is multiplied by the zoom.
+ */
+:root {
+  --ui-zoom: 1;
+}
+@media (min-width: 2400px) {
+  :root {
+    --ui-zoom: 1.25;
+  }
+}
+@media (min-width: 3200px) {
+  :root {
+    --ui-zoom: 1.6;
+  }
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-fg);
+  background: var(--color-page);
+  zoom: var(--ui-zoom);
+  -webkit-font-smoothing: antialiased;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+/* fields take the control radius; buttons take it through .tbtn or the rounded-control utility */
+input:not([type='checkbox'], [type='radio'], [type='color'], [type='range']),
+select,
+textarea {
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-field);
+}
+
+/* Custom scrollbars */
+.scroll-y::-webkit-scrollbar {
+  width: 12px;
+}
+.scroll-y::-webkit-scrollbar-thumb {
+  background: var(--color-scroll-thumb);
+  border: 3px solid var(--color-surface);
+}
+.scroll-y::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+/*
+ * Keyboard focus: one mark for every control, drawn from the focus roles. Unlayered, so it wins over the component
+ * and utility layers. Text fields show it on click too, as before. The transparent outline keeps a visible mark in
+ * forced-colors mode, where shadows are dropped.
+ */
+:where(button, a, input, select, textarea, summary, [tabindex], [role='radio'], [role='tab']):focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--shadow-focus);
+}
+/* on the header the ring is drawn inside the control, in the color of the tab mark */
+.on-header :where(button, a, select, [tabindex]):focus-visible {
+  box-shadow: var(--shadow-focus-header);
+}
+/* borderless fields that fill their row: the row shows the focus, not the field */
+.composer-field :where(input, textarea):focus-visible,
+.search-box :where(input, select):focus-visible,
+.rte-content textarea:focus-visible {
+  box-shadow: none;
+}
+/* drawn outside the box: its fields cover an inset ring */
+.search-box:focus-within {
+  box-shadow: 0 0 0 2px var(--color-tab-mark);
+}

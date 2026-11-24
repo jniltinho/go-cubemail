@@ -1,7 +1,7 @@
 /**
  * @file theme.ts
  * @description Applies a theme to the document. A theme is only a set of role values selected by the root's
- * `data-theme` attribute (see style.css and themes/); this module is the only writer of that attribute.
+ * `data-theme` attribute (see styles/contract.css and themes/); this module is the only writer of that attribute.
  */
 
 import { ref } from 'vue'

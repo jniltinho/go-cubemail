@@ -42,7 +42,7 @@ const quotaPercent = computed(() => {
 <template>
   <aside class="bg-sidebar border-r border-line flex flex-col min-h-0">
     <!-- Header -->
-    <div class="h-10 px-3 flex items-center justify-between bg-surface-2 border-b border-line flex-shrink-0">
+    <div class="strip h-10 px-3 flex items-center justify-between bg-surface-2 border-b border-line flex-shrink-0">
       <span class="text-[11px] uppercase tracking-wider text-fg-muted font-bold">Folders</span>
       <button
         type="button"

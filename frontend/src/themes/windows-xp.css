@@ -1,0 +1,191 @@
+/*
+ * "Windows XP" theme: the Luna blue style, after ad-manager's "Classic blue (XP)" (frontend/src/themes/classics.css,
+ * jniltinho/ad-manager) and adapted to a webmail: the app bar and dialog title bars are the Luna title bar gradient,
+ * the current view is a pressed taskbar button with the orange tab top, the primary action is the Start green,
+ * secondary buttons are XP push buttons (white to the dialog face #ECE9D8, navy frame, orange on hover), pane
+ * headers are list-view headers, the folder list is the task pane blue, dialogs get the blue window frame, fields
+ * are sunken, Tahoma. No affiliation with Microsoft; no logo, icon or font of the product is used.
+ * Gradients keep a thin light band at the top; from 20% down every stop holds its text at 7:1.
+ * Held to WCAG AAA (text 7:1, large text 4.5:1, components 3:1): a value moved for it keeps its hue and says
+ * what it was.
+ * Only role values of the contract in ../styles/contract.css.
+ */
+:root[data-theme='windows-xp'] {
+  --theme-label: 'Windows XP';
+  --theme-scheme: light;
+  --theme-order: 100;
+
+  /* text */
+  --color-fg: #000000;
+  --color-fg-strong: #0b2a6b;
+  --color-fg-muted: #404040;
+  --color-fg-subtle: #404040;
+  --color-heading: #0b2a6b;
+  --color-link: #00408a;
+  --color-link-hover: #002f66;
+
+  /* page and surfaces */
+  --color-page: #ece9d8;
+  --color-backdrop: #3a6ea5;
+  --color-surface: #ffffff;
+  --color-surface-2: #ece9d8;
+  --color-surface-3: #f6f5ee;
+  --color-line: #aca899;
+  --color-line-soft: #d6d2c2;
+  --color-popup-line: #0831d9;
+  --color-row-hover: #e8eefc;
+  --color-overlay: rgba(0, 0, 0, 0.4);
+  --color-scroll-thumb: #6e8ba8;
+
+  /* selection (the selected message) */
+  --color-selection: #1d50bb;
+  --color-on-selection: #ffffff;
+  --color-on-selection-muted: #ffffff;
+  --color-on-selection-subtle: #ffffff;
+  --color-on-selection-star: #ffe066;
+  --color-selection-mark: #1d50bb;
+  --color-selection-line: #1d50bb;
+
+  /* fields and keyboard focus */
+  --color-field: #ffffff;
+  --color-on-field: #000000;
+  --color-field-line: #6e8ba8;
+  --color-field-focus: #00408a;
+  --color-focus: #000000;
+
+  /* primary action */
+  --color-action: #1a5c1e;
+  --color-action-hover: #1f6421;
+  --color-action-line: #0f3d12;
+  --color-on-action: #ffffff;
+
+  /* secondary action */
+  --color-action-2: #ecebe5;
+  --color-action-2-hover: #f6efd6;
+  --color-action-2-line: #003c74;
+  --color-action-2-hover-line: #a65e00;
+  --color-on-action-2: #000000;
+
+  /* danger and status */
+  --color-danger: #980000; /* AAA, was #a00000 */
+  --color-on-danger: #ffffff;
+  --color-ok: #1b561b;
+  --color-err: #a00000;
+  --color-warn: #6b4500;
+  --color-err-soft: #f6e0e0;
+  --color-on-err-soft: #840000;
+  --color-err-line: #c98a8a;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #0143cf;
+  --color-header-brand: #0046c7;
+  --color-on-header: #ffffff;
+  --color-on-header-muted: #ffffff;
+  --color-on-header-err: #ffd6d6;
+  --color-header-line: #002a9c;
+  --color-header-control-line: #8cb4f0;
+  --color-header-hover: #0a3aa8;
+  --color-tab-on: #0a3aa8;
+  --color-on-tab-on: #ffffff;
+  --color-tab-mark: #ffc73c;
+
+  /* sidebar */
+  --color-sidebar: #d6dff7;
+  --color-on-sidebar: #000000;
+  --color-sidebar-hover: #c1d2ee;
+  --color-sidebar-active: #1d50bb;
+  --color-on-sidebar-active: #ffffff;
+  --color-count: #303030;
+
+  /* mail list */
+  --color-unread: #000000;
+  --color-unread-mark: #00408a;
+  --color-star: #b8860b;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #1a5c1e;
+  --color-accent-strong: #0f3d12;
+  --color-accent-soft: #e8eefc;
+  --color-on-accent: #ffffff;
+
+  /* raw source viewer */
+  --color-code: #1e1e1e;
+  --color-on-code: #f0f0f0;
+  --color-on-code-muted: #c0c0c0;
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #515965; /* AAA, was #5c6573 */
+  --color-paper-link: #1f4a8a;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+  --radius-control: 3px;
+  --radius-surface: 6px;
+  --radius-row: 0px;
+
+  /* type */
+  --font-sans: Tahoma, Verdana, 'Segoe UI', Arial, sans-serif;
+
+  /* depth, relief and the selected row's shape */
+  --shadow-menu: 2px 2px 3px rgba(0, 0, 0, 0.5);
+  --shadow-dialog: 0 0 0 1px #166aee, 0 0 0 3px #0831d9, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-toast: 0 3px 10px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 0 0 1px #166aee, 0 0 0 3px #0831d9, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-focus: 0 0 0 1px #ffffff, 0 0 0 3px var(--color-focus);
+  --shadow-focus-header: inset 0 0 0 2px var(--color-tab-mark);
+  --shadow-tab-on:
+    inset 0 1px 0 #a65e00, inset 0 3px 0 #e68b2c, inset 0 4px 0 #ffc73c, inset 0 0 6px rgba(0, 0, 0, 0.35);
+  --shadow-action:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.22), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-action-2: inset 0 1px 0 #ffffff, inset 0 -2px 0 rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-field: inset 0 1px 2px rgba(0, 0, 0, 0.14);
+  --bg-header: linear-gradient(
+    to bottom,
+    #005ce9 0%,
+    #3f97ff 3%,
+    #2b90ff 6%,
+    #0774fe 9%,
+    #0048cf 14%,
+    #0046c7 45%,
+    #004bd0 79%,
+    #0048cf 93%,
+    #0143cf 100%
+  );
+  --bg-tab-on: linear-gradient(to bottom, #0a3aa8 0%, #0d47c4 100%);
+  --bg-action: linear-gradient(
+    to bottom,
+    #5fa860 0%,
+    #3f923f 8%,
+    #2b7a2b 15%,
+    #1f6421 30%,
+    #1d6020 65%,
+    #1a5c1e 90%,
+    #144a17 100%
+  );
+  --bg-action-hover: linear-gradient(to bottom, #6cb86d 0%, #46a046 8%, #2f842f 15%, #1f6421 30%, #1f6421 100%);
+  --bg-action-2: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    #fafaf8 20%,
+    #f1f0ea 50%,
+    #ecebe5 72%,
+    #dcd8cc 90%,
+    #cbc5b6 100%
+  );
+  --bg-action-2-hover: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    #fdf8e8 20%,
+    #f9f0d2 50%,
+    #f6efd6 72%,
+    #f0dba0 90%,
+    #e8c46a 100%
+  );
+  --bg-strip: linear-gradient(to bottom, #fcfbf8 0%, #f6f4ec 40%, #ece9d8 75%, #e2dec9 100%);
+  --selection-mark-w: 0px;
+  --bg-backdrop: none;
+}

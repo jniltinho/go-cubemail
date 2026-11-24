@@ -1,8 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
+	"reflect"
 	"testing"
+
+	"go-cubemail/internal/theme"
 )
 
 // The route is registered with no auth middleware at all, as on the real server.
@@ -14,18 +18,19 @@ func TestThemesListWithoutSession(t *testing.T) {
 	rec := env.do(http.MethodGet, "/api/v1/themes", "", nil)
 	assertStatus(t, rec, http.StatusOK)
 
-	const want = `{"default":"outlook","themes":[` +
-		`{"id":"larry","label":"Larry","scheme":"light"},` +
-		`{"id":"outlook","label":"Outlook","scheme":"light"},` +
-		`{"id":"outlook-dark","label":"Outlook (dark)","scheme":"dark"},` +
-		`{"id":"apple-mail","label":"Apple Mail","scheme":"light"},` +
-		`{"id":"apple-mail-dark","label":"Apple Mail (dark)","scheme":"dark"},` +
-		`{"id":"breeze","label":"Breeze","scheme":"light"},` +
-		`{"id":"breeze-dark","label":"Breeze (dark)","scheme":"dark"},` +
-		`{"id":"graphite","label":"Graphite (dark)","scheme":"dark"},` +
-		`{"id":"high-contrast","label":"High contrast (dark)","scheme":"dark"}]}`
-	if got := string(bodyBytes(rec)); got != want {
-		t.Errorf("body = %s\nwant   %s", got, want)
+	// The registry is generated from the theme stylesheets, so the list is compared with it, not spelled out.
+	var got struct {
+		Default string        `json:"default"`
+		Themes  []theme.Theme `json:"themes"`
+	}
+	if err := json.Unmarshal(bodyBytes(rec), &got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Default != "outlook" {
+		t.Errorf("default = %q, want outlook", got.Default)
+	}
+	if !reflect.DeepEqual(got.Themes, theme.List()) {
+		t.Errorf("themes = %+v\nwant     %+v", got.Themes, theme.List())
 	}
 }
 

@@ -1,0 +1,160 @@
+/*
+ * Role contract. Every color, corner radius, shadow and font of the interface is a role declared here; components
+ * use roles only. The values below are the Larry theme (the default), as it rendered before themes existed (its
+ * lighter and darker blues were derived at run time from the navy); a theme file under ./themes gives other
+ * values to the same roles and nothing else. See DOCUMENTS/docs/THEMES.md.
+ * `static`: keep every role in the build, including those read only by a theme file or from script.
+ */
+@theme static {
+  /* text */
+  --color-fg: #1a1f2a;
+  --color-fg-strong: #0e1a2e;
+  --color-fg-muted: #444b56; /* AAA, was #5a6473 */
+  --color-fg-subtle: #4b525d; /* AAA, was #8a93a1 */
+  --color-heading: #152d53;
+  --color-link: #425471; /* AAA, was #546b90 */
+  --color-link-hover: #1b3a6b;
+
+  /* page and surfaces */
+  --color-page: #eceff3;
+  --color-backdrop: #c9cdd3;
+  --color-surface: #ffffff;
+  --color-surface-2: #f5f7fa;
+  --color-surface-3: #f8f9fc;
+  --color-line: #c9d1dc;
+  --color-line-soft: #e2e6ec;
+  --color-popup-line: #152d53;
+  --color-row-hover: #f0f3f8;
+  --color-overlay: rgba(11, 31, 64, 0.35);
+  --color-scroll-thumb: #c1cad6;
+
+  /* selection (the selected message) */
+  --color-selection: #d1d8e1;
+  --color-on-selection: #1a1f2a;
+  --color-on-selection-muted: #3b414c; /* AAA, was #5a6473 */
+  --color-on-selection-subtle: #3b414c; /* AAA, was #8a93a1 */
+  --color-on-selection-star: #9a7108; /* AAA, was #e0a40c */
+  --color-selection-mark: #1b3a6b;
+  --color-selection-line: #546b90;
+
+  /* fields and keyboard focus */
+  --color-field: #ffffff;
+  --color-on-field: #1a1f2a;
+  --color-field-line: #8295ae; /* AAA, was #c9d1dc */
+  --color-field-focus: #546b90;
+  --color-focus: #1b3a6b;
+
+  /* primary action */
+  --color-action: #1b3a6b;
+  --color-action-hover: #465978; /* AAA, was #546b90 */
+  --color-action-line: #152d53;
+  --color-on-action: #ffffff;
+
+  /* secondary action */
+  --color-action-2: #ffffff;
+  --color-action-2-hover: #e4e7ed;
+  --color-action-2-line: #8295ae; /* AAA, was #c9d1dc */
+  --color-action-2-hover-line: #546b90;
+  --color-on-action-2: #1a1f2a;
+
+  /* danger and status */
+  --color-danger: #9b2525; /* AAA, was #b22b2b */
+  --color-on-danger: #ffffff;
+  --color-ok: #1a6539; /* AAA, was #1f7a45 */
+  --color-err: #b22b2b;
+  --color-warn: #bd8b0a; /* AAA, was #e0a40c */
+  --color-err-soft: #fff0f0;
+  --color-on-err-soft: #9b2525; /* AAA, was #b22b2b */
+  --color-err-line: #f5c0c0;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #152d53;
+  --color-header-brand: #1b3a6b;
+  --color-on-header: #ffffff;
+  --color-on-header-muted: #d5e0f2;
+  --color-on-header-err: #ff8a8a;
+  --color-header-line: #0b1f40;
+  --color-header-control-line: #4a6fa0;
+  --color-header-hover: #102744;
+  --color-tab-on: #1b3a6b;
+  --color-on-tab-on: #ffffff;
+  --color-tab-mark: #66a0ff;
+
+  /* sidebar */
+  --color-sidebar: #ffffff;
+  --color-on-sidebar: #1a1f2a;
+  --color-sidebar-hover: #f0f3f8;
+  --color-sidebar-active: #d1d8e1;
+  --color-on-sidebar-active: #152d53;
+  --color-count: #4a525e; /* AAA, was #5a6473 */
+
+  /* mail list */
+  --color-unread: #1a1f2a;
+  --color-unread-mark: #4a525e; /* AAA, was #5a6473 */
+  --color-star: #bd8a0a; /* AAA, was #e0a40c */
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #1b3a6b;
+  --color-accent-strong: #152d53;
+  --color-accent-soft: #e4e7ed;
+  --color-on-accent: #ffffff;
+
+  /* raw source viewer */
+  --color-code: #0e1a2e;
+  --color-on-code: #d5e0f2;
+  --color-on-code-muted: #96a7bc; /* AAA, was #6a82a0 */
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #515864; /* AAA, was #8a93a1 */
+  --color-paper-link: #2a5599;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+  --radius-control: 0px;
+  --radius-surface: 0px;
+  --radius-row: 0px;
+
+  /* type */
+  --font-sans: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'Consolas', 'Menlo', monospace;
+}
+
+/* Roles that are not Tailwind theme keys: depth, the selected row's shape, the login backdrop, the paper's font. */
+:root {
+  /* identity of this theme (Larry): scripts/themes.mjs builds the server's registry from these three */
+  --theme-label: 'Larry';
+  --theme-scheme: light;
+  --theme-order: 10;
+
+  --shadow-menu: 0 6px 16px rgba(11, 31, 64, 0.18), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  --shadow-dialog: 0 8px 32px rgba(11, 31, 64, 0.22);
+  --shadow-toast: 0 4px 16px rgba(11, 31, 64, 0.16);
+  --shadow-card:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 2px 4px rgba(11, 31, 64, 0.18), 0 16px 40px -8px rgba(11, 31, 64, 0.45),
+    0 30px 60px -20px rgba(11, 31, 64, 0.35);
+  --shadow-focus: 0 0 0 1px var(--color-focus);
+  --shadow-focus-header: inset 0 0 0 2px var(--color-tab-mark);
+  /* relief: the mark of the current tab, and the bevel of buttons and fields in themes that have one */
+  --shadow-tab-on: inset 0 -3px 0 var(--color-tab-mark);
+  --shadow-action: none;
+  --shadow-action-2: none;
+  --shadow-field: none;
+  /* fills that a theme may draw as a gradient over the color role of the same name (none: the color shows) */
+  --bg-header: none;
+  --bg-tab-on: none;
+  --bg-action: none;
+  --bg-action-hover: none;
+  --bg-action-2: none;
+  --bg-action-2-hover: none;
+  --bg-strip: none;
+  --row-inset-x: 0px;
+  --selection-mark-w: 3px;
+  --bg-backdrop:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px);
+  --font-paper: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}

@@ -1,14 +1,17 @@
 /*
  * "High contrast" theme (dark): an accessibility theme for maximum legibility, ported from ad-manager's
  * frontend/src/themes/high-contrast.css (jniltinho/ad-manager, commit dcad381). Black surfaces, white text, yellow
- * #FFFF00 as the only accent (actions, links, the selected message with black text, the current tab), states
- * ok #5CFF5C, error #FFA3A3, warning #FFC04D; no shadows for depth and a solid 3 px focus ring. Held to WCAG AAA:
- * normal text 7:1, large text 4.5:1, components 3:1 (the aaa list of contrast.json). The message paper stays white
- * with black text. Only role values of the contract in ../style.css.
+ * #FFFF00 as the only accent (actions, links, the selected message with black text, the current tab), no shadows
+ * for depth and a solid 3 px focus ring. The message paper stays white with black text.
+ * Held to WCAG AAA (text 7:1, large text 4.5:1, components 3:1): a value moved for it keeps its hue and says
+ * what it was.
+ * Only role values of the contract in ../styles/contract.css.
  */
-
-/* High contrast: #000000 / #FFFFFF, accent #FFFF00 */
 :root[data-theme='high-contrast'] {
+  --theme-label: 'High contrast (dark)';
+  --theme-scheme: dark;
+  --theme-order: 90;
+
   /* text */
   --color-fg: #ffffff;
   --color-fg-strong: #ffffff;
@@ -120,7 +123,7 @@
 
   /* type */
 
-  /* depth and the selected row's shape */
+  /* depth, relief and the selected row's shape */
   --shadow-menu: none;
   --shadow-dialog: none;
   --shadow-toast: none;

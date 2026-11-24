@@ -1,21 +1,23 @@
 /*
- * "Graphite" theme (dark): Grafana v11 (packages/grafana-data/src/themes/createColors.ts), ported from ad-manager's
- * frontend/src/themes/graphite.css (jniltinho/ad-manager, commit dcad381): canvas #111217, primary #181B1F,
- * secondary #22252B, primary.main #3D71D9 and the orange #FF8833 accent. Square corners, as there. Only role values
- * of the contract in ../style.css.
- * Changed here: danger is the upstream error text #FF5286 with dark ink (the upstream #D10E5C button fill is 3.2:1
- * as text on the surface, and this contract uses one danger role for both).
+ * "Graphite" theme (dark): Grafana v11 (packages/grafana-data/src/themes/createColors.ts: canvas #111217, primary
+ * #181B1F, secondary #22252B, primary.main #3D71D9) with the orange #FF8833 accent, ported from ad-manager's
+ * frontend/src/themes/graphite.css (jniltinho/ad-manager, commit dcad381). Square corners, as there.
+ * Held to WCAG AAA (text 7:1, large text 4.5:1, components 3:1): a value moved for it keeps its hue and says
+ * what it was.
+ * Only role values of the contract in ../styles/contract.css.
  */
-
-/* Graphite (dark): canvas #111217, surfaces #181B1F, actions #3D71D9, accent #FF8833 */
 :root[data-theme='graphite'] {
+  --theme-label: 'Graphite (dark)';
+  --theme-scheme: dark;
+  --theme-order: 80;
+
   /* text */
   --color-fg: #ccccdc;
   --color-fg-strong: #ffffff;
-  --color-fg-muted: rgba(204, 204, 220, 0.65);
-  --color-fg-subtle: rgba(204, 204, 220, 0.65);
+  --color-fg-muted: rgba(204, 204, 220, 0.86); /* AAA, was rgba(204, 204, 220, 0.65) */
+  --color-fg-subtle: rgba(204, 204, 220, 0.83); /* AAA, was rgba(204, 204, 220, 0.65) */
   --color-heading: #ffffff;
-  --color-link: #6e9fff;
+  --color-link: #89b1ff; /* AAA, was #6e9fff */
   --color-link-hover: #8ab2ff;
 
   /* page and surfaces */
@@ -48,20 +50,20 @@
   --color-focus: #6e9fff;
 
   /* primary action */
-  --color-action: #3461bb;
-  --color-action-hover: #3d71d9;
+  --color-action: #2e55a5; /* AAA, was #3461bb */
+  --color-action-hover: #2353b2; /* AAA, was #3d71d9 */
   --color-action-line: #3d71d9;
   --color-on-action: #ffffff;
 
   /* secondary action */
   --color-action-2: #22252b;
   --color-action-2-hover: #2d3037;
-  --color-action-2-line: rgba(204, 204, 220, 0.3);
+  --color-action-2-line: rgba(204, 204, 220, 0.43); /* AAA, was rgba(204, 204, 220, 0.3) */
   --color-action-2-hover-line: #6e9fff;
   --color-on-action-2: #ccccdc;
 
   /* danger and status */
-  --color-danger: #ff5286;
+  --color-danger: #ff8daf; /* AAA, was #ff5286 */
   --color-on-danger: #111217;
   --color-ok: #6ccf8e;
   --color-err: #ff5286;
@@ -74,7 +76,7 @@
   --color-header: #15171b;
   --color-header-brand: #181b1f;
   --color-on-header: #ccccdc;
-  --color-on-header-muted: rgba(204, 204, 220, 0.65);
+  --color-on-header-muted: rgba(204, 204, 220, 0.78); /* AAA, was rgba(204, 204, 220, 0.65) */
   --color-on-header-err: #ff5286;
   --color-header-line: rgba(204, 204, 220, 0.12);
   --color-header-control-line: rgba(204, 204, 220, 0.3);
@@ -89,11 +91,11 @@
   --color-sidebar-hover: #22252b;
   --color-sidebar-active: #2d3b55;
   --color-on-sidebar-active: #ffffff;
-  --color-count: rgba(204, 204, 220, 0.65);
+  --color-count: rgba(204, 204, 220, 0.83); /* AAA, was rgba(204, 204, 220, 0.65) */
 
   /* mail list */
   --color-unread: #ffffff;
-  --color-unread-mark: #6e9fff;
+  --color-unread-mark: #89b1ff; /* AAA, was #6e9fff */
   --color-star: #fbad37;
 
   /* accent: avatars, the quota bar, today's date, small marks */
@@ -105,22 +107,22 @@
   /* raw source viewer */
   --color-code: #0b0c0e;
   --color-on-code: #ccccdc;
-  --color-on-code-muted: rgba(204, 204, 220, 0.65);
+  --color-on-code-muted: rgba(204, 204, 220, 0.75); /* AAA, was rgba(204, 204, 220, 0.65) */
 
   /* message content: HTML mail and the composer's document, a light sheet in every theme */
   --color-paper: #ffffff;
   --color-paper-2: #f5f7fa;
   --color-on-paper: #1a1f2a;
   --color-paper-muted: #444444;
-  --color-paper-subtle: #6d7787;
-  --color-paper-link: #2a5599;
+  --color-paper-subtle: #515965; /* AAA, was #5c6573 */
+  --color-paper-link: #1f4a8a;
   --color-paper-line: #c9d1dc;
 
   /* shape */
 
   /* type */
 
-  /* depth and the selected row's shape */
+  /* depth, relief and the selected row's shape */
   --shadow-focus: 0 0 0 2px var(--color-focus);
   --bg-backdrop: none;
   --shadow-menu: 0 8px 24px rgba(1, 4, 9, 0.75);

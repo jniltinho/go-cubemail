@@ -220,7 +220,7 @@ watch(
 <template>
   <div class="bg-surface overflow-hidden flex flex-col">
     <!-- Toolbar -->
-    <div class="h-10 px-4 bg-surface-2 border-b border-line flex items-center gap-1.5 flex-shrink-0">
+    <div class="strip h-10 px-4 bg-surface-2 border-b border-line flex items-center gap-1.5 flex-shrink-0">
       <button class="tbtn" type="button" @click="mail.navigatePrev()">
         <Icon name="chevron-left" :size="13" />
       </button>

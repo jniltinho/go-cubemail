@@ -1,0 +1,57 @@
+@layer components {
+  /* Toolbar buttons */
+  .tbtn {
+    height: 26px;
+    padding-left: 10px;
+    padding-right: 10px;
+    background-color: var(--color-action-2);
+    background-image: var(--bg-action-2);
+    box-shadow: var(--shadow-action-2);
+    border: 1px solid var(--color-action-2-line);
+    border-radius: var(--radius-control);
+    font-size: 12px;
+    color: var(--color-on-action-2);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tbtn:hover {
+    background-color: var(--color-action-2-hover);
+    background-image: var(--bg-action-2-hover);
+    border-color: var(--color-action-2-hover-line);
+  }
+  .tbtn:disabled {
+    color: var(--color-fg-subtle);
+    background: var(--color-surface-2);
+    box-shadow: none;
+    cursor: default;
+  }
+  .tbtn:disabled:hover {
+    background: var(--color-surface-2);
+    border-color: var(--color-action-2-line);
+  }
+  .tbtn-primary {
+    background-color: var(--color-action);
+    background-image: var(--bg-action);
+    box-shadow: var(--shadow-action);
+    color: var(--color-on-action);
+    border-color: var(--color-action-line);
+  }
+  .tbtn-primary:hover {
+    background-color: var(--color-action-hover);
+    background-image: var(--bg-action-hover);
+    border-color: var(--color-action-line);
+    color: var(--color-on-action);
+  }
+  .tbtn-danger {
+    color: var(--color-danger);
+  }
+  .tbtn-sm {
+    height: 22px;
+    padding-left: 4px;
+    padding-right: 4px;
+    font-size: 11px;
+    gap: 2px;
+  }
+}

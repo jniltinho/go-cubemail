@@ -1,0 +1,136 @@
+/*
+ * "Outlook (dark)" theme, inspired by Outlook on the web (no affiliation): Fluent 2 dark neutrals (page #1F1F1F,
+ * surfaces #292929) and the dark brand foreground #479EF5, 4 px corners, the "Segoe UI" stack.
+ * Held to WCAG AAA (text 7:1, large text 4.5:1, components 3:1): a value moved for it keeps its hue and says
+ * what it was.
+ * Only role values of the contract in ../styles/contract.css.
+ */
+:root[data-theme='outlook-dark'] {
+  --theme-label: 'Outlook (dark)';
+  --theme-scheme: dark;
+  --theme-order: 30;
+
+  /* text */
+  --color-fg: #ffffff;
+  --color-fg-strong: #ffffff;
+  --color-fg-muted: #d6d6d6;
+  --color-fg-subtle: #cacaca; /* AAA, was #adadad */
+  --color-heading: #ffffff;
+  --color-link: #89c1f9; /* AAA, was #479ef5 */
+  --color-link-hover: #7fbaf7; /* AAA, was #62abf5 */
+
+  /* page and surfaces */
+  --color-page: #1f1f1f;
+  --color-backdrop: #141414;
+  --color-surface: #292929;
+  --color-surface-2: #2e2e2e;
+  --color-surface-3: #242424;
+  --color-line: #525252;
+  --color-line-soft: #3d3d3d;
+  --color-popup-line: #666666;
+  --color-row-hover: #383838;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-scroll-thumb: #666666;
+
+  /* selection (the selected message) */
+  --color-selection: #0e4775;
+  --color-on-selection: #ffffff;
+  --color-on-selection-muted: #d6e8fa;
+  --color-on-selection-subtle: #d6e8fa;
+  --color-on-selection-star: #f2c661;
+  --color-selection-mark: #479ef5;
+  --color-selection-line: #115ea3;
+
+  /* fields and keyboard focus */
+  --color-field: #1f1f1f;
+  --color-on-field: #ffffff;
+  --color-field-line: #737373; /* AAA, was #666666 */
+  --color-field-focus: #479ef5;
+  --color-focus: #479ef5;
+
+  /* primary action */
+  --color-action: #105a9c; /* AAA, was #115ea3 */
+  --color-action-hover: #0c5a9d; /* AAA, was #0f6cbd */
+  --color-action-line: #115ea3;
+  --color-on-action: #ffffff;
+
+  /* secondary action */
+  --color-action-2: #2e2e2e;
+  --color-action-2-hover: #3d3d3d;
+  --color-action-2-line: #737373; /* AAA, was #666666 */
+  --color-action-2-hover-line: #858585;
+  --color-on-action-2: #ffffff;
+
+  /* danger and status */
+  --color-danger: #f6a6ad; /* AAA, was #f1707b */
+  --color-on-danger: #191919; /* AAA, was #1f1f1f */
+  --color-ok: #81c581; /* AAA, was #54b054 */
+  --color-err: #f1707b;
+  --color-warn: #faa06b;
+  --color-err-soft: #3b1a1d;
+  --color-on-err-soft: #f1bbbc;
+  --color-err-line: #6e2b30;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #141414;
+  --color-header-brand: #0a0a0a;
+  --color-on-header: #ffffff;
+  --color-on-header-muted: #d6d6d6;
+  --color-on-header-err: #f1707b;
+  --color-header-line: #000000;
+  --color-header-control-line: #666666;
+  --color-header-hover: #292929;
+  --color-tab-on: #292929;
+  --color-on-tab-on: #ffffff;
+  --color-tab-mark: #479ef5;
+
+  /* sidebar */
+  --color-sidebar: #1f1f1f;
+  --color-on-sidebar: #ffffff;
+  --color-sidebar-hover: #333333;
+  --color-sidebar-active: #3d3d3d;
+  --color-on-sidebar-active: #ffffff;
+  --color-count: #c2c2c2; /* AAA, was #adadad */
+
+  /* mail list */
+  --color-unread: #ffffff;
+  --color-unread-mark: #a3cef9; /* AAA, was #62abf5 */
+  --color-star: #f2c661;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #7dbbf8; /* AAA, was #479ef5 */
+  --color-accent-strong: #62abf5;
+  --color-accent-soft: #1f3347;
+  --color-on-accent: #0a0a0a;
+
+  /* raw source viewer */
+  --color-code: #0a0a0a;
+  --color-on-code: #d6d6d6;
+  --color-on-code-muted: #9b9b9b; /* AAA, was #999999 */
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #515965; /* AAA, was #5c6573 */
+  --color-paper-link: #1f4a8a;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+  --radius-control: 4px;
+  --radius-surface: 4px;
+  --radius-row: 0px;
+
+  /* type */
+  --font-sans:
+    'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+
+  /* depth, relief and the selected row's shape */
+  --shadow-menu: 0 0 2px rgba(0, 0, 0, 0.24), 0 4px 8px rgba(0, 0, 0, 0.28);
+  --shadow-dialog: 0 0 8px rgba(0, 0, 0, 0.24), 0 32px 64px rgba(0, 0, 0, 0.28);
+  --shadow-toast: 0 0 2px rgba(0, 0, 0, 0.24), 0 8px 16px rgba(0, 0, 0, 0.28);
+  --shadow-card: 0 0 2px rgba(0, 0, 0, 0.24), 0 14px 28px rgba(0, 0, 0, 0.28);
+  --shadow-focus: 0 0 0 2px var(--color-focus);
+  --bg-backdrop: none;
+}

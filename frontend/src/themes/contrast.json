@@ -1,6 +1,5 @@
 {
-  "comment": "Contrast recipes: a text or component role over the stack of background roles where it appears (top to bottom). size: normal needs 4.5:1; large and ui (interface components, WCAG 1.4.11) need 3:1. Themes listed in aaa are held to enhanced contrast (1.4.6): normal 7:1, large 4.5:1, ui 3:1. A recipe with aaaOnly is checked for the aaa themes only: field and button outlines and the star keep the reference look in the other themes, where the control's fill or the icon's shape already marks it.",
-  "aaa": ["high-contrast"],
+  "comment": "Contrast recipes: a text or component role over the stack of background roles where it appears (top to bottom). Every theme is held to WCAG AAA: normal text 7:1 (1.4.6), large text 4.5:1, interface components 3:1 (1.4.11).",
   "recipes": [
     { "id": "text/surface", "fg": "fg", "bg": ["surface"], "size": "normal" },
     { "id": "text/surface-2", "fg": "fg", "bg": ["surface-2"], "size": "normal" },
@@ -23,7 +22,6 @@
     { "id": "link/surface-2", "fg": "link", "bg": ["surface-2"], "size": "normal" },
     { "id": "link-hover/surface", "fg": "link-hover", "bg": ["surface"], "size": "normal" },
     { "id": "accent-text/surface", "fg": "accent", "bg": ["surface"], "size": "normal" },
-
     { "id": "selected/selection", "fg": "on-selection", "bg": ["selection"], "size": "normal" },
     { "id": "selected-muted/selection", "fg": "on-selection-muted", "bg": ["selection"], "size": "normal" },
     { "id": "selected-subtle/selection", "fg": "on-selection-subtle", "bg": ["selection"], "size": "normal" },
@@ -31,21 +29,19 @@
     { "id": "unread/row-hover", "fg": "unread", "bg": ["row-hover"], "size": "normal" },
     { "id": "unread-mark/surface", "fg": "unread-mark", "bg": ["surface"], "size": "normal" },
     { "id": "unread-mark/row-hover", "fg": "unread-mark", "bg": ["row-hover"], "size": "normal" },
-    { "id": "star/surface", "fg": "star", "bg": ["surface"], "size": "ui", "aaaOnly": true },
-    { "id": "star/selection", "fg": "on-selection-star", "bg": ["selection"], "size": "ui", "aaaOnly": true },
-
+    { "id": "star/surface", "fg": "star", "bg": ["surface"], "size": "ui" },
+    { "id": "star/selection", "fg": "on-selection-star", "bg": ["selection"], "size": "ui" },
     { "id": "field-text/field", "fg": "on-field", "bg": ["field"], "size": "normal" },
-    { "id": "field-line/surface", "fg": "field-line", "bg": ["surface"], "size": "ui", "aaaOnly": true },
+    { "id": "field-line/surface", "fg": "field-line", "bg": ["surface"], "size": "ui" },
     { "id": "focus/surface", "fg": "focus", "bg": ["surface"], "size": "ui" },
     { "id": "focus/surface-2", "fg": "focus", "bg": ["surface-2"], "size": "ui" },
     { "id": "focus/page", "fg": "focus", "bg": ["page"], "size": "ui" },
     { "id": "focus/header", "fg": "tab-mark", "bg": ["header"], "size": "ui" },
-
     { "id": "action", "fg": "on-action", "bg": ["action"], "size": "normal" },
     { "id": "action-hover", "fg": "on-action", "bg": ["action-hover"], "size": "normal" },
     { "id": "action-2", "fg": "on-action-2", "bg": ["action-2"], "size": "normal" },
     { "id": "action-2-hover", "fg": "on-action-2", "bg": ["action-2-hover"], "size": "normal" },
-    { "id": "action-2-line/surface", "fg": "action-2-line", "bg": ["surface"], "size": "ui", "aaaOnly": true },
+    { "id": "action-2-line/surface", "fg": "action-2-line", "bg": ["surface"], "size": "ui" },
     { "id": "danger", "fg": "on-danger", "bg": ["danger"], "size": "normal" },
     { "id": "danger-text/surface", "fg": "danger", "bg": ["surface"], "size": "normal" },
     { "id": "danger-text/action-2", "fg": "danger", "bg": ["action-2"], "size": "normal" },
@@ -54,7 +50,6 @@
     { "id": "err/surface", "fg": "err", "bg": ["surface"], "size": "ui" },
     { "id": "warn/surface", "fg": "warn", "bg": ["surface"], "size": "ui" },
     { "id": "err-soft", "fg": "on-err-soft", "bg": ["err-soft"], "size": "normal" },
-
     { "id": "header", "fg": "on-header", "bg": ["header"], "size": "normal" },
     { "id": "header-brand", "fg": "on-header", "bg": ["header-brand"], "size": "normal" },
     { "id": "header-hover", "fg": "on-header", "bg": ["header-hover"], "size": "normal" },
@@ -64,18 +59,15 @@
     { "id": "brand-mark", "fg": "header-brand", "bg": ["on-header"], "size": "large" },
     { "id": "tab-on", "fg": "on-tab-on", "bg": ["tab-on"], "size": "normal" },
     { "id": "tab-mark/tab-on", "fg": "tab-mark", "bg": ["tab-on"], "size": "ui" },
-
     { "id": "sidebar", "fg": "on-sidebar", "bg": ["sidebar"], "size": "normal" },
     { "id": "sidebar-hover", "fg": "on-sidebar", "bg": ["sidebar-hover"], "size": "normal" },
     { "id": "sidebar-active", "fg": "on-sidebar-active", "bg": ["sidebar-active"], "size": "normal" },
     { "id": "count/sidebar", "fg": "count", "bg": ["sidebar"], "size": "normal" },
     { "id": "count/sidebar-hover", "fg": "count", "bg": ["sidebar-hover"], "size": "normal" },
-
     { "id": "accent", "fg": "on-accent", "bg": ["accent"], "size": "normal" },
     { "id": "accent-strong", "fg": "on-accent", "bg": ["accent-strong"], "size": "normal" },
     { "id": "code", "fg": "on-code", "bg": ["code"], "size": "normal" },
     { "id": "code-muted", "fg": "on-code-muted", "bg": ["code"], "size": "normal" },
-
     { "id": "paper", "fg": "on-paper", "bg": ["paper"], "size": "normal" },
     { "id": "paper-2", "fg": "on-paper", "bg": ["paper-2"], "size": "normal" },
     { "id": "paper-muted", "fg": "paper-muted", "bg": ["paper"], "size": "normal" },

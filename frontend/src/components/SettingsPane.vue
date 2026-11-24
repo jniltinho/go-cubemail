@@ -193,7 +193,7 @@ async function savePrefs() {
 <template>
   <div class="bg-surface flex flex-col overflow-hidden" style="grid-column: 2/4">
     <!-- Header -->
-    <div class="h-10 px-4 bg-surface-2 border-b border-line flex items-center gap-4 flex-shrink-0">
+    <div class="strip h-10 px-4 bg-surface-2 border-b border-line flex items-center gap-4 flex-shrink-0">
       <span class="font-semibold text-fg text-[13px]">Settings</span>
       <div class="flex gap-1 ml-4">
         <button

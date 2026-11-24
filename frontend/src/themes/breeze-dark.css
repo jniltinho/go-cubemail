@@ -1,0 +1,132 @@
+/*
+ * "Breeze (dark)" theme: KDE Breeze Dark (colors/BreezeDark.colors: Window #2A2E32, View #1B1E20, Selection
+ * #3DAEE9), ported from ad-manager's frontend/src/themes/breeze.css (jniltinho/ad-manager, commit dcad381).
+ * Held to WCAG AAA (text 7:1, large text 4.5:1, components 3:1): a value moved for it keeps its hue and says
+ * what it was.
+ * Only role values of the contract in ../styles/contract.css.
+ */
+:root[data-theme='breeze-dark'] {
+  --theme-label: 'Breeze (dark)';
+  --theme-scheme: dark;
+  --theme-order: 70;
+
+  /* text */
+  --color-fg: #fcfcfc;
+  --color-fg-strong: #ffffff;
+  --color-fg-muted: #c4c9ce; /* AAA, was #a1a9b1 */
+  --color-fg-subtle: #b1b7be; /* AAA, was #a1a9b1 */
+  --color-heading: #ffffff;
+  --color-link: #5cbbed; /* AAA, was #3daee9 */
+  --color-link-hover: #63bdec;
+
+  /* page and surfaces */
+  --color-page: #2a2e32;
+  --color-backdrop: #1b1e20;
+  --color-surface: #1b1e20;
+  --color-surface-2: #232629;
+  --color-surface-3: #272b2f;
+  --color-line: #4d5257;
+  --color-line-soft: #31363b;
+  --color-popup-line: #7a8086;
+  --color-row-hover: #272b2f;
+  --color-overlay: rgba(0, 0, 0, 0.55);
+  --color-scroll-thumb: #4d5257;
+
+  /* selection (the selected message) */
+  --color-selection: #3fafe9; /* AAA, was #3daee9 */
+  --color-on-selection: #171a1c; /* AAA, was #1b1e20 */
+  --color-on-selection-muted: #171a1c; /* AAA, was #1b1e20 */
+  --color-on-selection-subtle: #171a1c; /* AAA, was #1b1e20 */
+  --color-on-selection-star: #1b1e20;
+  --color-selection-mark: #fcfcfc;
+  --color-selection-line: #63bdec;
+
+  /* fields and keyboard focus */
+  --color-field: #1b1e20;
+  --color-on-field: #fcfcfc;
+  --color-field-line: #7a8086;
+  --color-field-focus: #3daee9;
+  --color-focus: #3daee9;
+
+  /* primary action */
+  --color-action: #3fafe9; /* AAA, was #3daee9 */
+  --color-action-hover: #58b9ec;
+  --color-action-line: #3daee9;
+  --color-on-action: #171a1c; /* AAA, was #1b1e20 */
+
+  /* secondary action */
+  --color-action-2: #31363b;
+  --color-action-2-hover: #4e5256;
+  --color-action-2-line: #7a8086;
+  --color-action-2-hover-line: #3daee9;
+  --color-on-action-2: #fcfcfc;
+
+  /* danger and status */
+  --color-danger: #f7b4ba; /* AAA, was #f28a93 */
+  --color-on-danger: #1a1d1f; /* AAA, was #1b1e20 */
+  --color-ok: #2bc06a; /* AAA, was #27ae60 */
+  --color-err: #f28a93;
+  --color-warn: #f67400;
+  --color-err-soft: #3d2a2e;
+  --color-on-err-soft: #f5adb4;
+  --color-err-line: #6b3a41;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #31363b;
+  --color-header-brand: #2a2e33;
+  --color-on-header: #fcfcfc;
+  --color-on-header-muted: #c1c7cc; /* AAA, was #a1a9b1 */
+  --color-on-header-err: #f28a93;
+  --color-header-line: #1b1e20;
+  --color-header-control-line: #7a8086;
+  --color-header-hover: #3b4045;
+  --color-tab-on: #1b1e20;
+  --color-on-tab-on: #fcfcfc;
+  --color-tab-mark: #3daee9;
+
+  /* sidebar */
+  --color-sidebar: #232629;
+  --color-on-sidebar: #fcfcfc;
+  --color-sidebar-hover: #2e3338;
+  --color-sidebar-active: #3fafe9; /* AAA, was #3daee9 */
+  --color-on-sidebar-active: #171a1c; /* AAA, was #1b1e20 */
+  --color-count: #bcc1c7; /* AAA, was #a1a9b1 */
+
+  /* mail list */
+  --color-unread: #ffffff;
+  --color-unread-mark: #69c0ee; /* AAA, was #3daee9 */
+  --color-star: #f6c544;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #48b3ea; /* AAA, was #3daee9 */
+  --color-accent-strong: #63bdec;
+  --color-accent-soft: #1f3a4a;
+  --color-on-accent: #1b1e20;
+
+  /* raw source viewer */
+  --color-code: #141618;
+  --color-on-code: #fcfcfc;
+  --color-on-code-muted: #a1a9b1;
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #515965; /* AAA, was #5c6573 */
+  --color-paper-link: #1f4a8a;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+
+  /* type */
+  --font-sans: 'Noto Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+  /* depth, relief and the selected row's shape */
+  --shadow-focus: 0 0 0 2px var(--color-focus);
+  --bg-backdrop: none;
+  --shadow-menu: 0 3px 10px rgba(0, 0, 0, 0.5);
+  --shadow-dialog: 0 8px 28px rgba(0, 0, 0, 0.6);
+  --shadow-toast: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 6px 24px rgba(0, 0, 0, 0.55);
+}

@@ -1,0 +1,59 @@
+@layer components {
+  /* Depth of popups (menus, pickers) and dialogs */
+  .sh-menu {
+    box-shadow: var(--shadow-menu);
+  }
+  .sh-dialog {
+    box-shadow: var(--shadow-dialog);
+  }
+
+  /* Kebab dropdown */
+  .kebab-menu {
+    position: absolute;
+    z-index: 30;
+    background: var(--color-surface);
+    border: 1px solid var(--color-popup-line);
+    border-radius: var(--radius-surface);
+    min-width: 190px;
+    padding: 4px 0;
+    cursor: auto;
+    top: 100%;
+    right: 4px;
+    box-shadow: var(--shadow-menu);
+  }
+  .kmi {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    color: var(--color-fg);
+    cursor: pointer;
+    border-left: 3px solid transparent;
+  }
+  .kmi:hover {
+    background: var(--color-accent-soft);
+    border-left-color: var(--color-selection-mark);
+  }
+  .kmi.disabled {
+    color: var(--color-fg-subtle);
+    cursor: default;
+  }
+  .kmi.disabled:hover {
+    background: transparent;
+    border-left-color: transparent;
+  }
+  .kmi .ic-wrap {
+    width: 14px;
+    text-align: center;
+    color: var(--color-link);
+  }
+  .kmi.disabled .ic-wrap {
+    color: var(--color-fg-subtle);
+  }
+  .kdiv {
+    height: 1px;
+    background: var(--color-line-soft);
+    margin: 4px 0;
+  }
+}

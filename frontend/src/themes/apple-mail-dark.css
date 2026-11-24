@@ -1,0 +1,138 @@
+/*
+ * "Apple Mail (dark)" theme, inspired by Mail on macOS (no affiliation): the dark appearance (window #1E1E1E,
+ * content #28282A, systemBlue #0A84FF for focus), with the same shape as the light theme.
+ * Held to WCAG AAA (text 7:1, large text 4.5:1, components 3:1): a value moved for it keeps its hue and says
+ * what it was.
+ * Only role values of the contract in ../styles/contract.css.
+ */
+:root[data-theme='apple-mail-dark'] {
+  --theme-label: 'Apple Mail (dark)';
+  --theme-scheme: dark;
+  --theme-order: 50;
+
+  /* text */
+  --color-fg: rgba(255, 255, 255, 0.85);
+  --color-fg-strong: #ffffff;
+  --color-fg-muted: rgba(255, 255, 255, 0.71); /* AAA, was rgba(255, 255, 255, 0.65) */
+  --color-fg-subtle: rgba(255, 255, 255, 0.71); /* AAA, was rgba(255, 255, 255, 0.6) */
+  --color-heading: #ffffff;
+  --color-link: #8bc6ff; /* AAA, was #5eb0ff */
+  --color-link-hover: #8ac4ff;
+
+  /* page and surfaces */
+  --color-page: #1e1e1e;
+  --color-backdrop: #161617;
+  --color-surface: #28282a;
+  --color-surface-2: #323234;
+  --color-surface-3: #2e2e30;
+  --color-line: rgba(255, 255, 255, 0.12);
+  --color-line-soft: rgba(255, 255, 255, 0.07);
+  --color-popup-line: rgba(255, 255, 255, 0.2);
+  --color-row-hover: #343436;
+  --color-overlay: rgba(0, 0, 0, 0.55);
+  --color-scroll-thumb: #5a5a5e;
+
+  /* selection (the selected message) */
+  --color-selection: #0051c0; /* AAA, was #0058d0 */
+  --color-on-selection: #ffffff;
+  --color-on-selection-muted: #ffffff;
+  --color-on-selection-subtle: #ffffff;
+  --color-on-selection-star: #ffffff;
+  --color-selection-mark: #0058d0;
+  --color-selection-line: #0058d0;
+
+  /* fields and keyboard focus */
+  --color-field: #1e1e1e;
+  --color-on-field: rgba(255, 255, 255, 0.85);
+  --color-field-line: rgba(255, 255, 255, 0.35); /* AAA, was rgba(255, 255, 255, 0.25) */
+  --color-field-focus: #0a84ff;
+  --color-focus: #0a84ff;
+
+  /* primary action */
+  --color-action: #0057ae; /* AAA, was #0071e3 */
+  --color-action-hover: #0055b3; /* AAA, was #0064d2 */
+  --color-action-line: #0071e3;
+  --color-on-action: #ffffff;
+
+  /* secondary action */
+  --color-action-2: #3a3a3c;
+  --color-action-2-hover: #48484a;
+  --color-action-2-line: rgba(255, 255, 255, 0.35); /* AAA, was rgba(255, 255, 255, 0.15) */
+  --color-action-2-hover-line: rgba(255, 255, 255, 0.3);
+  --color-on-action-2: rgba(255, 255, 255, 0.85);
+
+  /* danger and status */
+  --color-danger: #ffbdb9; /* AAA, was #ff7b74 */
+  --color-on-danger: #191919; /* AAA, was #1e1e1e */
+  --color-ok: #32d74b;
+  --color-err: #ff7b74;
+  --color-warn: #ffd60a;
+  --color-err-soft: #3a1f1f;
+  --color-on-err-soft: #ffb4ae;
+  --color-err-line: #6b2b28;
+
+  /* header: the app bar, dialog title bars and the login box */
+  --color-header: #2c2c2e;
+  --color-header-brand: #1e1e1e;
+  --color-on-header: rgba(255, 255, 255, 0.85);
+  --color-on-header-muted: rgba(255, 255, 255, 0.67); /* AAA, was rgba(255, 255, 255, 0.65) */
+  --color-on-header-err: #ff7b74;
+  --color-header-line: #111111;
+  --color-header-control-line: rgba(255, 255, 255, 0.25);
+  --color-header-hover: #3a3a3c;
+  --color-tab-on: #3a3a3c;
+  --color-on-tab-on: #ffffff;
+  --color-tab-mark: #409cff;
+
+  /* sidebar */
+  --color-sidebar: #232325;
+  --color-on-sidebar: rgba(255, 255, 255, 0.85);
+  --color-sidebar-hover: #2e2e30;
+  --color-sidebar-active: #3a3a3c;
+  --color-on-sidebar-active: #ffffff;
+  --color-count: rgba(255, 255, 255, 0.68); /* AAA, was rgba(255, 255, 255, 0.65) */
+
+  /* mail list */
+  --color-unread: #ffffff;
+  --color-unread-mark: #91c9ff; /* AAA, was #5eb0ff */
+  --color-star: #ffd60a;
+
+  /* accent: avatars, the quota bar, today's date, small marks */
+  --color-accent: #70b9ff; /* AAA, was #5eb0ff */
+  --color-accent-strong: #8ac4ff;
+  --color-accent-soft: #1c3350;
+  --color-on-accent: #111111;
+
+  /* raw source viewer */
+  --color-code: #161617;
+  --color-on-code: #e6e6e6;
+  --color-on-code-muted: #a1a1a6; /* AAA, was #98989d */
+
+  /* message content: HTML mail and the composer's document, a light sheet in every theme */
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f7fa;
+  --color-on-paper: #1a1f2a;
+  --color-paper-muted: #444444;
+  --color-paper-subtle: #515965; /* AAA, was #5c6573 */
+  --color-paper-link: #1f4a8a;
+  --color-paper-line: #c9d1dc;
+
+  /* shape */
+  --radius-control: 6px;
+  --radius-surface: 10px;
+  --radius-row: 6px;
+
+  /* type */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', Menlo, Monaco, monospace;
+
+  /* depth, relief and the selected row's shape */
+  --shadow-focus: 0 0 0 2px var(--color-focus);
+  --row-inset-x: 8px;
+  --selection-mark-w: 0px;
+  --bg-backdrop: none;
+  --shadow-menu: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-dialog: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 24px 60px rgba(0, 0, 0, 0.6);
+  --shadow-toast: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 6px 18px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 12px 32px rgba(0, 0, 0, 0.5);
+}

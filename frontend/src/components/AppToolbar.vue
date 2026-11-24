@@ -66,7 +66,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
 </script>
 
 <template>
-  <div class="h-9 bg-surface-2 border-b border-line flex items-center px-2 gap-1 flex-shrink-0">
+  <div class="strip h-9 bg-surface-2 border-b border-line flex items-center px-2 gap-1 flex-shrink-0">
     <button class="tbtn tbtn-primary" type="button" @click="mail.compose()">
       <Icon name="pencil-line" :size="14" /> New Message
     </button>

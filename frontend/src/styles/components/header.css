@@ -1,0 +1,74 @@
+@layer components {
+  /* Dialog title bars and the header's small buttons */
+  .header-btn {
+    background: transparent;
+    border: 1px solid var(--color-header-control-line);
+    border-radius: var(--radius-control);
+    color: var(--color-on-header-muted);
+  }
+  .header-btn:hover {
+    background: var(--color-header-hover);
+    border-color: var(--color-tab-mark);
+    color: var(--color-on-header);
+  }
+  .tab-on {
+    background-color: var(--color-tab-on);
+    background-image: var(--bg-tab-on);
+    color: var(--color-on-tab-on);
+    box-shadow: var(--shadow-tab-on);
+  }
+  /* the app bar and the title bars of dialogs: a theme may lay a gradient over the header color */
+  .on-header {
+    background-image: var(--bg-header);
+  }
+  /* header strips of panes (folder list, message list, settings) */
+  .strip {
+    background-image: var(--bg-strip);
+  }
+
+  /* Search box */
+  .search-box {
+    flex: 1;
+    max-width: 560px;
+    display: flex;
+    align-items: stretch;
+    background: var(--color-field);
+    border: 1px solid var(--color-header-line);
+    border-radius: var(--radius-control);
+    overflow: hidden;
+  }
+  .search-box input {
+    flex: 1;
+    border: 0;
+    border-radius: 0;
+    outline: none;
+    padding: 0 10px;
+    font-size: 12.5px;
+    height: 26px;
+    background: var(--color-field);
+    color: var(--color-on-field);
+  }
+  .search-box select {
+    border: 0;
+    border-right: 1px solid var(--color-line);
+    border-radius: 0;
+    background: var(--color-surface-2);
+    font-size: 12px;
+    padding: 0 8px;
+    height: 26px;
+    color: var(--color-fg-muted);
+  }
+  .search-box button {
+    background-color: var(--color-action);
+    background-image: var(--bg-action);
+    color: var(--color-on-action);
+    border: 0;
+    padding: 0 12px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .search-box button:hover {
+    background-color: var(--color-action-hover);
+    background-image: var(--bg-action-hover);
+  }
+}
