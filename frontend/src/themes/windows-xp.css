@@ -4,7 +4,9 @@
  * the current view is a pressed taskbar button with the orange tab top, the primary action is the Start green,
  * secondary buttons are XP push buttons (white to the dialog face #ECE9D8, navy frame, orange on hover), pane
  * headers are list-view headers, the folder list is the task pane blue, dialogs get the blue window frame, fields
- * are sunken. The type is the bundled Inter, drawn at XP's size, with Tahoma behind it. No affiliation with Microsoft; no logo, icon or font of the product is used.
+ * are sunken. The type is the bundled Inter, drawn at XP's size, with Tahoma behind it. The login screen sits on
+ * the pale "Bliss" desktop of go-guacamole's XP theme (jniltinho/go-guacamole, frontend/src/themes/xp/theme.css):
+ * sky over the green hill. No affiliation with Microsoft; no logo, icon or font of the product is used.
  * Gradients keep a thin light band at the top; from 20% down every stop holds its text at 7:1.
  * Held to WCAG AAA (text 7:1, large text 4.5:1, components 3:1): a value moved for it keeps its hue and says
  * what it was.
@@ -26,7 +28,7 @@
 
   /* page and surfaces */
   --color-page: #ece9d8;
-  --color-backdrop: #3a6ea5;
+  --color-backdrop: #8fbcef;
   --color-surface: #ffffff;
   --color-surface-2: #ece9d8;
   --color-surface-3: #f6f5ee;
@@ -188,5 +190,5 @@
   --selection-mark-w: 0px;
   /* XP was drawn small (Tahoma 11 px, 22 px buttons): the whole interface at that size, 11/13 */
   --theme-scale: 0.85;
-  --bg-backdrop: none;
+  --bg-backdrop: linear-gradient(180deg, #8fbcef 0%, #b9d5f3 48%, #9fca80 72%, #6aa84f 100%);
 }
