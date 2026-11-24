@@ -95,7 +95,7 @@ Pre-built binaries are published on every release. For production setup with Mar
 
 ### Build from source
 
-Requires Go 1.26+ and Node.js (build time only).
+Requires Go 1.27+ and Node.js (build time only).
 
 ```bash
 git clone https://github.com/jniltinho/go-cubemail.git
@@ -142,7 +142,7 @@ See the [Production Setup Guide](setup/README.md) for MariaDB/PostgreSQL + syste
 
 ## Tech Stack
 
-**Backend**: Go 1.26, Echo v5, GORM, Cobra, Viper, Swaggo (OpenAPI)
+**Backend**: Go 1.27, Echo v5, GORM, Cobra, Viper, Swaggo (OpenAPI)
 
 **Frontend (embedded)**: Vue 3 + TypeScript + Vite+ (`vp`), Pinia, Tailwind CSS v4, TipTap (rich text), Lucide icons
 

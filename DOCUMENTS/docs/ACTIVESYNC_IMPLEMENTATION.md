@@ -2,7 +2,7 @@
 
 > **Project:** go-cubemail-vue  
 > **Reference:** SOGo ActiveSync bundle (`ActiveSync/`, `UI/MainUI/SOGoMicrosoftActiveSyncActions.m`)  
-> **Stack:** Go 1.26 + Echo v5  
+> **Stack:** Go 1.27 + Echo v5  
 > **Status:** Phase 0–5 partial — ItemOperations Fetch, Ping long-poll, Search results implemented; vtodo, EAS 16.1, OOF pending  
 > **Related:** [Calendar Implementation Guide](CALENDAR_IMPLEMENTATION.md)
 

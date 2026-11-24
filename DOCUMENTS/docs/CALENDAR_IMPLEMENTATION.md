@@ -2,7 +2,7 @@
 
 > **Project:** go-cubemail-vue  
 > **Reference:** SOGo Calendar (`SoObjects/Appointments`, `UI/Scheduler`)  
-> **Stack:** Go 1.26 + Echo v5 (backend) · Vue 3.5 + Pinia + Vite (frontend)  
+> **Stack:** Go 1.27 + Echo v5 (backend) · Vue 3.5 + Pinia + Vite (frontend)  
 > **Status:** Planning document — calendar UI exists as a mock; no backend calendar module yet  
 > **Related:** [ActiveSync Implementation Guide](ACTIVESYNC_IMPLEMENTATION.md) — mobile calendar/mail sync via EAS
 
@@ -400,7 +400,7 @@ Navigation:
 
 | Library | Version | Use |
 |---------|---------|-----|
-| `github.com/labstack/echo/v5` | v5.1.1 | HTTP server, routing, middleware |
+| `github.com/labstack/echo/v5` | v5.4.7 | HTTP server, routing, middleware |
 | `gorm.io/gorm` | v1.31.1 | ORM, migrations |
 | `gorm.io/driver/sqlite` | v1.6.0 | Default DB |
 | `github.com/spf13/viper` | v1.21.0 | Configuration |
@@ -429,8 +429,8 @@ go get github.com/go-playground/validator/v10  # Request validation (optional)
 
 | Library | Version | Use |
 |---------|---------|-----|
-| `vue` | ^3.5.34 | UI framework |
-| `pinia` | ^3.0.4 | State management |
+| `vue` | ^3.5.46 | UI framework |
+| `pinia` | ^4.1.0 | State management |
 | `axios` | 1.16.1 (vendored) | HTTP client |
 | `tailwindcss` | ^4.3.0 | Styling |
 | `@lucide/vue` | ^1.16.0 | Icons |

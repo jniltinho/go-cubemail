@@ -4,7 +4,7 @@ This guide explains how to set up a local development environment for **go-cubem
 
 ## Prerequisites
 
-- **Go** 1.26 or higher
+- **Go** 1.27 or higher
 - **Node.js** 20+ and npm
 - **Make**
 - A running database (SQLite for development, MariaDB/PostgreSQL recommended for production-like testing)

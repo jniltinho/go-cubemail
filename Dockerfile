@@ -13,7 +13,7 @@ RUN npm run build
 
 # ── Backend: static Go binary with the SPA embedded ──────────────────────────
 # Also on the build platform; Go cross-compiles, so no emulation is needed.
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download

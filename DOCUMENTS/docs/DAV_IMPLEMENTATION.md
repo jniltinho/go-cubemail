@@ -1,7 +1,7 @@
 # CalDAV & CardDAV Implementation Guide
 
 > **Project:** go-cubemail-vue
-> **Stack:** Go 1.26 + Echo v5 + GORM (SQLite / MariaDB / PostgreSQL) + Vue 3, single binary
+> **Stack:** Go 1.27 + Echo v5 + GORM (SQLite / MariaDB / PostgreSQL) + Vue 3, single binary
 > **Status:** Core protocol complete and covered by tests — contact groups, GAL, collected contacts and listing projection are pending (see [§6](#6-remaining-work))
 > **Related:** [DAV & Sync Setup](DAV_AND_SYNC_SETUP.md) (client configuration) · [SDD §11.4](SDD.md) · [ActiveSync Implementation](ACTIVESYNC_IMPLEMENTATION.md)
 

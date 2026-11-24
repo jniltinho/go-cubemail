@@ -31,7 +31,7 @@ There is no email session database — all message reading/writing occurs in rea
 
 | Layer | Technology | Version |
 |---|---|---|
-| Language | Go | 1.26+ |
+| Language | Go | 1.27+ |
 | HTTP Framework | Echo | v5.x |
 | CLI / bootstrap | Cobra | v1.9+ |
 | Configuration | Viper | v2.x |
@@ -52,7 +52,7 @@ There is no email session database — all message reading/writing occurs in rea
 | Framework | Vue 3 (Composition API) | ^3.5 |
 | Language | TypeScript | ^6.0 |
 | Toolchain (dev, build, lint, format) | Vite+ (`vite-plus`, `vp` CLI; bundles Vite 8) | 1.8 |
-| State management | Pinia | ^3.0 |
+| State management | Pinia | ^4.1 |
 | CSS framework | Tailwind CSS v4 (Vite plugin) | ^4.3 |
 | HTTP client | Axios | ^1.16 |
 | Rich text editor | TipTap (via RichTextEditor) | 2.x |
@@ -808,7 +808,7 @@ go-cubemail-vue
 ## 14. Go Dependencies (`go.mod`)
 
 ```
-github.com/labstack/echo/v5          v5.1.1
+github.com/labstack/echo/v5          v5.4.7
 github.com/spf13/cobra               v1.9.1
 github.com/spf13/viper               v1.21.0
 gorm.io/gorm                         v1.31.1
@@ -831,9 +831,9 @@ golang.org/x/time                    (rate limiting)
   "dependencies": {
     "@lucide/vue": "^1.16.0",
     "axios": "^1.16.1",
-    "pinia": "^3.0.4",
+    "pinia": "^4.1.0",
     "@tiptap/starter-kit": "^2.11.5",
-    "vue": "^3.5.34"
+    "vue": "^3.5.46"
   },
   "devDependencies": {
     "@fontsource-variable/inter": "^5.3.0",
